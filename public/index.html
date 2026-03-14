@@ -397,7 +397,7 @@ async function loadSightings() {
   }
   sightings = data || [];
   document.getElementById('hcount').textContent = sightings.length + ' logged';
-  renderDash(); renderLog(); updatePins(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
+  renderDash(); renderLog(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
 }
 
 async function uploadPhoto(file, sightingId) {
@@ -955,6 +955,20 @@ function showPin(camName) {
 
 function filterGo(c) { curFilter = c; showView('log'); }
 
+
+function toggleBuckIntel(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector(".bi-arrow");
+  body.classList.toggle("open");
+  if(arrow) arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
+}
+
+function goToBuck(name) {
+  curMapFilter = name;
+  showView("map");
+  setTimeout(() => { buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines(); }, 300);
+}
+
 // ── views ────────────────────────────────────────────────────────────────────
 function showView(n) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
@@ -963,7 +977,10 @@ function showView(n) {
   document.getElementById(vm[n] || "v"+n).classList.add("on");
   const nb = document.getElementById("nn-"+n);
   if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
-  if(n === "dash") renderDash();
+  if(n === "dash") {
+    document.getElementById("dashContent").innerHTML = '<div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>';
+    setTimeout(renderDash, 10);
+  }
   if(n === "map") {
     buildMapFilters(); buildMapLegend();
     setTimeout(async () => {
@@ -1145,6 +1162,232 @@ function handlePhoto(inp) {
 
 // ── init ───────────────────────────────────────────────────────────────────
 loadSightings();
+
+// Real-time updates - refresh when another user logs a sighting
+const channel = sb.channel('sightings-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'sightings' }, payload => {
+    // Reload sightings when any change happens from another session
+    if(payload.eventType === 'INSERT') {
+      const exists = sightings.find(s => s.id === payload.new.id);
+      if(!exists) {
+        sightings.unshift(payload.new);
+        document.getElementById('hcount').textContent = sightings.length + ' logged';
+        const activeDash = document.getElementById('vdash').classList.contains('on');
+        if(activeDash) renderDash();
+        buildMapFilters(); buildMapLegend(); refreshBucknameList();
+      }
+    }
+  })
+  .subscribe();
 </script>
 </body>
-</html>
+</html>function renderDash() {
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
+
+  const totalCount = sightings.length;
+  const buckCount = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
+  const matureList = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
+  const matureCount = matureList.length;
+  const nb = getNamedBucks();
+
+  // Stats strip
+  let html = `<div class="sgrid">
+    <div class="sbox"><div class="snum">${totalCount}</div><div class="slbl">Total</div></div>
+    <div class="sbox"><div class="snum">${buckCount}</div><div class="slbl">Bucks</div></div>
+    <div class="sbox"><div class="snum">${matureCount}</div><div class="slbl">Mature</div></div>
+  </div>`;
+
+  if(!totalCount) {
+    html += `<div class="card"><p style="color:#4a6a3a;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    document.getElementById("dashContent").innerHTML = html;
+    document.getElementById("hcount").textContent = "0 logged";
+    return;
+  }
+  document.getElementById("hcount").textContent = totalCount + " logged";
+
+  // ── Pre-compute all aggregates ─────────────────────────────────────────
+  // Wind counts
+  const windCounts = {};
+  WINDS.forEach(w => windCounts[w] = 0);
+  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
+  const maxWind = Math.max(...Object.values(windCounts), 1);
+  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
+
+  // Time of day counts
+  const timeCounts = {};
+  Object.keys(TIME_BUCKETS).forEach(k => timeCounts[k] = 0);
+  sightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
+    });
+  });
+  const maxTime = Math.max(...Object.values(timeCounts), 1);
+  const topTime = Object.entries(timeCounts).sort((a,b) => b[1]-a[1])[0];
+
+  // Camera counts
+  const camCounts = {};
+  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
+  const camMatureCounts = {};
+  CAMNAMES.slice(0,5).forEach(c => camMatureCounts[c] = 0);
+  sightings.forEach(s => {
+    if(camCounts[s.camera_name] !== undefined) {
+      camCounts[s.camera_name]++;
+      if(s.deer_type && s.deer_type.includes("Mature")) camMatureCounts[s.camera_name]++;
+    }
+  });
+  const maxCam = Math.max(...Object.values(camCounts), 1);
+  const topCam = Object.entries(camCounts).sort((a,b) => b[1]-a[1])[0];
+
+  // Mature buck conditions
+  const matureTemps = matureList.filter(s => s.temp_f).map(s => s.temp_f);
+  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b)=>a+b,0)/matureTemps.length) : null;
+  const moonCounts = {};
+  matureList.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
+  const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
+  const highP = sightings.filter(s => s.pressure && s.pressure > 1020);
+  const lowP = sightings.filter(s => s.pressure && s.pressure <= 1020);
+  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
+  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
+
+  // ── Named buck cards ───────────────────────────────────────────────────
+  if(nb.length > 0) {
+    html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
+    nb.forEach(bname => {
+      const bs = sightings.filter(s => s.buck_name === bname);
+      const color = buckColor(bname);
+      const cameras = [...new Set(bs.map(s => s.camera_name))];
+      const dates = bs.map(s => s.date).sort();
+      const recentImg = bs.filter(s => s.image_url).sort((a,b) => b.date.localeCompare(a.date))[0];
+
+      // Pre-compute buck aggregates
+      const bWind = {}; WINDS.forEach(w => bWind[w]=0);
+      const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
+      const bMoon = {}; const bBehav = {};
+      const bTemps = [];
+
+      bs.forEach(s => {
+        if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++;
+        if(s.temp_f) bTemps.push(s.temp_f);
+        if(s.moon_phase) bMoon[s.moon_phase] = (bMoon[s.moon_phase]||0)+1;
+        if(s.behavior) bBehav[s.behavior] = (bBehav[s.behavior]||0)+1;
+        if(s.time) {
+          const h = parseInt(s.time);
+          Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+            if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
+          });
+        }
+      });
+
+      const bMaxWind = Math.max(...Object.values(bWind), 1);
+      const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b) => bWind[b]-bWind[a]).slice(0,3);
+      const bTopTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
+      const bTopMoon = Object.entries(bMoon).sort((a,b)=>b[1]-a[1]).slice(0,2);
+      const bTopBehav = Object.entries(bBehav).sort((a,b)=>b[1]-a[1]);
+      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b)=>a+b,0)/bTemps.length) : null;
+      const bMinTemp = bTemps.length ? Math.min(...bTemps) : null;
+      const bMaxTemp = bTemps.length ? Math.max(...bTemps) : null;
+      const camSeq = [...new Set(bs.sort((a,b)=>new Date(a.date+"T"+(a.time||"00:00"))-new Date(b.date+"T"+(b.time||"00:00"))).map(s=>s.camera_name))];
+
+      const windBars = WINDS.filter(w=>bWind[w]>0).map(w =>
+        `<div class="cond-bar-wrap">
+          <div class="cond-bar-lbl"><span>${w}</span><span>${bWind[w]}</span></div>
+          <div class="cond-bar"><div class="cond-bar-fill${bTopWinds[0]===w?" hi":""}" style="width:${Math.round(bWind[w]/bMaxWind*100)}%"></div></div>
+        </div>`).join("");
+
+      const timeBars = bTopTime.map(([label,cnt]) =>
+        `<div class="cond-bar-wrap">
+          <div class="cond-bar-lbl"><span>${label}</span><span>${cnt}</span></div>
+          <div class="cond-bar"><div class="cond-bar-fill${cnt===bTopTime[0][1]?" hi":""}" style="width:${Math.round(cnt/bTopTime[0][1]*100)}%"></div></div>
+        </div>`).join("");
+
+      const patternText = bs.length >= 3 ? `
+        ${bTopWinds.length?`Most active on <strong style="color:#c8a951">${bTopWinds[0]}${bTopWinds[1]?" / "+bTopWinds[1]:""} wind</strong>. `:""}
+        ${bTopTime.length?`Peak: <strong style="color:#c8a951">${bTopTime[0][0]}</strong>. `:""}
+        ${bAvgTemp?`Avg temp <strong style="color:#c8a951">${bAvgTemp}&deg;F</strong>. `:""}
+        ${camSeq.length>1?`Corridor: <strong style="color:#c8a951">${camSeq.join(" &rarr; ")}</strong>.`:`Concentrated at <strong style="color:#c8a951">${camSeq[0]}</strong>.`}` : "";
+
+      html += `<div class="buck-intel gold">
+        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
+          ${recentImg
+            ?`<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
+            :`<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#127956;</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
+            <div style="font-size:11px;color:#7a9e6a">${bs.length} sightings &middot; ${cameras.join(", ")}</div>
+            <div style="font-size:10px;color:#4a6a3a">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
+          </div>
+          <div style="font-size:18px;color:#4a6a3a;transition:transform 0.2s" class="bi-arrow">&#8964;</div>
+        </button>
+        <div class="bi-body">
+          <div class="cond-grid">
+            <div class="cond-box"><div class="cond-title">Wind Preference</div>${windBars}</div>
+            <div class="cond-box"><div class="cond-title">Time of Day</div>${timeBars}</div>
+          </div>
+          <div class="stat-row"><span class="stat-lbl">Temp at sighting</span><span class="stat-val">${bAvgTemp?`${bMinTemp}&ndash;${bMaxTemp}&deg;F (avg ${bAvgTemp}&deg;)`:"--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Top moon phases</span><span class="stat-val">${bTopMoon.map(([m,c])=>`${m} (${c})`).join(", ")||"--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Top behaviors</span><span class="stat-val">${bTopBehav.slice(0,2).map(([b,c])=>`${b} (${c})`).join(", ")||"--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Camera pattern</span><span class="stat-val" style="font-size:10px">${camSeq.join(" &rarr; ")}</span></div>
+          ${bs.length>=3?`<div class="insight insight-gold" style="margin-top:10px">
+            <div class="insight-title">&#129504; Pattern Analysis</div>
+            <div class="insight-text">${patternText}</div>
+          </div>`:`<div style="font-size:11px;color:#4a6a3a;font-style:italic;padding:8px 0">Log ${3-bs.length} more sighting${3-bs.length>1?"s":""} to unlock pattern analysis.</div>`}
+          <button onclick="goToBuck('${bname}')" style="margin-top:10px;width:100%;padding:8px;border:1px solid ${color};border-radius:8px;background:transparent;color:${color};font-size:12px;cursor:pointer;font-family:Georgia,serif">&#128506; View movement map &rarr;</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── Property Intelligence ──────────────────────────────────────────────
+  html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
+
+  // Wind rose
+  html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; All Deer Activity</div>
+    <div class="wind-rose">${WINDS.map(w => `<div class="wr-cell">
+      <div class="wr-dir">${w}</div>
+      <div class="wr-bar"><div class="wr-fill${topWinds.includes(w)?" top":""}" style="width:${Math.round(windCounts[w]/maxWind*100)}%"></div></div>
+      <div class="wr-cnt">${windCounts[w]}</div>
+    </div>`).join("")}</div></div>`;
+
+  // Time of day
+  html += `<div class="prop-stat"><div class="cond-title">Movement by Time of Day</div>
+    ${Object.entries(timeCounts).map(([label,cnt])=>`<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+        <span style="color:${label===topTime[0]?"#c8a951":"#a0b890"}">${label}</span>
+        <span style="color:#7a9e6a">${cnt}</span>
+      </div>
+      <div class="cond-bar"><div class="cond-bar-fill${label===topTime[0]?" hi":""}" style="width:${Math.round(cnt/maxTime*100)}%"></div></div>
+    </div>`).join("")}</div>`;
+
+  // Camera hotspots
+  html += `<div class="prop-stat"><div class="cond-title">Camera Hotspots</div>
+    ${CAMNAMES.slice(0,5).map(c=>`<div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+        <span style="color:${topCam[0]===c?"#c8a951":"#a0b890"}">${c}</span>
+        <span style="color:#7a9e6a">${camCounts[c]}${camMatureCounts[c]>0?` &middot; <span style="color:#c8a951">${camMatureCounts[c]} mature</span>`:""}</span>
+      </div>
+      <div class="cond-bar"><div class="cond-bar-fill${camMatureCounts[c]>0?" hi":""}" style="width:${Math.round(camCounts[c]/maxCam*100)}%"></div></div>
+    </div>`).join("")}</div>`;
+
+  // Key insights
+  html += `<div class="insight insight-gold">
+    <div class="insight-title">&#127919; Key Insights &mdash; ${totalCount} Sightings</div>
+    <div class="insight-text">
+      ${topWinds.length?`<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
+      ${topTime?`<strong style="color:#c8a951">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
+      ${avgMatureTemp?`<strong style="color:#c8a951">Mature buck temp:</strong> avg ${avgMatureTemp}&deg;F at sighting.<br/>`:""}
+      ${topMoon?`<strong style="color:#c8a951">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
+      ${highP.length&&lowP.length?`<strong style="color:#c8a951">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
+      ${topCam?`<strong style="color:#c8a951">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
+    </div>
+  </div>`;
+
+  // Season intel
+  html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
+    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+  </div>`;
+
+  document.getElementById("dashContent").innerHTML = html;
+}
