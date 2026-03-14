@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Cooley Lake Deer Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Georgia',serif;background:#0d1a0f;color:#e8dcc8;max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:72px;overflow-x:hidden}
+.hdr{background:linear-gradient(180deg,#0a1208,#0d1a0f);border-bottom:1px solid #2a3d1e;padding:12px 16px 10px;position:sticky;top:0;z-index:200;display:flex;align-items:center;gap:10px}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:480px;background:#0a1208;border-top:1px solid #2a3d1e;display:grid;grid-template-columns:1fr 1fr 1fr 1fr;z-index:200}
+.nb{padding:10px 0 8px;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;color:#4a6a3a;font-family:'Georgia',serif;width:100%}
+.nb.on{color:#c8a951}.nb .ico{font-size:16px}.nb .lbl{font-size:10px;text-transform:uppercase;letter-spacing:1px}
+.ndot{width:18px;height:2px;background:#c8a951;border-radius:1px;margin-top:2px}
+.view{display:none;padding:14px 14px 0}.view.on{display:block}
+#vmap.on{display:block;padding:0}
+.card{background:#111f0e;border:1px solid #2a3d1e;border-radius:8px;padding:14px;margin-bottom:12px}
+.card.gold{border-color:#c8a951}.card.intel{background:#0a1a08;border-color:#c8a951}
+.stitle{font-size:11px;color:#c8a951;text-transform:uppercase;letter-spacing:2px;margin-bottom:10px}
+.lbl{font-size:10px;color:#7a9e6a;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:4px}
+.sgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.sbox{background:#111f0e;border:1px solid #2a3d1e;border-radius:8px;padding:10px 8px;text-align:center}
+.snum{font-size:22px;font-weight:700;color:#c8a951}.slbl{font-size:10px;color:#7a9e6a;text-transform:uppercase}
+.br{margin-bottom:5px}.bm{display:flex;justify-content:space-between;margin-bottom:2px;font-size:11px}
+.bt{height:5px;background:#1a2d14;border-radius:3px;overflow:hidden}.bf{height:100%;background:#4a7a3a;border-radius:3px}.bf.pk{background:#c8a951}
+.chip{padding:6px 12px;border-radius:20px;border:1px solid #2a3d1e;background:transparent;color:#7a9e6a;font-size:12px;cursor:pointer;font-family:'Georgia',serif;white-space:nowrap}
+.chip.on{border-color:#c8a951;background:#1a2d14;color:#c8a951}
+.crow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.frow{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}.frow::-webkit-scrollbar{display:none}
+input,select,textarea{width:100%;background:#111f0e;border:1px solid #2a3d1e;border-radius:6px;padding:8px 10px;color:#e8dcc8;font-size:13px;font-family:'Georgia',serif;outline:none}
+input::placeholder{color:#4a6a3a}
+textarea{resize:none}
+.igrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.ubox{background:#111f0e;border:2px dashed #2a3d1e;border-radius:8px;padding:20px;text-align:center;cursor:pointer;margin-bottom:12px}
+.sbtn{width:100%;padding:14px;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Georgia',serif;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+.sbtn.rdy{background:#c8a951;color:#0d1a0f}.sbtn.dis{background:#2a3d1e;color:#4a6a3a;cursor:not-allowed}
+.bbtn{background:none;border:none;color:#7a9e6a;font-size:13px;cursor:pointer;margin-bottom:12px;padding:0;font-family:'Georgia',serif}
+.sc{background:#111f0e;border:1px solid #2a3d1e;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.sc.m{border-color:#c8a951}
+.sc-img{width:100%;height:160px;object-fit:cover;display:block}
+.sc-body{padding:12px 14px;cursor:pointer}
+.sc-foot{padding:8px 14px 12px;display:flex;gap:8px;border-top:1px solid #1a2d14;align-items:center}
+.edit-btn{padding:5px 12px;border-radius:14px;border:1px solid #2a3d1e;background:transparent;color:#7a9e6a;font-size:11px;cursor:pointer;font-family:'Georgia',serif}
+.tag{font-size:10px;padding:2px 8px;background:#1a2d14;border-radius:10px;color:#a0b890}
+.tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.snotes{font-size:11px;color:#7a9e6a;margin-top:8px;font-style:italic;line-height:1.5}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.dc{background:#0d1a0f;border-radius:6px;padding:10px}
+.dl{font-size:10px;color:#4a6a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.dv{font-size:13px;color:#e8dcc8}
+.moon{background:#111f0e;border:1px solid #2a3d1e;border-radius:8px;padding:12px;display:flex;align-items:center;gap:10px;margin-bottom:12px}
+/* weather panel */
+.wx{background:#0d1a0f;border:1px solid #2a3d1e;border-radius:8px;padding:12px;margin-top:10px}
+.wx-title{font-size:10px;color:#c8a951;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.wx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wx-cell{background:#111f0e;border-radius:6px;padding:8px 6px;text-align:center}
+.wx-val{font-size:16px;font-weight:700;color:#7ab8f5}
+.wx-lbl{font-size:9px;color:#7a9e6a;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.wx-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.wx-apply{width:100%;margin-top:8px;padding:8px;background:#1a2d14;border:1px solid #2a3d1e;border-radius:6px;color:#c8a951;font-size:12px;cursor:pointer;font-family:Georgia,serif}
+/* map */
+.map-hdr{padding:10px 14px 8px;font-size:11px;color:#7a9e6a;line-height:1.6;border-bottom:1px solid #2a3d1e;background:#0d1a0f}
+#mapwrap{position:relative;width:100%;overflow:hidden;background:#1a2a1a}
+#mapwrap img.base{width:100%;display:block}
+#lineCanvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
+.pin{position:absolute;transform:translate(-50%,-50%);cursor:pointer;display:flex;flex-direction:column;align-items:center;z-index:10}
+.pin-dot{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;border:2.5px solid rgba(255,255,255,0.9);box-shadow:0 2px 10px rgba(0,0,0,0.8);font-family:Georgia,serif;transition:transform 0.15s}
+.pin:active .pin-dot{transform:scale(1.2)}
+.pin-lbl{font-size:9px;margin-top:2px;background:rgba(10,18,8,0.9);padding:2px 5px;border-radius:3px;white-space:nowrap;color:#a0c890}
+.map-filters{display:flex;gap:6px;padding:8px 10px;background:#0a1208;border-bottom:1px solid #2a3d1e;overflow-x:auto}
+.map-filters::-webkit-scrollbar{display:none}
+.mfchip{padding:5px 10px;border-radius:14px;border:1px solid #2a3d1e;background:transparent;color:#7a9e6a;font-size:11px;cursor:pointer;font-family:'Georgia',serif;white-space:nowrap;flex-shrink:0}
+.mfchip.on{background:#1a2d14;border-color:#c8a951;color:#c8a951}
+.map-legend{display:flex;gap:10px;padding:7px 14px;background:#0a1208;border-top:1px solid #2a3d1e;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:#7a9e6a}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* buck card */
+.bcard{background:#111f0e;border:1px solid #2a3d1e;border-radius:8px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer}
+/* pin popup */
+.pp{margin:0 14px 12px;border-radius:8px;border:1px solid #2a3d1e;background:#111f0e;overflow:hidden}
+.pp.gold{border-color:#c8a951}
+.pp-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 14px 8px}
+.pp-title{font-size:15px;font-weight:700;color:#c8a951}
+.pp-close{background:none;border:none;color:#7a9e6a;font-size:22px;cursor:pointer;line-height:1;padding:0}
+.pp-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 14px 12px}
+.pps{background:#0d1a0f;border-radius:6px;padding:8px 6px;text-align:center}
+.ppn{font-size:18px;font-weight:700;color:#c8a951}.ppl{font-size:10px;color:#7a9e6a;text-transform:uppercase}
+.pp-s{padding:10px 14px;border-top:1px solid #1a2d14}
+.pp-s-img{width:100%;height:110px;object-fit:cover;border-radius:6px;margin-bottom:7px}
+.pp-empty{padding:12px 14px;font-size:12px;color:#4a6a3a;font-style:italic}
+.pp-more{width:100%;padding:10px;background:#1a2d14;border:none;border-top:1px solid #2a3d1e;color:#7a9e6a;font-size:12px;cursor:pointer;font-family:'Georgia',serif}
+/* modal */
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:flex-end;justify-content:center}
+.modal{background:#111f0e;border:1px solid #2a3d1e;border-radius:16px 16px 0 0;padding:20px 16px 32px;width:100%;max-width:480px;max-height:80vh;overflow-y:auto}
+.modal-title{font-size:13px;color:#c8a951;text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.modal-close{background:none;border:none;color:#7a9e6a;font-size:22px;cursor:pointer;line-height:1}
+.save-btn{width:100%;padding:12px;border:none;border-radius:8px;background:#c8a951;color:#0d1a0f;font-size:14px;font-weight:700;cursor:pointer;font-family:'Georgia',serif;margin-top:8px}
+.del-btn{width:100%;padding:10px;border:1px solid #3a1a1a;border-radius:8px;background:transparent;color:#8a4a4a;font-size:13px;cursor:pointer;font-family:'Georgia',serif;margin-top:8px}
+/* loading / sync */
+.loading{text-align:center;padding:40px;color:#4a6a3a;font-size:13px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #2a3d1e;border-top-color:#c8a951;border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-dot{width:8px;height:8px;border-radius:50%;background:#2a3d1e;display:inline-block;margin-left:6px;transition:background 0.3s}
+.sync-dot.on{background:#c8a951}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <span style="font-size:22px">&#127956;</span>
+  <div>
+    <div style="font-size:15px;font-weight:700;color:#c8a951;letter-spacing:1px;text-transform:uppercase">Cooley Lake <span class="sync-dot" id="syncDot"></span></div>
+    <div style="font-size:10px;color:#7a9e6a;letter-spacing:2px;text-transform:uppercase">Deer Intelligence Tracker</div>
+  </div>
+  <div style="margin-left:auto;text-align:right">
+    <div style="font-size:11px;color:#7a9e6a">Suring, WI</div>
+    <div id="hcount" style="font-size:10px;color:#4a6a3a">Loading...</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="vdash" class="view on">
+  <div id="dashContent"><div class="loading"><div class="spinner"></div><br/>Loading...</div></div>
+</div>
+
+<!-- MAP -->
+<div id="vmap" class="view">
+  <div class="map-hdr">Tap a pin for sighting details. Filter by buck to see movement lines.</div>
+  <div class="map-filters" id="mapFilters"></div>
+  <div id="mapwrap">
+    <img class="base" id="baseImg" src="map.jpg" alt="Cooley Lake Property"/>
+    <canvas id="lineCanvas"></canvas>
+    <div class="pin" style="left:35.4%;top:49.1%" onclick="showPin('Dan')">
+      <div class="pin-dot" id="dot-Dan" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
+      <div class="pin-lbl" id="lbl-Dan">Dan</div>
+    </div>
+    <div class="pin" style="left:17.5%;top:61.4%" onclick="showPin('Colin')">
+      <div class="pin-dot" id="dot-Colin" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
+      <div class="pin-lbl" id="lbl-Colin">Colin</div>
+    </div>
+    <div class="pin" style="left:58.5%;top:57.6%" onclick="showPin('Ridge')">
+      <div class="pin-dot" id="dot-Ridge" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
+      <div class="pin-lbl" id="lbl-Ridge">Ridge</div>
+    </div>
+    <div class="pin" style="left:77.4%;top:82.2%" onclick="showPin('Behind Rons')">
+      <div class="pin-dot" id="dot-Rons" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
+      <div class="pin-lbl" id="lbl-Rons">Behind Rons</div>
+    </div>
+    <div class="pin" style="left:92.1%;top:83.6%" onclick="showPin('By Eric')">
+      <div class="pin-dot" id="dot-Eric" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
+      <div class="pin-lbl" id="lbl-Eric">By Eric</div>
+    </div>
+    <div style="position:absolute;top:3%;left:50%;transform:translateX(-50%);background:rgba(10,18,8,0.75);color:#7ab8f5;font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:1px;pointer-events:none">COOLEY LAKE</div>
+  </div>
+  <div class="map-legend" id="mapLegend"></div>
+  <div id="pp" style="display:none"></div>
+</div>
+
+<!-- LOG -->
+<div id="vlog" class="view" style="padding:14px 14px 0">
+  <div class="frow" id="frow"></div>
+  <div id="slist"><div class="loading"><div class="spinner"></div><br/>Loading...</div></div>
+</div>
+
+<!-- ADD -->
+<div id="vadd" class="view">
+  <div class="stitle">Log Sighting</div>
+  <div class="ubox" onclick="document.getElementById('finput').click()">
+    <div id="uph"><div style="font-size:28px">&#128247;</div><div style="font-size:12px;color:#7a9e6a;margin-top:4px">Tap to upload trail cam photo</div></div>
+    <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:6px"/>
+  </div>
+  <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+
+  <div class="igrid">
+    <div><span class="lbl">Date</span><input type="date" id="fd" onchange="updateMoon();autoWx()"/></div>
+    <div><span class="lbl" id="tlbl">Time</span><input type="time" id="ft" onchange="autoWx()"/></div>
+  </div>
+  <div style="margin-bottom:10px"><span class="lbl">Camera Location *</span><div class="crow" id="cch"></div></div>
+  <div style="margin-bottom:10px"><span class="lbl">Deer Type *</span><div class="crow" id="dch"></div></div>
+  <div style="margin-bottom:10px"><span class="lbl">Behavior</span><div class="crow" id="bch"></div></div>
+  <div style="margin-bottom:10px">
+    <span class="lbl">Buck Name <span style="color:#4a6a3a;font-size:9px">(optional)</span></span>
+    <input type="text" id="fbuckname" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off" list="bucknamelist"/>
+    <datalist id="bucknamelist"></datalist>
+  </div>
+
+  <!-- Weather panel -->
+  <div id="wxpanel">
+    <div class="wx">
+      <div class="wx-title">
+        &#127780; Historical Weather
+        <span id="wxstat" style="font-size:9px;color:#4a6a3a;font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span>
+      </div>
+      <div id="wxload" style="font-size:11px;color:#4a6a3a;font-style:italic;padding:4px 0 8px">Fetching conditions for this date...</div>
+      <div id="wxdata" style="display:none">
+        <div class="wx-grid">
+          <div class="wx-cell"><div class="wx-val" id="wx-t">--</div><div class="wx-lbl">Temp &deg;F</div></div>
+          <div class="wx-cell"><div class="wx-val" id="wx-w">--</div><div class="wx-lbl">Wind mph</div></div>
+          <div class="wx-cell"><div class="wx-val" id="wx-g">--</div><div class="wx-lbl">Gust mph</div></div>
+        </div>
+        <div class="wx-row2">
+          <div class="wx-cell"><div class="wx-val" id="wx-d">--</div><div class="wx-lbl">Wind Dir</div></div>
+          <div class="wx-cell"><div class="wx-val" id="wx-h">--</div><div class="wx-lbl">Humidity</div></div>
+          <div class="wx-cell"><div class="wx-val" id="wx-p">--</div><div class="wx-lbl">Precip in</div></div>
+        </div>
+        <div style="margin-top:6px">
+          <div class="wx-cell" style="text-align:left;padding:8px 10px">
+            <div class="wx-lbl" style="margin-bottom:2px">Barometric Pressure</div>
+            <div style="font-size:13px;color:#e8dcc8"><span id="wx-bp">--</span> hPa &nbsp;<span id="wx-bpt" style="font-size:11px;color:#7a9e6a"></span></div>
+          </div>
+        </div>
+        <button class="wx-apply" onclick="applyWx()">&#8593; Apply weather to sighting</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manual overrides (always visible, pre-filled by weather) -->
+  <div style="margin-top:10px" class="igrid">
+    <div>
+      <span class="lbl">Wind Dir <span style="color:#4a6a3a;font-size:9px">(auto-filled)</span></span>
+      <select id="fwind">
+        <option value="">--</option><option>N</option><option>NE</option><option>E</option><option>SE</option>
+        <option>S</option><option>SW</option><option>W</option><option>NW</option><option>Calm</option>
+      </select>
+    </div>
+    <div>
+      <span class="lbl">Temp &deg;F <span style="color:#4a6a3a;font-size:9px">(auto-filled)</span></span>
+      <input type="number" id="ftemp" placeholder="--"/>
+    </div>
+  </div>
+
+  <div style="margin-bottom:10px"><span class="lbl">Notes</span><textarea id="fnotes" rows="3" placeholder="Antler details, travel direction, buck ID notes..."></textarea></div>
+  <div class="moon"><div style="font-size:22px" id="micon">&#127761;</div>
+    <div><div style="font-size:12px;color:#e8dcc8" id="mlbl">Select a date</div>
+    <div style="font-size:10px;color:#7a9e6a" id="msub">Moon phase auto-calculated</div></div>
+  </div>
+  <button class="sbtn dis" id="sbtn" onclick="submitSighting()">Log Sighting</button>
+</div>
+
+<!-- DETAIL -->
+<div id="vdet" class="view">
+  <button class="bbtn" onclick="showView('log')">&#8592; Back to Log</button>
+  <div id="detcontent"></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-bg" id="editModal" style="display:none" onclick="closeModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Edit Sighting <button class="modal-close" onclick="document.getElementById('editModal').style.display='none'">&#215;</button></div>
+    <div style="margin-bottom:10px"><span class="lbl">Buck Name</span><input type="text" id="eBuckName" placeholder="Name this buck..." list="bucknamelist"/></div>
+    <div style="margin-bottom:10px"><span class="lbl">Deer Type</span>
+      <select id="eDeerType">
+        <option>Buck - Mature (4.5+)</option><option>Buck - 3.5</option><option>Buck - 2.5</option>
+        <option>Buck - 1.5</option><option>Doe</option><option>Fawn</option><option>Unknown</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px"><span class="lbl">Camera</span>
+      <select id="eCamera">
+        <option>Dan</option><option>Colin</option><option>Ridge</option><option>Behind Rons</option><option>By Eric</option><option>Other</option>
+      </select>
+    </div>
+    <div class="igrid">
+      <div><span class="lbl">Date</span><input type="date" id="eDate"/></div>
+      <div><span class="lbl">Time</span><input type="time" id="eTime"/></div>
+    </div>
+    <div style="margin-bottom:10px"><span class="lbl">Behavior</span>
+      <select id="eBehavior">
+        <option value="">--</option><option>Feeding</option><option>Traveling</option><option>Scraping/Rubbing</option>
+        <option>Bedding</option><option>Chasing</option><option>Breeding</option><option>Alert/Spooked</option><option>Other</option>
+      </select>
+    </div>
+    <div style="margin-bottom:10px"><span class="lbl">Notes</span><textarea id="eNotes" rows="3"></textarea></div>
+    <div style="margin-bottom:8px">
+      <span class="lbl">Photo</span>
+      <div id="ePhotoWrap" style="margin-bottom:8px"></div>
+      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:7px 14px;border-radius:6px;border:1px solid #2a3d1e;background:#0d1a0f;color:#7a9e6a;font-size:12px;cursor:pointer;font-family:Georgia,serif">&#128247; Change photo</button>
+      <input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
+    </div>
+    <button class="save-btn" onclick="saveEdit()">Save Changes</button>
+    <button class="del-btn" onclick="deleteSighting()">&#128465; Delete Sighting</button>
+  </div>
+</div>
+
+<div class="nav">
+  <button class="nb on" onclick="showView('dash')" id="nn-dash"><span class="ico">&#128202;</span><span class="lbl">Dashboard</span><div class="ndot"></div></button>
+  <button class="nb" onclick="showView('map')" id="nn-map"><span class="ico">&#128506;</span><span class="lbl">Map</span></button>
+  <button class="nb" onclick="showView('add')" id="nn-add"><span class="ico" style="font-size:20px">+</span><span class="lbl">Log</span></button>
+  <button class="nb" onclick="showView('log')" id="nn-log"><span class="ico">&#128203;</span><span class="lbl">Sightings</span></button>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CLAT = 45.0200, CLNG = -88.2756;
+const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Other"];
+const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
+const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
+const DTYPES = ["Buck - Mature (4.5+)","Buck - 3.5","Buck - 2.5","Buck - 1.5","Doe","Fawn","Unknown"];
+const BEHS = ["Feeding","Traveling","Scraping/Rubbing","Bedding","Chasing","Breeding","Alert/Spooked","Other"];
+const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a","#8ae84a","#f0a050"];
+const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+
+let sightings = [], curFilter = "all", curMapFilter = "all";
+let wxFetched = null, wxApplied = null;
+let formImgFile = null;
+let editId = null, editImgFile = null, editImgChanged = false;
+
+// ── utils ──────────────────────────────────────────────────────────────────
+const fmtT = t => {
+  if(!t) return "";
+  const [h,m] = t.slice(0,5).split(":");
+  const hr = parseInt(h);
+  return `${hr>12?hr-12:(hr||12)}:${m} ${hr>=12?"PM":"AM"}`;
+};
+const fmtD = d => {
+  if(!d) return "";
+  return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+};
+const moonPhase = date => {
+  const p = (((new Date(date) - new Date("2000-01-06")) / 86400000) % 29.53 + 29.53) % 29.53;
+  if(p<1.85) return {i:"🌑",l:"New Moon"};
+  if(p<7.38) return {i:"🌒",l:"Waxing Crescent"};
+  if(p<9.22) return {i:"🌓",l:"First Quarter"};
+  if(p<14.76) return {i:"🌔",l:"Waxing Gibbous"};
+  if(p<16.61) return {i:"🌕",l:"Full Moon"};
+  if(p<22.15) return {i:"🌖",l:"Waning Gibbous"};
+  if(p<23.99) return {i:"🌗",l:"Last Quarter"};
+  return {i:"🌘",l:"Waning Crescent"};
+};
+const deg2dir = d => DIR_LABELS[Math.round(d/22.5)%16];
+const simpleDir = windDir => {
+  if(!windDir) return "";
+  const simple = ["NW","NE","SE","SW","N","S","E","W"];
+  return simple.find(d => windDir.startsWith(d)) || "";
+};
+function getNamedBucks() {
+  return [...new Set(sightings.filter(s=>s.buck_name&&s.buck_name.trim()).map(s=>s.buck_name.trim()))];
+}
+function buckColor(name) {
+  const names = getNamedBucks();
+  const idx = names.indexOf(name);
+  return idx >= 0 ? BUCK_COLORS[idx % BUCK_COLORS.length] : "#c8a951";
+}
+function syncDot(on) {
+  const d = document.getElementById("syncDot");
+  if(d) d.className = "sync-dot" + (on ? " on" : "");
+}
+
+// ── data ───────────────────────────────────────────────────────────────────
+async function loadSightings() {
+  syncDot(true);
+  const {data, error} = await sb.from('sightings').select('*')
+    .order('date', {ascending:false})
+    .order('time', {ascending:false});
+  syncDot(false);
+  if(error) {
+    console.error('Load error:', error);
+    document.getElementById('dashContent').innerHTML =
+      `<div class="loading" style="color:#e87a4a">Could not load data.<br/><small>${error.message}</small></div>`;
+    return;
+  }
+  sightings = data || [];
+  document.getElementById('hcount').textContent = sightings.length + ' logged';
+  renderDash(); renderLog(); updatePins(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
+}
+
+async function uploadPhoto(file, sightingId) {
+  if(!file) return null;
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = 'sightings/' + sightingId + '.' + ext;
+    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: file.type || 'image/jpeg'});
+    if(error) { console.error('Upload error:', error); return null; }
+    const {data} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e) {
+    console.error('uploadPhoto exception:', e);
+    return null;
+  }
+}
+
+async function submitSighting() {
+  const c = document.querySelector(".chip[data-k='cam'].on");
+  const d = document.querySelector(".chip[data-k='deer'].on");
+  if(!c || !d) return;
+  const btn = document.getElementById("sbtn");
+  btn.textContent = "Saving..."; btn.classList.remove("rdy"); btn.classList.add("dis");
+  const beh = document.querySelector(".chip[data-k='beh'].on");
+  const wx = wxApplied || {};
+  const newSighting = {
+    date: document.getElementById("fd").value,
+    time: document.getElementById("ft").value + ":00",
+    camera_name: c.dataset.v,
+    deer_type: d.dataset.v,
+    behavior: beh ? beh.dataset.v : null,
+    buck_name: document.getElementById("fbuckname").value.trim() || null,
+    wind_dir: document.getElementById("fwind").value || null,
+    temp_f: parseFloat(document.getElementById("ftemp").value) || null,
+    wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
+    wind_gust: wx.windGust ? parseFloat(wx.windGust) : null,
+    humidity: wx.humidity ? parseInt(wx.humidity) : null,
+    precip: wx.precip ? parseFloat(wx.precip) : null,
+    pressure: wx.pressure ? parseFloat(wx.pressure) : null,
+    notes: document.getElementById("fnotes").value || null,
+    image_url: null,
+    moon_phase: document.getElementById("mlbl").textContent,
+  };
+  syncDot(true);
+  const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
+  syncDot(false);
+  if(error) {
+    console.error('Insert error:', error);
+    btn.textContent = "Error: " + error.message.slice(0,35);
+    btn.classList.add("rdy"); btn.classList.remove("dis");
+    setTimeout(() => { btn.textContent = "Log Sighting"; checkSub(); }, 3000);
+    return;
+  }
+  // Upload photo separately
+  if(formImgFile) {
+    try {
+      syncDot(true);
+      const url = await uploadPhoto(formImgFile, data.id);
+      syncDot(false);
+      if(url) {
+        await sb.from('sightings').update({image_url: url}).eq('id', data.id);
+        data.image_url = url;
+      }
+    } catch(photoErr) {
+      syncDot(false);
+      console.error('Photo upload failed (sighting saved):', photoErr);
+    }
+  }
+  sightings.unshift(data);
+  // Reset form
+  formImgFile = null; wxApplied = null;
+  document.getElementById("fnotes").value = "";
+  document.getElementById("ftemp").value = "";
+  document.getElementById("fwind").value = "";
+  document.getElementById("finput").value = "";
+  document.getElementById("fbuckname").value = "";
+  document.getElementById("uprev").style.display = "none";
+  document.getElementById("uph").style.display = "block";
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
+  btn.textContent = "✓ Saved!";
+  document.getElementById('hcount').textContent = sightings.length + ' logged';
+  setTimeout(() => { curFilter = "all"; showView("log"); }, 1000);
+  updatePins(); refreshBucknameList(); renderDash();
+}
+
+async function saveEdit() {
+  const s = sightings.find(x => x.id === editId); if(!s) return;
+  const updates = {
+    buck_name: document.getElementById("eBuckName").value.trim() || null,
+    deer_type: document.getElementById("eDeerType").value,
+    camera_name: document.getElementById("eCamera").value,
+    date: document.getElementById("eDate").value,
+    time: document.getElementById("eTime").value + ":00",
+    behavior: document.getElementById("eBehavior").value || null,
+    notes: document.getElementById("eNotes").value || null,
+  };
+  if(editImgChanged && editImgFile) {
+    try {
+      const url = await uploadPhoto(editImgFile, editId);
+      if(url) updates.image_url = url;
+    } catch(e) { console.error('Edit photo failed:', e); }
+  }
+  syncDot(true);
+  const {error} = await sb.from('sightings').update(updates).eq('id', editId);
+  syncDot(false);
+  if(error) { alert('Save failed: ' + error.message); return; }
+  Object.assign(s, updates);
+  document.getElementById("editModal").style.display = "none";
+  renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
+}
+
+async function deleteSighting() {
+  if(!confirm("Delete this sighting?")) return;
+  syncDot(true);
+  await sb.from('sightings').delete().eq('id', editId);
+  syncDot(false);
+  sightings = sightings.filter(x => x.id !== editId);
+  document.getElementById("editModal").style.display = "none";
+  document.getElementById('hcount').textContent = sightings.length + ' logged';
+  renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
+}
+
+// ── edit modal ─────────────────────────────────────────────────────────────
+function openEdit(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  editId = id; editImgChanged = false; editImgFile = null;
+  document.getElementById("eBuckName").value = s.buck_name || "";
+  document.getElementById("eDeerType").value = s.deer_type || "Unknown";
+  document.getElementById("eCamera").value = s.camera_name || "Other";
+  document.getElementById("eDate").value = s.date || "";
+  document.getElementById("eTime").value = (s.time || "").slice(0,5);
+  document.getElementById("eBehavior").value = s.behavior || "";
+  document.getElementById("eNotes").value = s.notes || "";
+  const pw = document.getElementById("ePhotoWrap");
+  pw.innerHTML = s.image_url
+    ? `<img src="${s.image_url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px"/>`
+    : `<div style="font-size:11px;color:#4a6a3a;font-style:italic">No photo attached</div>`;
+  document.getElementById("editModal").style.display = "flex";
+}
+function closeModal(e) {
+  if(e.target === document.getElementById("editModal"))
+    document.getElementById("editModal").style.display = "none";
+}
+function handleEditPhoto(inp) {
+  const f = inp.files[0]; if(!f) return;
+  editImgFile = f; editImgChanged = true;
+  const r = new FileReader();
+  r.onload = e => { document.getElementById("ePhotoWrap").innerHTML = `<img src="${e.target.result}" style="width:100%;height:140px;object-fit:cover;border-radius:6px"/>`; };
+  r.readAsDataURL(f);
+}
+
+// ── weather ────────────────────────────────────────────────────────────────
+let wxTimer = null;
+function autoWx() {
+  const d = document.getElementById("fd").value;
+  const t = document.getElementById("ft").value;
+  if(!d || !t) return;
+  clearTimeout(wxTimer);
+  wxTimer = setTimeout(() => fetchWx(d, t), 600);
+}
+
+async function fetchWx(date, time) {
+  const load = document.getElementById("wxload");
+  const wxd  = document.getElementById("wxdata");
+  const stat = document.getElementById("wxstat");
+  load.style.display = "block"; wxd.style.display = "none";
+  load.textContent = "Fetching conditions...";
+  stat.textContent = "fetching..."; stat.style.color = "#4a6a3a";
+  try {
+    const h = parseInt(time.split(":")[0]);
+    const inputDate = new Date(date + "T12:00:00");
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffDays = Math.floor((today - inputDate) / 86400000);
+    if(diffDays < 0) { load.textContent = "Future date — no weather yet."; return; }
+    let url, isArchive = (diffDays >= 5);
+    if(isArchive) {
+      url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + CLAT
+          + "&longitude=" + CLNG + "&start_date=" + date + "&end_date=" + date
+          + "&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure"
+          + "&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago";
+    } else {
+      url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT
+          + "&longitude=" + CLNG
+          + "&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure"
+          + "&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago"
+          + "&past_days=5&forecast_days=1";
+    }
+    const r = await fetch(url); const j = await r.json();
+    if(!j.hourly) throw new Error("no data");
+    let hi = h;
+    if(!isArchive) {
+      const target = date + "T" + String(h).padStart(2,"0") + ":00";
+      hi = j.hourly.time.findIndex(t => t === target);
+      if(hi === -1) throw new Error("hour not found");
+    }
+    wxFetched = {
+      temp:     Math.round(j.hourly.temperature_2m[hi]),
+      windSpd:  Math.round(j.hourly.windspeed_10m[hi]),
+      windGst:  Math.round(j.hourly.windgusts_10m[hi]),
+      windDir:  deg2dir(j.hourly.winddirection_10m[hi]),
+      humid:    Math.round(j.hourly.relativehumidity_2m[hi]),
+      precip:   j.hourly.precipitation[hi].toFixed(2),
+      press:    Math.round(j.hourly.surface_pressure[hi]),
+    };
+    // Populate display
+    document.getElementById("wx-t").textContent = wxFetched.temp + "\u00b0";
+    document.getElementById("wx-w").textContent = wxFetched.windSpd;
+    document.getElementById("wx-g").textContent = wxFetched.windGst;
+    document.getElementById("wx-d").textContent = wxFetched.windDir;
+    document.getElementById("wx-h").textContent = wxFetched.humid + "%";
+    document.getElementById("wx-p").textContent = wxFetched.precip + '"';
+    document.getElementById("wx-bp").textContent = wxFetched.press;
+    document.getElementById("wx-bpt").textContent =
+      wxFetched.press > 1013 ? "Rising" : wxFetched.press < 1005 ? "Low" : "Stable";
+    stat.textContent = isArchive ? "(historical)" : "(recent data)";
+    stat.style.color = "#7aaa6a";
+    load.style.display = "none"; wxd.style.display = "block";
+    // Auto-apply wind dir and temp immediately
+    applyWx();
+  } catch(e) {
+    load.textContent = "Weather unavailable — enter manually below.";
+    stat.textContent = "unavailable"; stat.style.color = "#e87a4a";
+    console.error("fetchWx:", e);
+  }
+}
+
+function applyWx() {
+  if(!wxFetched) return;
+  // Auto-fill temp
+  document.getElementById("ftemp").value = wxFetched.temp;
+  // Auto-fill wind direction dropdown
+  const wd = document.getElementById("fwind");
+  const match = simpleDir(wxFetched.windDir);
+  for(let i = 0; i < wd.options.length; i++) {
+    if(wd.options[i].value === match) { wd.selectedIndex = i; break; }
+  }
+  wxApplied = {
+    windSpeed: wxFetched.windSpd,
+    windGust:  wxFetched.windGst,
+    humidity:  wxFetched.humid,
+    precip:    wxFetched.precip,
+    pressure:  wxFetched.press,
+  };
+}
+
+// ── map ────────────────────────────────────────────────────────────────────
+function buildMapFilters() {
+  const bucks = getNamedBucks();
+  document.getElementById("mapFilters").innerHTML =
+    `<button class="mfchip${curMapFilter==="all"?" on":""}" onclick="setMapFilter('all',this)">All</button>`
+    + bucks.map(b => `<button class="mfchip${curMapFilter===b?" on":""}" onclick="setMapFilter('${b}',this)" style="${curMapFilter===b?`border-color:${buckColor(b)};color:${buckColor(b)}`:''}">&#9679; ${b}</button>`).join("");
+}
+function buildMapLegend() {
+  const bucks = getNamedBucks();
+  let h = `<div class="leg-item"><div class="leg-dot" style="background:#2a6a1a"></div>Camera</div>
+           <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature</div>`;
+  bucks.forEach(b => { h += `<div class="leg-item"><div class="leg-dot" style="background:${buckColor(b)}"></div>${b}</div>`; });
+  document.getElementById("mapLegend").innerHTML = h;
+}
+function setMapFilter(name, btn) {
+  curMapFilter = name;
+  document.querySelectorAll(".mfchip").forEach(c => { c.classList.remove("on"); c.style.borderColor=""; c.style.color=""; });
+  btn.classList.add("on");
+  if(name !== "all") { btn.style.borderColor = buckColor(name); btn.style.color = buckColor(name); }
+  updatePins(); drawLines();
+}
+function updatePins() {
+  Object.entries(PIN_MAP).forEach(([camName, pinId]) => {
+    const allCs = sightings.filter(s => s.camera_name === camName);
+    const cs = curMapFilter === "all" ? allCs : allCs.filter(s => s.buck_name === curMapFilter);
+    const dot = document.getElementById("dot-" + pinId);
+    const lbl = document.getElementById("lbl-" + pinId);
+    if(!dot) return;
+    const cnt = allCs.length;
+    const mature = allCs.some(s => s.deer_type && s.deer_type.includes("Mature"));
+    let bg, border, color;
+    if(curMapFilter !== "all") {
+      const has = cs.length > 0;
+      bg = has ? buckColor(curMapFilter) : "#1a2a1a";
+      border = has ? buckColor(curMapFilter) : "#2a3d1e";
+      color = "#0d1a0f";
+      dot.style.opacity = has ? "1" : "0.3";
+    } else {
+      bg = mature ? "#c8a951" : "#2a6a1a";
+      border = mature ? "#fff" : "#7aaa6a";
+      color = mature ? "#0d1a0f" : "#e8dcc8";
+      dot.style.opacity = "1";
+    }
+    dot.style.background = bg; dot.style.borderColor = border; dot.style.color = color;
+    dot.textContent = cnt > 0 ? cnt : "📷";
+    if(lbl) lbl.style.color = (curMapFilter !== "all" && cs.length > 0) ? buckColor(curMapFilter) : "#a0c890";
+  });
+}
+function drawLines() {
+  const canvas = document.getElementById("lineCanvas");
+  const wrap = document.getElementById("mapwrap");
+  canvas.width = wrap.offsetWidth; canvas.height = wrap.offsetHeight;
+  const ctx = canvas.getContext("2d");
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if(curMapFilter === "all") return;
+  const bs = sightings
+    .filter(s => s.buck_name === curMapFilter && PIN_POS[s.camera_name])
+    .sort((a,b) => new Date(a.date+"T"+(a.time||"00:00")) - new Date(b.date+"T"+(b.time||"00:00")));
+  if(bs.length < 2) return;
+  const color = buckColor(curMapFilter);
+  const W = canvas.width, H = canvas.height;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.setLineDash([6,4]);
+  ctx.shadowColor = color; ctx.shadowBlur = 6; ctx.globalAlpha = 0.75;
+  ctx.beginPath();
+  bs.forEach((s,i) => {
+    const p = PIN_POS[s.camera_name];
+    const x = p[0]/100*W, y = p[1]/100*H;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.shadowBlur = 0;
+  bs.forEach((s,i) => {
+    const p = PIN_POS[s.camera_name];
+    const x = p[0]/100*W, y = p[1]/100*H;
+    ctx.fillStyle = i===0 ? "#fff" : i===bs.length-1 ? color : "rgba(255,255,255,0.5)";
+    ctx.beginPath(); ctx.arc(x, y, i===0||i===bs.length-1 ? 5 : 3, 0, Math.PI*2); ctx.fill();
+    if(i===0 || i===bs.length-1) {
+      const label = fmtD(s.date);
+      ctx.fillStyle = "rgba(10,18,8,0.85)";
+      const tw = ctx.measureText(label).width + 8;
+      ctx.fillRect(x+8, y-9, tw, 16);
+      ctx.fillStyle = color; ctx.font = "9px Georgia,serif";
+      ctx.fillText(label, x+12, y+3);
+    }
+  });
+}
+function initLineCanvas() {
+  const img = document.getElementById("baseImg");
+  const resize = () => {
+    const c = document.getElementById("lineCanvas");
+    c.width = img.offsetWidth; c.height = img.offsetHeight; drawLines();
+  };
+  if(img.complete) resize(); else img.onload = resize;
+  window.addEventListener("resize", resize);
+}
+function showPin(camName) {
+  const cs = sightings.filter(s => s.camera_name === camName);
+  const bucks = cs.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
+  const mature = cs.filter(s => s.deer_type && s.deer_type.includes("Mature")).length;
+  const sh = cs.length === 0
+    ? `<div class="pp-empty">No sightings logged yet.</div>`
+    : cs.slice(0,3).map(s => {
+        const bc = s.buck_name ? buckColor(s.buck_name) : null;
+        return `<div class="pp-s">
+          ${s.image_url ? `<img class="pp-s-img" src="${s.image_url}" alt="trail cam"/>` : ""}
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <span style="font-size:13px;font-weight:${s.deer_type&&s.deer_type.includes("Mature")?700:400};color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</span>
+              ${s.buck_name ? `<span style="font-size:11px;margin-left:5px;padding:1px 7px;border-radius:10px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</span>` : ""}
+            </div>
+            <span style="font-size:11px;color:#7a9e6a">${fmtT(s.time)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:3px">
+            <span style="font-size:11px;color:#7a9e6a">${s.behavior||""}</span>
+            <span style="font-size:11px;color:#4a6a3a">${fmtD(s.date)}</span>
+          </div>
+          ${s.wind_dir||s.temp_f ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
+            ${s.wind_dir?`<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>`:""}
+            ${s.temp_f?`<span class="tag">&#127777; ${s.temp_f}&deg;F</span>`:""}
+          </div>` : ""}
+        </div>`;
+      }).join("");
+  const more = cs.length > 3 ? `<button class="pp-more" onclick="filterGo('${camName}')">View all ${cs.length} &#8594;</button>` : "";
+  const pp = document.getElementById("pp");
+  pp.innerHTML = `<div class="pp${mature>0?" gold":""}">
+    <div class="pp-hdr"><div class="pp-title">${camName}</div><button class="pp-close" onclick="document.getElementById('pp').style.display='none'">&#215;</button></div>
+    <div class="pp-stats">
+      <div class="pps"><div class="ppn">${cs.length}</div><div class="ppl">Total</div></div>
+      <div class="pps"><div class="ppn">${bucks}</div><div class="ppl">Bucks</div></div>
+      <div class="pps"><div class="ppn">${mature}</div><div class="ppl">Mature</div></div>
+    </div>${sh}${more}</div>`;
+  pp.style.display = "block";
+  pp.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+function filterGo(c) { curFilter = c; showView("log"); }
+
+// ── views ──────────────────────────────────────────────────────────────────
+function showView(n) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
+  document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
+  const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet"};
+  document.getElementById(vm[n] || "v"+n).classList.add("on");
+  const nb = document.getElementById("nn-"+n);
+  if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
+  if(n === "dash") renderDash();
+  if(n === "map") { buildMapFilters(); buildMapLegend(); updatePins(); setTimeout(() => { initLineCanvas(); drawLines(); }, 80); }
+  if(n === "log") renderLog();
+  if(n === "add") initForm();
+}
+
+// ── dashboard ──────────────────────────────────────────────────────────────
+function renderDash() {
+  const b = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck"));
+  const m = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
+  const nb = getNamedBucks();
+  let html = `<div class="sgrid">
+    <div class="sbox"><div class="snum">${sightings.length}</div><div class="slbl">Total</div></div>
+    <div class="sbox"><div class="snum">${b.length}</div><div class="slbl">Bucks</div></div>
+    <div class="sbox"><div class="snum">${m.length}</div><div class="slbl">Mature</div></div>
+  </div>`;
+  const bl = {dawn:0,morning:0,midday:0,afternoon:0,dusk:0,night:0};
+  sightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    if(h>=5&&h<7) bl.dawn++; else if(h>=7&&h<10) bl.morning++;
+    else if(h>=10&&h<13) bl.midday++; else if(h>=13&&h<16) bl.afternoon++;
+    else if(h>=16&&h<20) bl.dusk++; else bl.night++;
+  });
+  const mx = Math.max(...Object.values(bl), 1);
+  html += `<div class="card"><div class="stitle">Movement by Time of Day</div>
+    ${Object.entries(bl).map(([b,c]) => `<div class="br">
+      <div class="bm"><span style="color:#a0b890;text-transform:capitalize">${b}</span><span style="color:#c8a951">${c}</span></div>
+      <div class="bt"><div class="bf${c===mx?" pk":""}" style="width:${(c/mx)*100}%"></div></div>
+    </div>`).join("")}</div>`;
+  if(nb.length > 0) {
+    html += `<div class="card"><div class="stitle">&#9679; Named Bucks</div>`;
+    html += nb.map(bname => {
+      const bs = sightings.filter(s => s.buck_name === bname);
+      const dates = bs.map(s => s.date).sort();
+      const cams = [...new Set(bs.map(s => s.camera_name))];
+      const color = buckColor(bname);
+      const recent = bs.filter(s => s.image_url).sort((a,b) => b.date.localeCompare(a.date))[0];
+      return `<div class="bcard" onclick="goToBuck('${bname}')">
+        ${recent
+          ? `<img src="${recent.image_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
+          : `<div style="width:44px;height:44px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">&#127956;</div>`}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:14px;font-weight:700;color:${color}">${bname}</div>
+          <div style="font-size:11px;color:#7a9e6a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cams.join(", ")}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="color:#c8a951;font-weight:700;font-size:13px">${bs.length} sightings</div>
+          <div style="font-size:10px;color:#4a6a3a">${fmtD(dates[dates.length-1])}</div>
+        </div>
+      </div>`;
+    }).join("");
+    html += `</div>`;
+  }
+  const ca = CAMNAMES.slice(0,5).map(c => ({n:c, c:sightings.filter(s=>s.camera_name===c).length}))
+    .filter(x => x.c > 0).sort((a,b) => b.c - a.c);
+  html += `<div class="card"><div class="stitle">Camera Activity</div>
+    ${ca.length===0
+      ? `<div style="font-size:12px;color:#4a6a3a">No sightings yet</div>`
+      : ca.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a2d14">
+          <span style="font-size:13px">${c.n}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="height:4px;width:${sightings.length?Math.round((c.c/sightings.length)*80):0}px;background:#4a7a3a;border-radius:2px"></div>
+            <span style="font-size:12px;color:#c8a951">${c.c}</span>
+          </div>
+        </div>`).join("")}</div>`;
+  html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
+    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&#8211;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+  </div>`;
+  document.getElementById("dashContent").innerHTML = html;
+}
+function goToBuck(name) {
+  curMapFilter = name;
+  showView("map");
+  setTimeout(() => { buildMapFilters(); buildMapLegend(); updatePins(); initLineCanvas(); drawLines(); }, 100);
+}
+
+// ── log ────────────────────────────────────────────────────────────────────
+function renderLog() {
+  const bucks = getNamedBucks();
+  document.getElementById("frow").innerHTML =
+    ["all",...CAMNAMES.slice(0,5)].map(f =>
+      `<button class="chip${curFilter===f?" on":""}" onclick="setFilt('${f}')">${f==="all"?"All":f}</button>`
+    ).join("")
+    + (bucks.length ? bucks.map(b =>
+        `<button class="chip${curFilter===b?" on":""}" onclick="setFilt('${b}')"
+          style="border-color:${buckColor(b)};${curFilter===b?"background:#1a2d14;color:"+buckColor(b):""}">&#9679; ${b}</button>`
+      ).join("") : "");
+  const fil = curFilter === "all" ? sightings
+    : bucks.includes(curFilter) ? sightings.filter(s => s.buck_name === curFilter)
+    : sightings.filter(s => s.camera_name === curFilter);
+  const sl = document.getElementById("slist");
+  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4a6a3a;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
+  sl.innerHTML = fil.map(s => {
+    const bc = s.buck_name ? buckColor(s.buck_name) : null;
+    return `<div class="sc${s.deer_type&&s.deer_type.includes("Mature")?" m":""}">
+      ${s.image_url ? `<img class="sc-img" src="${s.image_url}" alt="" onclick="showDet(${s.id})"/>` : ""}
+      <div class="sc-body" onclick="showDet(${s.id})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
+            ${s.buck_name ? `<div style="font-size:12px;margin-top:3px;color:${bc}">&#9679; ${s.buck_name}</div>` : ""}
+            <div style="font-size:12px;color:#7a9e6a;margin-top:2px">${s.camera_name}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;color:#a0b890">${fmtD(s.date)}</div>
+            <div style="font-size:12px;color:#7a9e6a">${fmtT(s.time)}</div>
+          </div>
+        </div>
+        <div class="tags">
+          ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
+          ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
+          ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}&deg;F</span>` : ""}
+          ${s.humidity ? `<span class="tag">&#128167; ${s.humidity}%</span>` : ""}
+          ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
+        </div>
+        ${s.notes ? `<div class="snotes">${s.notes}</div>` : ""}
+      </div>
+      <div class="sc-foot">
+        <button class="edit-btn" onclick="openEdit(${s.id})">&#9998; Edit</button>
+        ${s.buck_name
+          ? `<span style="font-size:11px;color:${bc}">&#9679; ${s.buck_name}</span>`
+          : `<span style="font-size:11px;color:#4a6a3a;font-style:italic">Tap Edit to name buck</span>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+function setFilt(f) { curFilter = f; renderLog(); }
+
+// ── detail ─────────────────────────────────────────────────────────────────
+function showDet(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  const m = moonPhase(s.date);
+  const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const wxHtml = s.wind_speed ? `
+    <div class="wx" style="margin-top:10px">
+      <div class="wx-title">&#127780; Conditions at Sighting</div>
+      <div class="wx-grid">
+        <div class="wx-cell"><div class="wx-val">${s.temp_f||"--"}</div><div class="wx-lbl">Temp F</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_speed||"--"}</div><div class="wx-lbl">Wind mph</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_gust||"--"}</div><div class="wx-lbl">Gust mph</div></div>
+      </div>
+      <div class="wx-row2">
+        <div class="wx-cell"><div class="wx-val">${s.wind_dir||"--"}</div><div class="wx-lbl">Wind Dir</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.humidity?s.humidity+"%":"--"}</div><div class="wx-lbl">Humidity</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.precip?s.precip+'"':"--"}</div><div class="wx-lbl">Precip</div></div>
+      </div>
+      ${s.pressure ? `<div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px">
+        <div class="wx-lbl">Barometric Pressure</div>
+        <div style="font-size:13px;color:#e8dcc8">${s.pressure} hPa</div>
+      </div></div>` : ""}
+    </div>` : "";
+  document.getElementById("detcontent").innerHTML = `
+    ${s.image_url ? `<img src="${s.image_url}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:280px;object-fit:cover"/>` : ""}
+    <div class="card${s.deer_type&&s.deer_type.includes("Mature")?" gold":""}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="font-size:18px;font-weight:700;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
+        ${s.buck_name ? `<div style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</div>` : ""}
+      </div>
+      <div style="font-size:13px;color:#7a9e6a;margin-bottom:14px">${s.camera_name}</div>
+      <div class="dgrid">
+        <div class="dc"><div class="dl">Date</div><div class="dv">${fmtD(s.date)}</div></div>
+        <div class="dc"><div class="dl">Time</div><div class="dv">${fmtT(s.time)}</div></div>
+        <div class="dc"><div class="dl">Moon</div><div class="dv">${m.i} ${m.l}</div></div>
+        <div class="dc"><div class="dl">Behavior</div><div class="dv">${s.behavior||"--"}</div></div>
+      </div>
+      ${wxHtml}
+      ${s.notes ? `<div style="background:#0d1a0f;border-radius:6px;padding:10px;margin-top:10px">
+        <div style="font-size:10px;color:#4a6a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div>
+        <div style="font-size:13px;color:#a0b890;line-height:1.6;font-style:italic">${s.notes}</div>
+      </div>` : ""}
+      <button class="edit-btn" style="margin-top:12px;width:100%;padding:10px" onclick="openEdit(${s.id})">&#9998; Edit Sighting</button>
+    </div>`;
+  showView("det");
+}
+
+// ── form ───────────────────────────────────────────────────────────────────
+function initForm() {
+  const now = new Date();
+  document.getElementById("fd").value = now.toISOString().split("T")[0];
+  document.getElementById("ft").value = now.toTimeString().slice(0,5);
+  document.getElementById("fbuckname").value = "";
+  document.getElementById("fnotes").value = "";
+  document.getElementById("ftemp").value = "";
+  document.getElementById("fwind").value = "";
+  wxFetched = null; wxApplied = null; formImgFile = null;
+  document.getElementById("wxload").style.display = "block";
+  document.getElementById("wxload").textContent = "Fetching conditions...";
+  document.getElementById("wxdata").style.display = "none";
+  document.getElementById("wxstat").textContent = "fetching...";
+  document.getElementById("wxstat").style.color = "#4a6a3a";
+  document.getElementById("uprev").style.display = "none";
+  document.getElementById("uph").style.display = "block";
+  refreshBucknameList(); updateMoon(); autoWx();
+  mkChips("cch", CAMNAMES, "cam");
+  mkChips("dch", DTYPES, "deer");
+  mkChips("bch", BEHS, "beh");
+  checkSub();
+}
+function refreshBucknameList() {
+  const dl = document.getElementById("bucknamelist");
+  if(dl) dl.innerHTML = getNamedBucks().map(b => `<option value="${b}">`).join("");
+}
+function mkChips(id, opts, key) {
+  document.getElementById(id).innerHTML = opts.map(o =>
+    `<button class="chip" data-k="${key}" data-v="${o}" onclick="pickChip(this,'${key}')">${o}</button>`
+  ).join("");
+}
+function pickChip(btn, key) {
+  document.querySelectorAll(`.chip[data-k="${key}"]`).forEach(b => b.classList.remove("on"));
+  btn.classList.add("on"); checkSub();
+}
+function checkSub() {
+  const c = document.querySelector(".chip[data-k='cam'].on");
+  const d = document.querySelector(".chip[data-k='deer'].on");
+  const btn = document.getElementById("sbtn");
+  if(c && d) { btn.classList.remove("dis"); btn.classList.add("rdy"); }
+  else { btn.classList.remove("rdy"); btn.classList.add("dis"); }
+}
+function updateMoon() {
+  const d = document.getElementById("fd").value;
+  if(!d) return;
+  const m = moonPhase(d);
+  document.getElementById("micon").textContent = m.i;
+  document.getElementById("mlbl").textContent = m.l;
+  document.getElementById("msub").textContent = "Auto-calculated for " + fmtD(d);
+  document.getElementById("tlbl").textContent = "Time " + m.i;
+}
+function handlePhoto(inp) {
+  const f = inp.files[0]; if(!f) return;
+  formImgFile = f;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById("uph").style.display = "none";
+    const p = document.getElementById("uprev");
+    p.src = e.target.result; p.style.display = "block";
+  };
+  r.readAsDataURL(f);
+}
+
+// ── init ───────────────────────────────────────────────────────────────────
+loadSightings();
+</script>
+</body>
+</html>
