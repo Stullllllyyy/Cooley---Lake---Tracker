@@ -1179,9 +1179,8 @@ const channel = sb.channel('sightings-changes')
     }
   })
   .subscribe();
-</script>
-</body>
-</html>function renderDash() {
+
+function renderDash() {
   const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
   const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
 
@@ -1391,3 +1390,7 @@ const channel = sb.channel('sightings-changes')
 
   document.getElementById("dashContent").innerHTML = html;
 }
+
+</script>
+</body>
+</html>
