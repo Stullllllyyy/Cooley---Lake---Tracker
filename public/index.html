@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Cooley Lake Deer Tracker</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -137,6 +138,28 @@ textarea{resize:none}
 .wr-fill{height:100%;background:#4a7a3a;border-radius:2px}
 .wr-fill.top{background:#c8a951}
 .wr-cnt{font-size:11px;color:#c8a951;font-weight:700}
+
+/* mapbox map */
+#map { width:100%; height:460px; }
+.map-filters{display:flex;gap:6px;padding:8px 10px;background:#0a1208;border-bottom:1px solid #2a3d1e;overflow-x:auto;position:sticky;top:57px;z-index:100}
+.map-filters::-webkit-scrollbar{display:none}
+.mfchip{padding:5px 10px;border-radius:14px;border:1px solid #2a3d1e;background:#0a1208;color:#7a9e6a;font-size:11px;cursor:pointer;font-family:'Georgia',serif;white-space:nowrap;flex-shrink:0}
+.mfchip.on{background:#1a2d14;border-color:#c8a951;color:#c8a951}
+.map-legend{display:flex;gap:10px;padding:7px 14px;background:#0a1208;border-top:1px solid #2a3d1e;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:9px;color:#7a9e6a}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+/* custom mapbox markers */
+.cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center}
+.cam-dot{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:3px solid rgba(255,255,255,0.9);box-shadow:0 2px 12px rgba(0,0,0,0.7);font-family:Georgia,serif;color:#e8dcc8;transition:transform 0.15s}
+.cam-dot:active{transform:scale(1.15)}
+.cam-lbl{font-size:9px;margin-top:2px;background:rgba(10,18,8,0.9);color:#a0c890;padding:2px 6px;border-radius:3px;white-space:nowrap;font-family:Georgia,serif}
+.mapboxgl-ctrl-bottom-right{display:none}
+.mapboxgl-ctrl-bottom-left{display:none}
+/* edit mode */
+.map-edit-bar{padding:8px 14px;background:#1a2d14;border-top:1px solid #c8a951;display:none;align-items:center;justify-content:space-between}
+.map-edit-bar.on{display:flex}
+.edit-hint{font-size:11px;color:#c8a951}
+.edit-done{padding:6px 14px;border:1px solid #c8a951;border-radius:8px;background:transparent;color:#c8a951;font-size:12px;cursor:pointer;font-family:Georgia,serif}
 </style>
 </head>
 <body>
@@ -160,33 +183,8 @@ textarea{resize:none}
 
 <!-- MAP -->
 <div id="vmap" class="view">
-  <div class="map-hdr">Tap a pin for sighting details. Filter by buck to see movement lines.</div>
   <div class="map-filters" id="mapFilters"></div>
-  <div id="mapwrap">
-    <img class="base" id="baseImg" src="map.jpg" alt="Cooley Lake Property"/>
-    <canvas id="lineCanvas"></canvas>
-    <div class="pin" style="left:35.4%;top:49.1%" onclick="showPin('Dan')">
-      <div class="pin-dot" id="dot-Dan" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
-      <div class="pin-lbl" id="lbl-Dan">Dan</div>
-    </div>
-    <div class="pin" style="left:17.5%;top:61.4%" onclick="showPin('Colin')">
-      <div class="pin-dot" id="dot-Colin" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
-      <div class="pin-lbl" id="lbl-Colin">Colin</div>
-    </div>
-    <div class="pin" style="left:58.5%;top:57.6%" onclick="showPin('Ridge')">
-      <div class="pin-dot" id="dot-Ridge" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
-      <div class="pin-lbl" id="lbl-Ridge">Ridge</div>
-    </div>
-    <div class="pin" style="left:77.4%;top:82.2%" onclick="showPin('Behind Rons')">
-      <div class="pin-dot" id="dot-Rons" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
-      <div class="pin-lbl" id="lbl-Rons">Behind Rons</div>
-    </div>
-    <div class="pin" style="left:92.1%;top:83.6%" onclick="showPin('By Eric')">
-      <div class="pin-dot" id="dot-Eric" style="background:#2a6a1a;border-color:#7aaa6a">&#128247;</div>
-      <div class="pin-lbl" id="lbl-Eric">By Eric</div>
-    </div>
-    <div style="position:absolute;top:3%;left:50%;transform:translateX(-50%);background:rgba(10,18,8,0.75);color:#7ab8f5;font-size:9px;padding:2px 7px;border-radius:3px;letter-spacing:1px;pointer-events:none">COOLEY LAKE</div>
-  </div>
+  <div id="map"></div>
   <div class="map-legend" id="mapLegend"></div>
   <div id="pp" style="display:none"></div>
 </div>
@@ -323,6 +321,7 @@ textarea{resize:none}
   <button class="nb" onclick="showView('log')" id="nn-log"><span class="ico">&#128203;</span><span class="lbl">Sightings</span></button>
 </div>
 
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script>
 const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
@@ -644,371 +643,317 @@ function applyWx() {
   };
 }
 
-// ── map ────────────────────────────────────────────────────────────────────
+// ── map (Mapbox) ──────────────────────────────────────────────────────────────
+mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+
+const PROPERTY_CENTER = [-88.2756, 45.0200];
+const PROPERTY_BOUNDS = [[-88.295, 45.010], [-88.258, 45.035]];
+
+// Camera locations - stored in Supabase, editable via drag
+let camLocations = {
+  'Dan':         { lng: -88.2738, lat: 45.0195 },
+  'Colin':       { lng: -88.2768, lat: 45.0185 },
+  'Ridge':       { lng: -88.2710, lat: 45.0175 },
+  'Behind Rons': { lng: -88.2712, lat: 45.0162 },
+  'By Eric':     { lng: -88.2695, lat: 45.0158 },
+};
+
+let mapInstance = null;
+let mapMarkers = {};
+let lineLayerAdded = false;
+let editMode = false;
+
+async function loadCamLocations() {
+  // Try to load saved cam positions from Supabase
+  try {
+    const { data } = await sb.from('cameras').select('name, lng, lat').order('id');
+    if(data && data.length) {
+      data.forEach(c => {
+        if(c.lng && c.lat) camLocations[c.name] = { lng: c.lng, lat: c.lat };
+      });
+    }
+  } catch(e) { console.log('Using default cam positions'); }
+}
+
+async function saveCamLocation(name, lng, lat) {
+  try {
+    await sb.from('cameras').update({ lng, lat }).eq('name', name);
+    camLocations[name] = { lng, lat };
+  } catch(e) { console.error('Save cam location failed:', e); }
+}
+
+function initMap() {
+  if(mapInstance) { refreshMapPins(); return; }
+
+  mapInstance = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    center: PROPERTY_CENTER,
+    zoom: 15,
+    maxBounds: [[-88.35, 44.98], [-88.20, 45.07]],
+  });
+
+  // Zoom controls
+  mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+
+  mapInstance.on('load', () => {
+    addPropertyOutline();
+    addLineLayer();
+    addCamMarkers();
+    lineLayerAdded = true;
+  });
+
+  mapInstance.on('style.load', () => {
+    if(!lineLayerAdded) return;
+    addPropertyOutline();
+    addLineLayer();
+  });
+}
+
+function addPropertyOutline() {
+  if(mapInstance.getSource('property')) return;
+  mapInstance.addSource('property', {
+    type: 'geojson',
+    data: {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          [-88.2800, 45.0245], [-88.2690, 45.0245],
+          [-88.2690, 45.0210], [-88.2720, 45.0210],
+          [-88.2720, 45.0170], [-88.2690, 45.0170],
+          [-88.2690, 45.0145], [-88.2800, 45.0145],
+          [-88.2800, 45.0245]
+        ]]
+      }
+    }
+  });
+  mapInstance.addLayer({
+    id: 'property-fill',
+    type: 'fill',
+    source: 'property',
+    paint: { 'fill-color': '#ff5555', 'fill-opacity': 0.06 }
+  });
+  mapInstance.addLayer({
+    id: 'property-outline',
+    type: 'line',
+    source: 'property',
+    paint: { 'line-color': '#ff5555', 'line-width': 2.5, 'line-dasharray': [3,2] }
+  });
+}
+
+function addLineLayer() {
+  if(mapInstance.getSource('buck-lines')) return;
+  mapInstance.addSource('buck-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  mapInstance.addLayer({
+    id: 'buck-lines-layer',
+    type: 'line',
+    source: 'buck-lines',
+    paint: {
+      'line-color': ['get', 'color'],
+      'line-width': 2.5,
+      'line-dasharray': [2, 1],
+      'line-opacity': 0.8
+    }
+  });
+}
+
+function addCamMarkers() {
+  // Remove existing markers
+  Object.values(mapMarkers).forEach(m => m.remove());
+  mapMarkers = {};
+
+  Object.entries(camLocations).forEach(([name, pos]) => {
+    const cs = sightings.filter(s => s.camera_name === name);
+    const cnt = cs.length;
+    const mature = cs.some(s => s.deer_type && s.deer_type.includes('Mature'));
+    const buckFiltered = curMapFilter !== 'all' ? cs.filter(s => s.buck_name === curMapFilter) : cs;
+    const hasBuck = buckFiltered.length > 0;
+
+    let bg = '#2a6a1a', border = '#7aaa6a', opacity = '1';
+    if(curMapFilter !== 'all') {
+      bg = hasBuck ? buckColor(curMapFilter) : '#1a2a1a';
+      border = hasBuck ? buckColor(curMapFilter) : '#2a3d1e';
+      opacity = hasBuck ? '1' : '0.3';
+    } else if(mature) {
+      bg = '#c8a951'; border = '#fff';
+    }
+
+    const el = document.createElement('div');
+    el.className = 'cam-marker';
+    el.style.opacity = opacity;
+    el.innerHTML = `
+      <div class="cam-dot" style="background:${bg};border-color:${border}">
+        ${cnt > 0 ? cnt : '&#128247;'}
+      </div>
+      <div class="cam-lbl" style="${curMapFilter !== 'all' && hasBuck ? 'color:' + buckColor(curMapFilter) : ''}">${name}</div>
+    `;
+
+    // Click to show popup
+    el.addEventListener('click', (e) => {
+      if(editMode) return;
+      e.stopPropagation();
+      showPin(name);
+    });
+
+    const marker = new mapboxgl.Marker({ element: el, draggable: editMode })
+      .setLngLat([pos.lng, pos.lat])
+      .addTo(mapInstance);
+
+    // Save position on drag end
+    marker.on('dragend', async () => {
+      const lngLat = marker.getLngLat();
+      await saveCamLocation(name, lngLat.lng, lngLat.lat);
+      console.log('Saved', name, lngLat);
+    });
+
+    mapMarkers[name] = marker;
+  });
+}
+
+function refreshMapPins() {
+  if(!mapInstance) return;
+  addCamMarkers();
+  updateBuckLines();
+}
+
+function updateBuckLines() {
+  if(!mapInstance || !mapInstance.getSource('buck-lines')) return;
+  if(curMapFilter === 'all') {
+    mapInstance.getSource('buck-lines').setData({ type: 'FeatureCollection', features: [] });
+    return;
+  }
+  const bs = sightings
+    .filter(s => s.buck_name === curMapFilter && camLocations[s.camera_name])
+    .sort((a,b) => new Date(a.date+'T'+(a.time||'00:00')) - new Date(b.date+'T'+(b.time||'00:00')));
+  if(bs.length < 2) {
+    mapInstance.getSource('buck-lines').setData({ type: 'FeatureCollection', features: [] });
+    return;
+  }
+  const color = buckColor(curMapFilter);
+  const coords = bs.map(s => {
+    const pos = camLocations[s.camera_name];
+    return [pos.lng, pos.lat];
+  });
+  mapInstance.getSource('buck-lines').setData({
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: { color },
+      geometry: { type: 'LineString', coordinates: coords }
+    }]
+  });
+  // Fit map to show the full route
+  if(bs.length >= 2) {
+    const lngs = coords.map(c => c[0]);
+    const lats = coords.map(c => c[1]);
+    mapInstance.fitBounds(
+      [[Math.min(...lngs)-0.003, Math.min(...lats)-0.003], [Math.max(...lngs)+0.003, Math.max(...lats)+0.003]],
+      { padding: 60, duration: 800 }
+    );
+  }
+}
+
 function buildMapFilters() {
   const bucks = getNamedBucks();
-  document.getElementById("mapFilters").innerHTML =
-    `<button class="mfchip${curMapFilter==="all"?" on":""}" onclick="setMapFilter('all',this)">All</button>`
-    + bucks.map(b => `<button class="mfchip${curMapFilter===b?" on":""}" onclick="setMapFilter('${b}',this)" style="${curMapFilter===b?`border-color:${buckColor(b)};color:${buckColor(b)}`:''}">&#9679; ${b}</button>`).join("");
+  const bar = document.getElementById('mapFilters');
+  if(!bar) return;
+  bar.innerHTML =
+    `<button class="mfchip${curMapFilter==='all'?' on':''}" onclick="setMapFilter('all',this)">All Cameras</button>`
+    + bucks.map(b =>
+        `<button class="mfchip${curMapFilter===b?' on':''}" onclick="setMapFilter('${b}',this)"
+          style="${curMapFilter===b?'border-color:'+buckColor(b)+';color:'+buckColor(b):''}">&#9679; ${b}</button>`
+      ).join('');
 }
+
 function buildMapLegend() {
   const bucks = getNamedBucks();
+  const leg = document.getElementById('mapLegend');
+  if(!leg) return;
   let h = `<div class="leg-item"><div class="leg-dot" style="background:#2a6a1a"></div>Camera</div>
-           <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature</div>`;
+           <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature buck</div>`;
   bucks.forEach(b => { h += `<div class="leg-item"><div class="leg-dot" style="background:${buckColor(b)}"></div>${b}</div>`; });
-  document.getElementById("mapLegend").innerHTML = h;
+  // Edit mode toggle
+  h += `<button onclick="toggleEditMode()" id="editModeBtn" style="margin-left:auto;padding:4px 10px;border:1px solid #2a3d1e;border-radius:8px;background:transparent;color:#7a9e6a;font-size:10px;cursor:pointer;font-family:Georgia,serif">&#9999; Move Pins</button>`;
+  leg.innerHTML = h;
 }
+
 function setMapFilter(name, btn) {
   curMapFilter = name;
-  document.querySelectorAll(".mfchip").forEach(c => { c.classList.remove("on"); c.style.borderColor=""; c.style.color=""; });
-  btn.classList.add("on");
-  if(name !== "all") { btn.style.borderColor = buckColor(name); btn.style.color = buckColor(name); }
-  updatePins(); drawLines();
+  document.querySelectorAll('.mfchip').forEach(c => { c.classList.remove('on'); c.style.borderColor=''; c.style.color=''; });
+  btn.classList.add('on');
+  if(name !== 'all') { btn.style.borderColor = buckColor(name); btn.style.color = buckColor(name); }
+  refreshMapPins();
+  updateBuckLines();
 }
-function updatePins() {
-  Object.entries(PIN_MAP).forEach(([camName, pinId]) => {
-    const allCs = sightings.filter(s => s.camera_name === camName);
-    const cs = curMapFilter === "all" ? allCs : allCs.filter(s => s.buck_name === curMapFilter);
-    const dot = document.getElementById("dot-" + pinId);
-    const lbl = document.getElementById("lbl-" + pinId);
-    if(!dot) return;
-    const cnt = allCs.length;
-    const mature = allCs.some(s => s.deer_type && s.deer_type.includes("Mature"));
-    let bg, border, color;
-    if(curMapFilter !== "all") {
-      const has = cs.length > 0;
-      bg = has ? buckColor(curMapFilter) : "#1a2a1a";
-      border = has ? buckColor(curMapFilter) : "#2a3d1e";
-      color = "#0d1a0f";
-      dot.style.opacity = has ? "1" : "0.3";
-    } else {
-      bg = mature ? "#c8a951" : "#2a6a1a";
-      border = mature ? "#fff" : "#7aaa6a";
-      color = mature ? "#0d1a0f" : "#e8dcc8";
-      dot.style.opacity = "1";
-    }
-    dot.style.background = bg; dot.style.borderColor = border; dot.style.color = color;
-    dot.textContent = cnt > 0 ? cnt : "📷";
-    if(lbl) lbl.style.color = (curMapFilter !== "all" && cs.length > 0) ? buckColor(curMapFilter) : "#a0c890";
-  });
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('editModeBtn');
+  if(editMode) {
+    btn.textContent = '✓ Done Moving';
+    btn.style.borderColor = '#c8a951';
+    btn.style.color = '#c8a951';
+    // Show hint
+    const leg = document.getElementById('mapLegend');
+    const hint = document.createElement('div');
+    hint.id = 'editHint';
+    hint.style.cssText = 'width:100%;padding:6px 0 0;font-size:10px;color:#c8a951;font-style:italic';
+    hint.textContent = 'Drag any camera pin to its exact location. Changes save automatically.';
+    leg.appendChild(hint);
+  } else {
+    btn.textContent = '✎ Move Pins';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    const hint = document.getElementById('editHint');
+    if(hint) hint.remove();
+  }
+  // Rebuild markers with draggable state
+  addCamMarkers();
 }
-function drawLines() {
-  const canvas = document.getElementById("lineCanvas");
-  const wrap = document.getElementById("mapwrap");
-  canvas.width = wrap.offsetWidth; canvas.height = wrap.offsetHeight;
-  const ctx = canvas.getContext("2d");
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  if(curMapFilter === "all") return;
-  const bs = sightings
-    .filter(s => s.buck_name === curMapFilter && PIN_POS[s.camera_name])
-    .sort((a,b) => new Date(a.date+"T"+(a.time||"00:00")) - new Date(b.date+"T"+(b.time||"00:00")));
-  if(bs.length < 2) return;
-  const color = buckColor(curMapFilter);
-  const W = canvas.width, H = canvas.height;
-  ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.setLineDash([6,4]);
-  ctx.shadowColor = color; ctx.shadowBlur = 6; ctx.globalAlpha = 0.75;
-  ctx.beginPath();
-  bs.forEach((s,i) => {
-    const p = PIN_POS[s.camera_name];
-    const x = p[0]/100*W, y = p[1]/100*H;
-    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-  ctx.globalAlpha = 1; ctx.setLineDash([]); ctx.shadowBlur = 0;
-  bs.forEach((s,i) => {
-    const p = PIN_POS[s.camera_name];
-    const x = p[0]/100*W, y = p[1]/100*H;
-    ctx.fillStyle = i===0 ? "#fff" : i===bs.length-1 ? color : "rgba(255,255,255,0.5)";
-    ctx.beginPath(); ctx.arc(x, y, i===0||i===bs.length-1 ? 5 : 3, 0, Math.PI*2); ctx.fill();
-    if(i===0 || i===bs.length-1) {
-      const label = fmtD(s.date);
-      ctx.fillStyle = "rgba(10,18,8,0.85)";
-      const tw = ctx.measureText(label).width + 8;
-      ctx.fillRect(x+8, y-9, tw, 16);
-      ctx.fillStyle = color; ctx.font = "9px Georgia,serif";
-      ctx.fillText(label, x+12, y+3);
-    }
-  });
-}
-function initLineCanvas() {
-  const img = document.getElementById("baseImg");
-  const resize = () => {
-    const c = document.getElementById("lineCanvas");
-    c.width = img.offsetWidth; c.height = img.offsetHeight; drawLines();
-  };
-  if(img.complete) resize(); else img.onload = resize;
-  window.addEventListener("resize", resize);
-}
+
 function showPin(camName) {
   const cs = sightings.filter(s => s.camera_name === camName);
-  const bucks = cs.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
-  const mature = cs.filter(s => s.deer_type && s.deer_type.includes("Mature")).length;
+  const bucks = cs.filter(s => s.deer_type && s.deer_type.includes('Buck')).length;
+  const mature = cs.filter(s => s.deer_type && s.deer_type.includes('Mature')).length;
   const sh = cs.length === 0
     ? `<div class="pp-empty">No sightings logged yet.</div>`
     : cs.slice(0,3).map(s => {
         const bc = s.buck_name ? buckColor(s.buck_name) : null;
         return `<div class="pp-s">
-          ${s.image_url ? `<img class="pp-s-img" src="${s.image_url}" alt="trail cam"/>` : ""}
+          ${s.image_url ? `<img class="pp-s-img" src="${s.image_url}" alt="trail cam"/>` : ''}
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
-              <span style="font-size:13px;font-weight:${s.deer_type&&s.deer_type.includes("Mature")?700:400};color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</span>
-              ${s.buck_name ? `<span style="font-size:11px;margin-left:5px;padding:1px 7px;border-radius:10px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</span>` : ""}
+              <span style="font-size:13px;font-weight:${s.deer_type&&s.deer_type.includes('Mature')?700:400};color:${s.deer_type&&s.deer_type.includes('Mature')?'#c8a951':'#e8dcc8'}">${s.deer_type}</span>
+              ${s.buck_name ? `<span style="font-size:11px;margin-left:5px;padding:1px 7px;border-radius:10px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</span>` : ''}
             </div>
             <span style="font-size:11px;color:#7a9e6a">${fmtT(s.time)}</span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:3px">
-            <span style="font-size:11px;color:#7a9e6a">${s.behavior||""}</span>
+            <span style="font-size:11px;color:#7a9e6a">${s.behavior||''}</span>
             <span style="font-size:11px;color:#4a6a3a">${fmtD(s.date)}</span>
           </div>
           ${s.wind_dir||s.temp_f ? `<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">
-            ${s.wind_dir?`<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>`:""}
-            ${s.temp_f?`<span class="tag">&#127777; ${s.temp_f}&deg;F</span>`:""}
-          </div>` : ""}
+            ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?' '+s.wind_speed+'mph':''}</span>` : ''}
+            ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}&deg;F</span>` : ''}
+          </div>` : ''}
         </div>`;
-      }).join("");
-  const more = cs.length > 3 ? `<button class="pp-more" onclick="filterGo('${camName}')">View all ${cs.length} &#8594;</button>` : "";
-  const pp = document.getElementById("pp");
-  pp.innerHTML = `<div class="pp${mature>0?" gold":""}">
+      }).join('');
+  const more = cs.length > 3 ? `<button class="pp-more" onclick="filterGo('${camName}')">View all ${cs.length} &#8594;</button>` : '';
+  const pp = document.getElementById('pp');
+  pp.innerHTML = `<div class="pp${mature>0?' gold':''}">
     <div class="pp-hdr"><div class="pp-title">${camName}</div><button class="pp-close" onclick="document.getElementById('pp').style.display='none'">&#215;</button></div>
     <div class="pp-stats">
       <div class="pps"><div class="ppn">${cs.length}</div><div class="ppl">Total</div></div>
       <div class="pps"><div class="ppn">${bucks}</div><div class="ppl">Bucks</div></div>
       <div class="pps"><div class="ppn">${mature}</div><div class="ppl">Mature</div></div>
-    </div>${sh}${more}</div>`;
-  pp.style.display = "block";
-  pp.scrollIntoView({behavior:"smooth",block:"nearest"});
-}
-function filterGo(c) { curFilter = c; showView("log"); }
-
-
-
-// ── dashboard + intel (combined) ─────────────────────────────────────────────
-function renderDash() {
-  const b = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck"));
-  const m = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
-  const nb = getNamedBucks();
-  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
-  const timeBuckets = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
-
-  let html = "";
-
-  // ── Stats strip ──────────────────────────────────────────────────────
-  html += `<div class="sgrid">
-    <div class="sbox"><div class="snum">${sightings.length}</div><div class="slbl">Total</div></div>
-    <div class="sbox"><div class="snum">${b.length}</div><div class="slbl">Bucks</div></div>
-    <div class="sbox"><div class="snum">${m.length}</div><div class="slbl">Mature</div></div>
+    </div>${sh}${more}
   </div>`;
-
-  if(!sightings.length) {
-    html += `<div class="card"><p style="color:#4a6a3a;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
-    document.getElementById("dashContent").innerHTML = html;
-    document.getElementById("hcount").textContent = "0 logged";
-    return;
-  }
-  document.getElementById("hcount").textContent = sightings.length + " logged";
-
-  // ── Named buck cards ─────────────────────────────────────────────────
-  if(nb.length > 0) {
-    html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
-    nb.forEach(bname => {
-      const bs = sightings.filter(s => s.buck_name === bname);
-      const color = buckColor(bname);
-      const cameras = [...new Set(bs.map(s => s.camera_name))];
-      const dates = bs.map(s => s.date).sort();
-      const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
-      const bWindCounts = {};
-      WINDS.forEach(w => bWindCounts[w] = 0);
-      bs.forEach(s => { if(s.wind_dir && bWindCounts[s.wind_dir] !== undefined) bWindCounts[s.wind_dir]++; });
-      const bMaxWind = Math.max(...Object.values(bWindCounts), 1);
-      const bTopWinds = WINDS.filter(w => bWindCounts[w] > 0).sort((a,b_) => bWindCounts[b_] - bWindCounts[a]).slice(0,3);
-      const bTimeCounts = {};
-      Object.keys(timeBuckets).forEach(k => bTimeCounts[k] = 0);
-      bs.forEach(s => {
-        if(!s.time) return;
-        const h = parseInt(s.time);
-        Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
-          if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTimeCounts[label]++;
-        });
-      });
-      const bTopTime = Object.entries(bTimeCounts).filter(([,c]) => c > 0).sort((a,b_) => b_[1]-a[1]);
-      const bTemps = bs.filter(s => s.temp_f).map(s => s.temp_f);
-      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b_) => a+b_,0)/bTemps.length) : null;
-      const bMinTemp = bTemps.length ? Math.min(...bTemps) : null;
-      const bMaxTemp = bTemps.length ? Math.max(...bTemps) : null;
-      const bMoonCounts = {};
-      bs.forEach(s => { if(s.moon_phase) bMoonCounts[s.moon_phase] = (bMoonCounts[s.moon_phase]||0)+1; });
-      const bTopMoon = Object.entries(bMoonCounts).sort((a,b_) => b_[1]-a[1]).slice(0,2);
-      const behavCounts = {};
-      bs.forEach(s => { if(s.behavior) behavCounts[s.behavior] = (behavCounts[s.behavior]||0)+1; });
-      const topBehav = Object.entries(behavCounts).sort((a,b_) => b_[1]-a[1]);
-      const camSeq = [...new Set(bs.sort((a,b_) => new Date(a.date+"T"+(a.time||"00:00")) - new Date(b_.date+"T"+(b_.time||"00:00"))).map(s => s.camera_name))];
-
-      html += `<div class="buck-intel gold">
-        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
-          ${recentImg
-            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#127956;</div>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
-            <div style="font-size:11px;color:#7a9e6a">${bs.length} sightings &middot; ${cameras.join(", ")}</div>
-            <div style="font-size:10px;color:#4a6a3a">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
-          </div>
-          <div style="font-size:18px;color:#4a6a3a;transition:transform 0.2s" class="bi-arrow">&#8964;</div>
-        </button>
-        <div class="bi-body">
-          <div class="cond-grid">
-            <div class="cond-box">
-              <div class="cond-title">Wind Preference</div>
-              ${WINDS.filter(w => bWindCounts[w]>0).map(w => {
-                const pct = Math.round((bWindCounts[w]/bMaxWind)*100);
-                return `<div class="cond-bar-wrap">
-                  <div class="cond-bar-lbl"><span>${w}</span><span>${bWindCounts[w]}</span></div>
-                  <div class="cond-bar"><div class="cond-bar-fill${bTopWinds[0]===w?" hi":""}" style="width:${pct}%"></div></div>
-                </div>`;
-              }).join("")}
-            </div>
-            <div class="cond-box">
-              <div class="cond-title">Time of Day</div>
-              ${bTopTime.map(([label,cnt]) => `<div class="cond-bar-wrap">
-                  <div class="cond-bar-lbl"><span>${label}</span><span>${cnt}</span></div>
-                  <div class="cond-bar"><div class="cond-bar-fill${cnt===bTopTime[0][1]?" hi":""}" style="width:${Math.round((cnt/bTopTime[0][1])*100)}%"></div></div>
-                </div>`).join("")}
-            </div>
-          </div>
-          <div class="stat-row"><span class="stat-lbl">Temp at sighting</span><span class="stat-val">${bAvgTemp ? `${bMinTemp}&ndash;${bMaxTemp}&deg;F (avg ${bAvgTemp}&deg;)` : "--"}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Top moon phases</span><span class="stat-val">${bTopMoon.map(([mn,c]) => `${mn} (${c})`).join(", ")||"--"}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Top behaviors</span><span class="stat-val">${topBehav.slice(0,2).map(([bh,c]) => `${bh} (${c})`).join(", ")||"--"}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Camera pattern</span><span class="stat-val" style="font-size:10px">${camSeq.join(" &rarr; ")}</span></div>
-          ${bs.length >= 3 ? `<div class="insight insight-gold" style="margin-top:10px">
-            <div class="insight-title">&#129504; Pattern Analysis</div>
-            <div class="insight-text">
-              ${bTopWinds.length ? `Most active on <strong style="color:#c8a951">${bTopWinds[0]}${bTopWinds[1]?" / "+bTopWinds[1]:""} wind</strong>. ` : ""}
-              ${bTopTime.length ? `Peak movement: <strong style="color:#c8a951">${bTopTime[0][0]}</strong> hours. ` : ""}
-              ${bAvgTemp ? `Avg temp at sighting <strong style="color:#c8a951">${bAvgTemp}&deg;F</strong>. ` : ""}
-              ${camSeq.length > 1 ? `Travel corridor confirmed: <strong style="color:#c8a951">${camSeq.join(" &rarr; ")}</strong>.` : `Concentrated at <strong style="color:#c8a951">${camSeq[0]}</strong>.`}
-            </div>
-          </div>` : `<div style="font-size:11px;color:#4a6a3a;font-style:italic;padding:8px 0">Log ${3-bs.length} more sighting${3-bs.length>1?"s":""} to unlock pattern analysis.</div>`}
-          <button onclick="goToBuck('${bname}')" style="margin-top:10px;width:100%;padding:8px;border:1px solid ${color};border-radius:8px;background:transparent;color:${color};font-size:12px;cursor:pointer;font-family:Georgia,serif">&#128506; View movement map &rarr;</button>
-        </div>
-      </div>`;
-    });
-  }
-
-  // ── Property-wide Intelligence ────────────────────────────────────────
-  html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
-
-  // Wind rose
-  const windCounts = {};
-  WINDS.forEach(w => windCounts[w] = 0);
-  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
-  const maxWind = Math.max(...Object.values(windCounts), 1);
-  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b_) => windCounts[b_]-windCounts[a]).slice(0,3);
-
-  html += `<div class="prop-stat">
-    <div class="cond-title">Wind Direction &mdash; All Deer Activity</div>
-    <div class="wind-rose">
-      ${WINDS.map(w => {
-        const cnt = windCounts[w];
-        const pct = Math.round((cnt/maxWind)*100);
-        return `<div class="wr-cell">
-          <div class="wr-dir">${w}</div>
-          <div class="wr-bar"><div class="wr-fill${topWinds.includes(w)?" top":""}" style="width:${pct}%"></div></div>
-          <div class="wr-cnt">${cnt}</div>
-        </div>`;
-      }).join("")}
-    </div>
-  </div>`;
-
-  // Time of day
-  const timeCounts = {};
-  Object.keys(timeBuckets).forEach(k => timeCounts[k] = 0);
-  sightings.forEach(s => {
-    if(!s.time) return;
-    const h = parseInt(s.time);
-    Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
-      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
-    });
-  });
-  const maxTime = Math.max(...Object.values(timeCounts), 1);
-  const topTime = Object.entries(timeCounts).sort((a,b_) => b_[1]-a[1])[0];
-
-  html += `<div class="prop-stat">
-    <div class="cond-title">Movement by Time of Day</div>
-    ${Object.entries(timeCounts).map(([label,cnt]) => `<div style="margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
-        <span style="color:${label===topTime[0]?"#c8a951":"#a0b890"}">${label}</span>
-        <span style="color:#7a9e6a">${cnt}</span>
-      </div>
-      <div class="cond-bar"><div class="cond-bar-fill${label===topTime[0]?" hi":""}" style="width:${Math.round((cnt/maxTime)*100)}%"></div></div>
-    </div>`).join("")}
-  </div>`;
-
-  // Camera hotspots
-  const camCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
-  sightings.forEach(s => { if(camCounts[s.camera_name] !== undefined) camCounts[s.camera_name]++; });
-  const maxCam = Math.max(...Object.values(camCounts), 1);
-  const topCam = Object.entries(camCounts).sort((a,b_) => b_[1]-a[1])[0];
-
-  html += `<div class="prop-stat">
-    <div class="cond-title">Camera Hotspots</div>
-    ${CAMNAMES.slice(0,5).map(c => {
-      const cnt = camCounts[c];
-      const mCnt = sightings.filter(s => s.camera_name===c && s.deer_type&&s.deer_type.includes("Mature")).length;
-      return `<div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-          <span style="color:${topCam[0]===c?"#c8a951":"#a0b890"}">${c}</span>
-          <span style="color:#7a9e6a">${cnt}${mCnt>0?` &middot; <span style="color:#c8a951">${mCnt} mature</span>`:""}</span>
-        </div>
-        <div class="cond-bar"><div class="cond-bar-fill${mCnt>0?" hi":""}" style="width:${Math.round((cnt/maxCam)*100)}%"></div></div>
-      </div>`;
-    }).join("")}
-  </div>`;
-
-  // Condition insights
-  const matureTemps = m.filter(s => s.temp_f).map(s => s.temp_f);
-  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b_)=>a+b_,0)/matureTemps.length) : null;
-  const moonCounts = {};
-  m.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
-  const topMoon = Object.entries(moonCounts).sort((a,b_)=>b_[1]-a[1])[0];
-  const highP = sightings.filter(s => s.pressure && s.pressure > 1020);
-  const lowP = sightings.filter(s => s.pressure && s.pressure <= 1020);
-  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
-  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
-
-  html += `<div class="insight insight-gold">
-    <div class="insight-title">&#127919; Key Insights &mdash; ${sightings.length} Sightings</div>
-    <div class="insight-text">
-      ${topWinds.length ? `<strong style="color:#c8a951">Best wind directions:</strong> ${topWinds.join(", ")} produce the most activity.<br/>` : ""}
-      ${topTime ? `<strong style="color:#c8a951">Peak movement window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>` : ""}
-      ${avgMatureTemp ? `<strong style="color:#c8a951">Mature buck activity:</strong> avg ${avgMatureTemp}&deg;F at time of sighting.<br/>` : ""}
-      ${topMoon ? `<strong style="color:#c8a951">Best moon phase:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>` : ""}
-      ${highP.length&&lowP.length ? `<strong style="color:#c8a951">Pressure:</strong> High pressure &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% on low pressure.<br/>` : ""}
-      ${topCam ? `<strong style="color:#c8a951">Hottest camera:</strong> ${topCam[0]} with ${topCam[1]} total sightings.` : ""}
-    </div>
-  </div>`;
-
-  // Season intel card
-  html += `<div class="card intel">
-    <div class="stitle">&#127919; Season Intel</div>
-    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary stands: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
-  </div>`;
-
-  document.getElementById("dashContent").innerHTML = html;
+  pp.style.display = 'block';
+  pp.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function goToBuck(name) {
-  curMapFilter = name;
-  showView("map");
-  setTimeout(() => { buildMapFilters(); buildMapLegend(); updatePins(); initLineCanvas(); drawLines(); }, 100);
-}
-
-function toggleBuckIntel(btn) {
-  const body = btn.nextElementSibling;
-  const arrow = btn.querySelector(".bi-arrow");
-  body.classList.toggle("open");
-  if(arrow) arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
-}
+function filterGo(c) { curFilter = c; showView('log'); }
 
 // ── views ────────────────────────────────────────────────────────────────────
 function showView(n) {
@@ -1019,7 +964,13 @@ function showView(n) {
   const nb = document.getElementById("nn-"+n);
   if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
   if(n === "dash") renderDash();
-  if(n === "map") { buildMapFilters(); buildMapLegend(); updatePins(); setTimeout(() => { initLineCanvas(); drawLines(); }, 80); }
+  if(n === "map") {
+    buildMapFilters(); buildMapLegend();
+    setTimeout(async () => {
+      if(!mapInstance) await loadCamLocations();
+      initMap();
+    }, 50);
+  }
   if(n === "log") renderLog();
   if(n === "add") initForm();
 }
