@@ -191,11 +191,6 @@ textarea{resize:none}
   <div id="pp" style="display:none"></div>
 </div>
 
-<!-- INTEL -->
-<div id="vintel" class="view" style="padding:14px 14px 0">
-  <div id="intelContent"><div class="loading"><div class="spinner"></div><br/>Loading intelligence...</div></div>
-</div>
-
 <!-- LOG -->
 <div id="vlog" class="view" style="padding:14px 14px 0">
   <div class="frow" id="frow"></div>
@@ -321,12 +316,11 @@ textarea{resize:none}
   </div>
 </div>
 
-<div class="nav" style="grid-template-columns:1fr 1fr 1fr 1fr 1fr">
-  <button class="nb on" onclick="showView('dash')" id="nn-dash"><span class="ico">&#128202;</span><span class="lbl">Home</span><div class="ndot"></div></button>
-  <button class="nb" onclick="showView('intel')" id="nn-intel"><span class="ico">&#129504;</span><span class="lbl">Intel</span></button>
+<div class="nav">
+  <button class="nb on" onclick="showView('dash')" id="nn-dash"><span class="ico">&#129504;</span><span class="lbl">Intel</span><div class="ndot"></div></button>
   <button class="nb" onclick="showView('map')" id="nn-map"><span class="ico">&#128506;</span><span class="lbl">Map</span></button>
   <button class="nb" onclick="showView('add')" id="nn-add"><span class="ico" style="font-size:20px">+</span><span class="lbl">Log</span></button>
-  <button class="nb" onclick="showView('log')" id="nn-log"><span class="ico">&#128203;</span><span class="lbl">Log</span></button>
+  <button class="nb" onclick="showView('log')" id="nn-log"><span class="ico">&#128203;</span><span class="lbl">Sightings</span></button>
 </div>
 
 <script>
@@ -788,76 +782,250 @@ function filterGo(c) { curFilter = c; showView("log"); }
 
 
 
-// ── dashboard ──────────────────────────────────────────────────────────────
+// ── dashboard + intel (combined) ─────────────────────────────────────────────
 function renderDash() {
   const b = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck"));
   const m = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
   const nb = getNamedBucks();
-  let html = `<div class="sgrid">
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const timeBuckets = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
+
+  let html = "";
+
+  // ── Stats strip ──────────────────────────────────────────────────────
+  html += `<div class="sgrid">
     <div class="sbox"><div class="snum">${sightings.length}</div><div class="slbl">Total</div></div>
     <div class="sbox"><div class="snum">${b.length}</div><div class="slbl">Bucks</div></div>
     <div class="sbox"><div class="snum">${m.length}</div><div class="slbl">Mature</div></div>
   </div>`;
-  const bl = {dawn:0,morning:0,midday:0,afternoon:0,dusk:0,night:0};
+
+  if(!sightings.length) {
+    html += `<div class="card"><p style="color:#4a6a3a;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    document.getElementById("dashContent").innerHTML = html;
+    document.getElementById("hcount").textContent = "0 logged";
+    return;
+  }
+  document.getElementById("hcount").textContent = sightings.length + " logged";
+
+  // ── Named buck cards ─────────────────────────────────────────────────
+  if(nb.length > 0) {
+    html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
+    nb.forEach(bname => {
+      const bs = sightings.filter(s => s.buck_name === bname);
+      const color = buckColor(bname);
+      const cameras = [...new Set(bs.map(s => s.camera_name))];
+      const dates = bs.map(s => s.date).sort();
+      const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
+      const bWindCounts = {};
+      WINDS.forEach(w => bWindCounts[w] = 0);
+      bs.forEach(s => { if(s.wind_dir && bWindCounts[s.wind_dir] !== undefined) bWindCounts[s.wind_dir]++; });
+      const bMaxWind = Math.max(...Object.values(bWindCounts), 1);
+      const bTopWinds = WINDS.filter(w => bWindCounts[w] > 0).sort((a,b_) => bWindCounts[b_] - bWindCounts[a]).slice(0,3);
+      const bTimeCounts = {};
+      Object.keys(timeBuckets).forEach(k => bTimeCounts[k] = 0);
+      bs.forEach(s => {
+        if(!s.time) return;
+        const h = parseInt(s.time);
+        Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
+          if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTimeCounts[label]++;
+        });
+      });
+      const bTopTime = Object.entries(bTimeCounts).filter(([,c]) => c > 0).sort((a,b_) => b_[1]-a[1]);
+      const bTemps = bs.filter(s => s.temp_f).map(s => s.temp_f);
+      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b_) => a+b_,0)/bTemps.length) : null;
+      const bMinTemp = bTemps.length ? Math.min(...bTemps) : null;
+      const bMaxTemp = bTemps.length ? Math.max(...bTemps) : null;
+      const bMoonCounts = {};
+      bs.forEach(s => { if(s.moon_phase) bMoonCounts[s.moon_phase] = (bMoonCounts[s.moon_phase]||0)+1; });
+      const bTopMoon = Object.entries(bMoonCounts).sort((a,b_) => b_[1]-a[1]).slice(0,2);
+      const behavCounts = {};
+      bs.forEach(s => { if(s.behavior) behavCounts[s.behavior] = (behavCounts[s.behavior]||0)+1; });
+      const topBehav = Object.entries(behavCounts).sort((a,b_) => b_[1]-a[1]);
+      const camSeq = [...new Set(bs.sort((a,b_) => new Date(a.date+"T"+(a.time||"00:00")) - new Date(b_.date+"T"+(b_.time||"00:00"))).map(s => s.camera_name))];
+
+      html += `<div class="buck-intel gold">
+        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
+          ${recentImg
+            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
+            : `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#127956;</div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
+            <div style="font-size:11px;color:#7a9e6a">${bs.length} sightings &middot; ${cameras.join(", ")}</div>
+            <div style="font-size:10px;color:#4a6a3a">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
+          </div>
+          <div style="font-size:18px;color:#4a6a3a;transition:transform 0.2s" class="bi-arrow">&#8964;</div>
+        </button>
+        <div class="bi-body">
+          <div class="cond-grid">
+            <div class="cond-box">
+              <div class="cond-title">Wind Preference</div>
+              ${WINDS.filter(w => bWindCounts[w]>0).map(w => {
+                const pct = Math.round((bWindCounts[w]/bMaxWind)*100);
+                return `<div class="cond-bar-wrap">
+                  <div class="cond-bar-lbl"><span>${w}</span><span>${bWindCounts[w]}</span></div>
+                  <div class="cond-bar"><div class="cond-bar-fill${bTopWinds[0]===w?" hi":""}" style="width:${pct}%"></div></div>
+                </div>`;
+              }).join("")}
+            </div>
+            <div class="cond-box">
+              <div class="cond-title">Time of Day</div>
+              ${bTopTime.map(([label,cnt]) => `<div class="cond-bar-wrap">
+                  <div class="cond-bar-lbl"><span>${label}</span><span>${cnt}</span></div>
+                  <div class="cond-bar"><div class="cond-bar-fill${cnt===bTopTime[0][1]?" hi":""}" style="width:${Math.round((cnt/bTopTime[0][1])*100)}%"></div></div>
+                </div>`).join("")}
+            </div>
+          </div>
+          <div class="stat-row"><span class="stat-lbl">Temp at sighting</span><span class="stat-val">${bAvgTemp ? `${bMinTemp}&ndash;${bMaxTemp}&deg;F (avg ${bAvgTemp}&deg;)` : "--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Top moon phases</span><span class="stat-val">${bTopMoon.map(([mn,c]) => `${mn} (${c})`).join(", ")||"--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Top behaviors</span><span class="stat-val">${topBehav.slice(0,2).map(([bh,c]) => `${bh} (${c})`).join(", ")||"--"}</span></div>
+          <div class="stat-row"><span class="stat-lbl">Camera pattern</span><span class="stat-val" style="font-size:10px">${camSeq.join(" &rarr; ")}</span></div>
+          ${bs.length >= 3 ? `<div class="insight insight-gold" style="margin-top:10px">
+            <div class="insight-title">&#129504; Pattern Analysis</div>
+            <div class="insight-text">
+              ${bTopWinds.length ? `Most active on <strong style="color:#c8a951">${bTopWinds[0]}${bTopWinds[1]?" / "+bTopWinds[1]:""} wind</strong>. ` : ""}
+              ${bTopTime.length ? `Peak movement: <strong style="color:#c8a951">${bTopTime[0][0]}</strong> hours. ` : ""}
+              ${bAvgTemp ? `Avg temp at sighting <strong style="color:#c8a951">${bAvgTemp}&deg;F</strong>. ` : ""}
+              ${camSeq.length > 1 ? `Travel corridor confirmed: <strong style="color:#c8a951">${camSeq.join(" &rarr; ")}</strong>.` : `Concentrated at <strong style="color:#c8a951">${camSeq[0]}</strong>.`}
+            </div>
+          </div>` : `<div style="font-size:11px;color:#4a6a3a;font-style:italic;padding:8px 0">Log ${3-bs.length} more sighting${3-bs.length>1?"s":""} to unlock pattern analysis.</div>`}
+          <button onclick="goToBuck('${bname}')" style="margin-top:10px;width:100%;padding:8px;border:1px solid ${color};border-radius:8px;background:transparent;color:${color};font-size:12px;cursor:pointer;font-family:Georgia,serif">&#128506; View movement map &rarr;</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── Property-wide Intelligence ────────────────────────────────────────
+  html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
+
+  // Wind rose
+  const windCounts = {};
+  WINDS.forEach(w => windCounts[w] = 0);
+  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
+  const maxWind = Math.max(...Object.values(windCounts), 1);
+  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b_) => windCounts[b_]-windCounts[a]).slice(0,3);
+
+  html += `<div class="prop-stat">
+    <div class="cond-title">Wind Direction &mdash; All Deer Activity</div>
+    <div class="wind-rose">
+      ${WINDS.map(w => {
+        const cnt = windCounts[w];
+        const pct = Math.round((cnt/maxWind)*100);
+        return `<div class="wr-cell">
+          <div class="wr-dir">${w}</div>
+          <div class="wr-bar"><div class="wr-fill${topWinds.includes(w)?" top":""}" style="width:${pct}%"></div></div>
+          <div class="wr-cnt">${cnt}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  </div>`;
+
+  // Time of day
+  const timeCounts = {};
+  Object.keys(timeBuckets).forEach(k => timeCounts[k] = 0);
   sightings.forEach(s => {
     if(!s.time) return;
     const h = parseInt(s.time);
-    if(h>=5&&h<7) bl.dawn++; else if(h>=7&&h<10) bl.morning++;
-    else if(h>=10&&h<13) bl.midday++; else if(h>=13&&h<16) bl.afternoon++;
-    else if(h>=16&&h<20) bl.dusk++; else bl.night++;
+    Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
+      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
+    });
   });
-  const mx = Math.max(...Object.values(bl), 1);
-  html += `<div class="card"><div class="stitle">Movement by Time of Day</div>
-    ${Object.entries(bl).map(([b,c]) => `<div class="br">
-      <div class="bm"><span style="color:#a0b890;text-transform:capitalize">${b}</span><span style="color:#c8a951">${c}</span></div>
-      <div class="bt"><div class="bf${c===mx?" pk":""}" style="width:${(c/mx)*100}%"></div></div>
-    </div>`).join("")}</div>`;
-  if(nb.length > 0) {
-    html += `<div class="card"><div class="stitle">&#9679; Named Bucks</div>`;
-    html += nb.map(bname => {
-      const bs = sightings.filter(s => s.buck_name === bname);
-      const dates = bs.map(s => s.date).sort();
-      const cams = [...new Set(bs.map(s => s.camera_name))];
-      const color = buckColor(bname);
-      const recent = bs.filter(s => s.image_url).sort((a,b) => b.date.localeCompare(a.date))[0];
-      return `<div class="bcard" onclick="goToBuck('${bname}')">
-        ${recent
-          ? `<img src="${recent.image_url}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-          : `<div style="width:44px;height:44px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">&#127956;</div>`}
-        <div style="flex:1;min-width:0">
-          <div style="font-size:14px;font-weight:700;color:${color}">${bname}</div>
-          <div style="font-size:11px;color:#7a9e6a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cams.join(", ")}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0">
-          <div style="color:#c8a951;font-weight:700;font-size:13px">${bs.length} sightings</div>
-          <div style="font-size:10px;color:#4a6a3a">${fmtD(dates[dates.length-1])}</div>
-        </div>
-      </div>`;
-    }).join("");
-    html += `</div>`;
-  }
-  const ca = CAMNAMES.slice(0,5).map(c => ({n:c, c:sightings.filter(s=>s.camera_name===c).length}))
-    .filter(x => x.c > 0).sort((a,b) => b.c - a.c);
-  html += `<div class="card"><div class="stitle">Camera Activity</div>
-    ${ca.length===0
-      ? `<div style="font-size:12px;color:#4a6a3a">No sightings yet</div>`
-      : ca.map(c => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid #1a2d14">
-          <span style="font-size:13px">${c.n}</span>
-          <div style="display:flex;align-items:center;gap:8px">
-            <div style="height:4px;width:${sightings.length?Math.round((c.c/sightings.length)*80):0}px;background:#4a7a3a;border-radius:2px"></div>
-            <span style="font-size:12px;color:#c8a951">${c.c}</span>
-          </div>
-        </div>`).join("")}</div>`;
-  html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
-    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&#8211;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+  const maxTime = Math.max(...Object.values(timeCounts), 1);
+  const topTime = Object.entries(timeCounts).sort((a,b_) => b_[1]-a[1])[0];
+
+  html += `<div class="prop-stat">
+    <div class="cond-title">Movement by Time of Day</div>
+    ${Object.entries(timeCounts).map(([label,cnt]) => `<div style="margin-bottom:6px">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+        <span style="color:${label===topTime[0]?"#c8a951":"#a0b890"}">${label}</span>
+        <span style="color:#7a9e6a">${cnt}</span>
+      </div>
+      <div class="cond-bar"><div class="cond-bar-fill${label===topTime[0]?" hi":""}" style="width:${Math.round((cnt/maxTime)*100)}%"></div></div>
+    </div>`).join("")}
   </div>`;
+
+  // Camera hotspots
+  const camCounts = {};
+  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
+  sightings.forEach(s => { if(camCounts[s.camera_name] !== undefined) camCounts[s.camera_name]++; });
+  const maxCam = Math.max(...Object.values(camCounts), 1);
+  const topCam = Object.entries(camCounts).sort((a,b_) => b_[1]-a[1])[0];
+
+  html += `<div class="prop-stat">
+    <div class="cond-title">Camera Hotspots</div>
+    ${CAMNAMES.slice(0,5).map(c => {
+      const cnt = camCounts[c];
+      const mCnt = sightings.filter(s => s.camera_name===c && s.deer_type&&s.deer_type.includes("Mature")).length;
+      return `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
+          <span style="color:${topCam[0]===c?"#c8a951":"#a0b890"}">${c}</span>
+          <span style="color:#7a9e6a">${cnt}${mCnt>0?` &middot; <span style="color:#c8a951">${mCnt} mature</span>`:""}</span>
+        </div>
+        <div class="cond-bar"><div class="cond-bar-fill${mCnt>0?" hi":""}" style="width:${Math.round((cnt/maxCam)*100)}%"></div></div>
+      </div>`;
+    }).join("")}
+  </div>`;
+
+  // Condition insights
+  const matureTemps = m.filter(s => s.temp_f).map(s => s.temp_f);
+  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b_)=>a+b_,0)/matureTemps.length) : null;
+  const moonCounts = {};
+  m.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
+  const topMoon = Object.entries(moonCounts).sort((a,b_)=>b_[1]-a[1])[0];
+  const highP = sightings.filter(s => s.pressure && s.pressure > 1020);
+  const lowP = sightings.filter(s => s.pressure && s.pressure <= 1020);
+  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
+  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
+
+  html += `<div class="insight insight-gold">
+    <div class="insight-title">&#127919; Key Insights &mdash; ${sightings.length} Sightings</div>
+    <div class="insight-text">
+      ${topWinds.length ? `<strong style="color:#c8a951">Best wind directions:</strong> ${topWinds.join(", ")} produce the most activity.<br/>` : ""}
+      ${topTime ? `<strong style="color:#c8a951">Peak movement window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>` : ""}
+      ${avgMatureTemp ? `<strong style="color:#c8a951">Mature buck activity:</strong> avg ${avgMatureTemp}&deg;F at time of sighting.<br/>` : ""}
+      ${topMoon ? `<strong style="color:#c8a951">Best moon phase:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>` : ""}
+      ${highP.length&&lowP.length ? `<strong style="color:#c8a951">Pressure:</strong> High pressure &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% on low pressure.<br/>` : ""}
+      ${topCam ? `<strong style="color:#c8a951">Hottest camera:</strong> ${topCam[0]} with ${topCam[1]} total sightings.` : ""}
+    </div>
+  </div>`;
+
+  // Season intel card
+  html += `<div class="card intel">
+    <div class="stitle">&#127919; Season Intel</div>
+    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary stands: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+  </div>`;
+
   document.getElementById("dashContent").innerHTML = html;
 }
+
 function goToBuck(name) {
   curMapFilter = name;
   showView("map");
   setTimeout(() => { buildMapFilters(); buildMapLegend(); updatePins(); initLineCanvas(); drawLines(); }, 100);
 }
+
+function toggleBuckIntel(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector(".bi-arrow");
+  body.classList.toggle("open");
+  if(arrow) arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
+}
+
+// ── views ────────────────────────────────────────────────────────────────────
+function showView(n) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
+  document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
+  const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet"};
+  document.getElementById(vm[n] || "v"+n).classList.add("on");
+  const nb = document.getElementById("nn-"+n);
+  if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
+  if(n === "dash") renderDash();
+  if(n === "map") { buildMapFilters(); buildMapLegend(); updatePins(); setTimeout(() => { initLineCanvas(); drawLines(); }, 80); }
+  if(n === "log") renderLog();
+  if(n === "add") initForm();
+}
+
+
+
 
 // ── log ────────────────────────────────────────────────────────────────────
 function renderLog() {
@@ -1022,255 +1190,7 @@ function handlePhoto(inp) {
   r.readAsDataURL(f);
 }
 
-// ── intel / analytics ─────────────────────────────────────────────────────
-function showView(n) {
-  document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
-  document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
-  const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet",intel:"vintel"};
-  document.getElementById(vm[n] || "v"+n).classList.add("on");
-  const nb = document.getElementById("nn-"+n);
-  if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
-  if(n === "dash") renderDash();
-  if(n === "intel") renderIntel();
-  if(n === "map") { buildMapFilters(); buildMapLegend(); updatePins(); setTimeout(() => { initLineCanvas(); drawLines(); }, 80); }
-  if(n === "log") renderLog();
-  if(n === "add") initForm();
-}
 
-function renderIntel() {
-  if(!sightings.length) {
-    document.getElementById("intelContent").innerHTML = `<div class="loading" style="color:#4a6a3a">No sightings logged yet.<br/>Add sightings to see intelligence.</div>`;
-    return;
-  }
-  const bucks = getNamedBucks();
-  let html = '';
-
-  // ── Property-wide trends ──────────────────────────────────────────────
-  html += `<div class="stitle" style="margin-bottom:10px">&#127759; Property Intelligence</div>`;
-
-  // Overall movement score by conditions
-  const totalS = sightings.length;
-  const matureS = sightings.filter(s => s.deer_type && s.deer_type.includes('Mature'));
-  const buckS = sightings.filter(s => s.deer_type && s.deer_type.includes('Buck'));
-
-  // Best wind directions
-  const windCounts = {};
-  const WINDS = ['N','NE','E','SE','S','SW','W','NW'];
-  WINDS.forEach(w => windCounts[w] = 0);
-  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
-  const maxWind = Math.max(...Object.values(windCounts), 1);
-  const topWinds = WINDS.filter(w => windCounts[w] > 0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
-
-  // Best time of day
-  const timeBuckets = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
-  const timeCounts = {};
-  Object.keys(timeBuckets).forEach(k => timeCounts[k] = 0);
-  sightings.forEach(s => {
-    if(!s.time) return;
-    const h = parseInt(s.time);
-    Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
-      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
-    });
-  });
-  const topTime = Object.entries(timeCounts).sort((a,b)=>b[1]-a[1])[0];
-
-  // Temp ranges for mature buck activity
-  const matureTemps = matureS.filter(s=>s.temp_f).map(s=>s.temp_f);
-  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b)=>a+b,0)/matureTemps.length) : null;
-
-  // Moon phase breakdown for mature bucks
-  const moonCounts = {};
-  matureS.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
-  const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
-
-  // Camera hotspots
-  const camCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
-  sightings.forEach(s => { if(camCounts[s.camera_name] !== undefined) camCounts[s.camera_name]++; });
-  const topCam = Object.entries(camCounts).sort((a,b)=>b[1]-a[1])[0];
-  const maxCam = Math.max(...Object.values(camCounts), 1);
-
-  // Pressure analysis - high pressure = more movement?
-  const highPressure = sightings.filter(s => s.pressure && s.pressure > 1020);
-  const lowPressure = sightings.filter(s => s.pressure && s.pressure <= 1020);
-  const highRate = highPressure.length ? Math.round(highPressure.filter(s=>s.deer_type&&s.deer_type.includes('Buck')).length / highPressure.length * 100) : 0;
-  const lowRate = lowPressure.length ? Math.round(lowPressure.filter(s=>s.deer_type&&s.deer_type.includes('Buck')).length / lowPressure.length * 100) : 0;
-
-  html += `<div class="prop-stat">
-    <div class="cond-title">Wind Direction — Deer Activity</div>
-    <div class="wind-rose">
-      ${WINDS.map(w => {
-        const cnt = windCounts[w];
-        const pct = Math.round((cnt/maxWind)*100);
-        const isTop = topWinds.includes(w);
-        return `<div class="wr-cell">
-          <div class="wr-dir">${w}</div>
-          <div class="wr-bar"><div class="wr-fill${isTop?' top':''}" style="width:${pct}%"></div></div>
-          <div class="wr-cnt">${cnt}</div>
-        </div>`;
-      }).join('')}
-    </div>
-  </div>`;
-
-  html += `<div class="prop-stat">
-    <div class="cond-title">Camera Hotspots — Total Sightings</div>
-    ${CAMNAMES.slice(0,5).map(c => {
-      const cnt = camCounts[c];
-      const pct = Math.round((cnt/maxCam)*100);
-      const matureCnt = sightings.filter(s=>s.camera_name===c&&s.deer_type&&s.deer_type.includes('Mature')).length;
-      return `<div style="margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-          <span style="color:#a0b890">${c}</span>
-          <span style="color:#7a9e6a">${cnt} total${matureCnt>0?` · <span style="color:#c8a951">${matureCnt} mature</span>`:''}</span>
-        </div>
-        <div class="cond-bar"><div class="cond-bar-fill${matureCnt>0?' hi':''}" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  // Time of day breakdown
-  html += `<div class="prop-stat">
-    <div class="cond-title">Movement by Time of Day</div>
-    ${Object.entries(timeCounts).map(([label, cnt]) => {
-      const pct = Math.round((cnt/Math.max(...Object.values(timeCounts),1))*100);
-      const isTop = label === topTime[0];
-      return `<div style="margin-bottom:6px">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
-          <span style="color:${isTop?'#c8a951':'#a0b890'}">${label}</span>
-          <span style="color:#7a9e6a">${cnt}</span>
-        </div>
-        <div class="cond-bar"><div class="cond-bar-fill${isTop?' hi':''}" style="width:${pct}%"></div></div>
-      </div>`;
-    }).join('')}
-  </div>`;
-
-  // Key insights
-  html += `<div class="insight insight-gold">
-    <div class="insight-title">&#127919; Property Insights</div>
-    <div class="insight-text">
-      ${topWinds.length ? `<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(', ')} — most deer activity recorded on these directions.<br/>` : ''}
-      ${topTime ? `<strong style="color:#c8a951">Peak movement:</strong> ${topTime[0]} window produces the most sightings (${topTime[1]}).<br/>` : ''}
-      ${avgMatureTemp ? `<strong style="color:#c8a951">Mature buck temp range:</strong> avg ${avgMatureTemp}°F at time of sighting.<br/>` : ''}
-      ${topMoon ? `<strong style="color:#c8a951">Best moon phase:</strong> ${topMoon[0]} — ${topMoon[1]} mature buck sighting${topMoon[1]>1?'s':''}.<br/>` : ''}
-      ${highPressure.length && lowPressure.length ? `<strong style="color:#c8a951">Pressure:</strong> High pressure (>1020hPa) = ${highRate}% buck sightings vs ${lowRate}% on low pressure.<br/>` : ''}
-      ${topCam ? `<strong style="color:#c8a951">Hottest camera:</strong> ${topCam[0]} with ${topCam[1]} total sightings.` : ''}
-    </div>
-  </div>`;
-
-  // ── Individual Buck Analysis ──────────────────────────────────────────
-  if(bucks.length > 0) {
-    html += `<div class="stitle" style="margin:16px 0 10px">&#128000; Individual Buck Analysis</div>`;
-    bucks.forEach(bname => {
-      const bs = sightings.filter(s => s.buck_name === bname);
-      const color = buckColor(bname);
-      const cameras = [...new Set(bs.map(s=>s.camera_name))];
-      const dates = bs.map(s=>s.date).sort();
-      const firstDate = dates[0], lastDate = dates[dates.length-1];
-      const recentImg = bs.filter(s=>s.image_url).sort((a,b)=>b.date.localeCompare(a.date))[0];
-
-      // Behavior breakdown
-      const behavCounts = {};
-      bs.forEach(s => { if(s.behavior) behavCounts[s.behavior] = (behavCounts[s.behavior]||0)+1; });
-      const topBehav = Object.entries(behavCounts).sort((a,b)=>b[1]-a[1]);
-
-      // Wind preference
-      const bWindCounts = {};
-      WINDS.forEach(w => bWindCounts[w] = 0);
-      bs.forEach(s => { if(s.wind_dir && bWindCounts[s.wind_dir]!==undefined) bWindCounts[s.wind_dir]++; });
-      const bTopWinds = WINDS.filter(w=>bWindCounts[w]>0).sort((a,b)=>bWindCounts[b]-bWindCounts[a]).slice(0,3);
-      const bMaxWind = Math.max(...Object.values(bWindCounts), 1);
-
-      // Time pattern
-      const bTimeCounts = {};
-      Object.keys(timeBuckets).forEach(k => bTimeCounts[k] = 0);
-      bs.forEach(s => {
-        if(!s.time) return;
-        const h = parseInt(s.time);
-        Object.entries(timeBuckets).forEach(([label,[start,end]]) => {
-          if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTimeCounts[label]++;
-        });
-      });
-      const bTopTime = Object.entries(bTimeCounts).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1]);
-
-      // Temp range
-      const bTemps = bs.filter(s=>s.temp_f).map(s=>s.temp_f);
-      const bMinTemp = bTemps.length ? Math.min(...bTemps) : null;
-      const bMaxTemp = bTemps.length ? Math.max(...bTemps) : null;
-      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b)=>a+b,0)/bTemps.length) : null;
-
-      // Moon phases
-      const bMoonCounts = {};
-      bs.forEach(s => { if(s.moon_phase) bMoonCounts[s.moon_phase] = (bMoonCounts[s.moon_phase]||0)+1; });
-      const bTopMoon = Object.entries(bMoonCounts).sort((a,b)=>b[1]-a[1]).slice(0,2);
-
-      // Camera movement pattern
-      const camSequence = bs.sort((a,b)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00'))).map(s=>s.camera_name);
-
-      html += `<div class="buck-intel gold">
-        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
-          ${recentImg
-            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#127956;</div>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
-            <div style="font-size:11px;color:#7a9e6a">${bs.length} sightings · ${cameras.join(', ')}</div>
-            <div style="font-size:10px;color:#4a6a3a">${fmtD(firstDate)} — ${fmtD(lastDate)}</div>
-          </div>
-          <div style="font-size:18px;color:#4a6a3a" class="bi-arrow">&#8964;</div>
-        </button>
-        <div class="bi-body">
-          <div class="cond-grid">
-            <div class="cond-box">
-              <div class="cond-title">Wind Preference</div>
-              ${WINDS.filter(w=>bWindCounts[w]>0).map(w => {
-                const pct = Math.round((bWindCounts[w]/bMaxWind)*100);
-                const isTop = bTopWinds[0]===w;
-                return `<div class="cond-bar-wrap">
-                  <div class="cond-bar-lbl"><span>${w}</span><span>${bWindCounts[w]}</span></div>
-                  <div class="cond-bar"><div class="cond-bar-fill${isTop?' hi':''}" style="width:${pct}%"></div></div>
-                </div>`;
-              }).join('')}
-            </div>
-            <div class="cond-box">
-              <div class="cond-title">Time of Day</div>
-              ${bTopTime.map(([label,cnt]) => {
-                const pct = Math.round((cnt/bTopTime[0][1])*100);
-                return `<div class="cond-bar-wrap">
-                  <div class="cond-bar-lbl"><span>${label}</span><span>${cnt}</span></div>
-                  <div class="cond-bar"><div class="cond-bar-fill${cnt===bTopTime[0][1]?' hi':''}" style="width:${pct}%"></div></div>
-                </div>`;
-              }).join('')}
-            </div>
-          </div>
-          <div class="stat-row"><span class="stat-lbl">Temp range at sighting</span><span class="stat-val">${bAvgTemp ? `${bMinTemp}°–${bMaxTemp}°F (avg ${bAvgTemp}°)` : '--'}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Best moon phases</span><span class="stat-val">${bTopMoon.map(([m,c])=>`${m} (${c})`).join(', ')||'--'}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Top behavior</span><span class="stat-val">${topBehav.slice(0,2).map(([b,c])=>`${b} (${c})`).join(', ')||'--'}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Camera pattern</span><span class="stat-val" style="font-size:10px">${[...new Set(camSequence)].join(' → ')}</span></div>
-          <div class="stat-row"><span class="stat-lbl">Total sightings</span><span class="stat-val" style="color:${color}">${bs.length}</span></div>
-          ${bs.length >= 3 ? `
-          <div class="insight" style="margin-top:10px">
-            <div class="insight-title">&#129504; Pattern Analysis</div>
-            <div class="insight-text">
-              ${bTopWinds.length ? `Most active on <strong style="color:#c8a951">${bTopWinds[0]} wind</strong>${bTopWinds[1]?` and ${bTopWinds[1]}`:''}. ` : ''}
-              ${bTopTime.length ? `Peak movement during <strong style="color:#c8a951">${bTopTime[0][0]}</strong> hours. ` : ''}
-              ${bAvgTemp ? `Active in ${bAvgTemp < 40 ? '<strong style="color:#c8a951">cold</strong>' : bAvgTemp < 55 ? '<strong style="color:#c8a951">cool</strong>' : 'warm'} conditions (avg ${bAvgTemp}°F). ` : ''}
-              ${cameras.length > 1 ? `Covering <strong style="color:#c8a951">${cameras.length} cameras</strong> — confirmed travel corridor: ${cameras.join(' → ')}.` : `Concentrated at <strong style="color:#c8a951">${cameras[0]}</strong>.`}
-            </div>
-          </div>` : ''}
-        </div>
-      </div>`;
-    });
-  }
-
-  document.getElementById("intelContent").innerHTML = html;
-}
-
-function toggleBuckIntel(btn) {
-  const body = btn.nextElementSibling;
-  const arrow = btn.querySelector('.bi-arrow');
-  body.classList.toggle('open');
-  if(arrow) arrow.style.transform = body.classList.contains('open') ? 'rotate(180deg)' : '';
-}
 
 // ── init ───────────────────────────────────────────────────────────────────
 loadSightings();
