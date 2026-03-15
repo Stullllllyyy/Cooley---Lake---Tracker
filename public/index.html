@@ -34,7 +34,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
 .map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
 .map-select-arrow.open{transform:rotate(180deg)}
-.buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:500}
+.buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:120;pointer-events:none}
 .buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
 .buck-drop-item:last-child{border:none}
 .buck-drop-item:active,.buck-drop-item:hover{background:var(--surface2)}
@@ -70,7 +70,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .popup-more{width:100%;padding:10px;background:var(--surface2);border:none;border-top:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)}
 
 /* tab bar */
-.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:100;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
 .tab-btn.on{color:var(--gold)}
 .tab-btn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px}
@@ -78,9 +78,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tab-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px}
 
 /* sheets */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:150;pointer-events:none;transition:background 0.3s}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
+.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
@@ -466,7 +466,7 @@ textarea{resize:none}
   <div class="ml-title">Movement Lines</div>
   <div class="ml-row"><div class="ml-line" style="background:#7aafe0"></div>Daytime</div>
   <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
-  <div class="ml-row" style="
+  <div class="ml-r
 <script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','log','sightings','detail'];
@@ -1339,6 +1339,7 @@ function toggleBuckDropdown() {
   const wrap = document.querySelector('.map-select-wrap');
   const isOpen = dd.style.display !== 'none';
   dd.style.display = isOpen ? 'none' : 'block';
+  dd.style.pointerEvents = isOpen ? 'none' : 'auto';
   if(arrow) arrow.classList.toggle('open', !isOpen);
   if(wrap) wrap.classList.toggle('active', !isOpen);
   if(!isOpen) {
@@ -1350,7 +1351,7 @@ function closeBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
   const arrow = document.getElementById('filterArrow');
   const wrap = document.querySelector('.map-select-wrap');
-  if(dd) dd.style.display = 'none';
+  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
   if(arrow) arrow.classList.remove('open');
   if(wrap) wrap.classList.remove('active');
 }
@@ -1865,7 +1866,7 @@ async function loadHuntForecast() {
       // Wind direction
       const simpleDir = wdir.length > 2 ? wdir.slice(0,2) : wdir;
       if(bestWinds.some(w => w.startsWith(simpleDir) || simpleDir.startsWith(w))) {
-        score += 20; flags.push({text:wdir+' wind OK', good:true});
+        score += 20; flags.push({text:wdir+' wind &#10003;', good:true});
       }
 
       // Wind speed
@@ -1876,7 +1877,7 @@ async function loadHuntForecast() {
       if(precip > 0.5) { score -= 20; flags.push({text:'Heavy rain', good:false}); }
       else if(precip > 0 && precip < 0.1) { score += 5; flags.push({text:'Light precip', good:true}); }
       else if(precip === 0 && i > 0 && j.daily.precipitation_sum[i-1] > 0.3) {
-        score += 25; flags.push({text:'Post-rain! ', good:true});
+        score += 25; flags.push({text:'Post-rain! &#128293;', good:true});
       }
 
       // Cold front aftermath (pressure rising implied by clear after rain)
@@ -2557,12 +2558,12 @@ function renderDash() {
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'&deg;' : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;-${bMaxTemp}&deg;F</div>` : ''}
+                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;&#8211;${bMaxTemp}&deg;F</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
-                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
+                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}&#8211;${bMaxPress} hPa</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgWind !== null ? bAvgWind : '--'}</div>
@@ -2650,13 +2651,9 @@ function renderDash() {
   document.getElementById("intelContent").innerHTML = html;
 }
 
-// --- startup -
-// Init app
+// --- startup
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
 loadSightings();
-updateMapWeather();
-setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
-ings();
 updateMapWeather();
 setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
 </script>
