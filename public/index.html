@@ -2373,6 +2373,18 @@ function renderDash() {
     </div>
   </div>`;
 
+  // ── 7-day hunt forecast ─────────────────────────────────────────────────
+  html += `<div class="prop-stat">
+    <div class="cond-title" style="margin-bottom:8px">&#128197; 7-Day Hunt Forecast</div>
+    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+  </div>`;
+
+  // ── Weather & movement correlation ────────────────────────────────────
+  html += `<div class="prop-stat">
+    <div class="cond-title" style="margin-bottom:10px">&#127782; Weather Impact on Movement</div>
+    ${buildWeatherCorrelation(sightings)}
+  </div>`;
+
   // Season intel
   html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
     <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
