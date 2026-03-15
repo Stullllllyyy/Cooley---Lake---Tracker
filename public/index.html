@@ -9,10 +9,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#080d08;--surface:#101810;--surface2:#162014;
-  --border:#1a2a16;--border2:#253d1e;
+  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;
+  --border:#242424;--border2:#2e2e2e;
   --gold:#c8a951;--gold2:#e8c96a;
-  --green:#3a7a2a;--text:#e8dcc8;--text2:#9aae8a;--text3:#4a6a3a;
+  --green:#4a9a58;--text:#f0f0f0;--text2:#a0a0a0;--text3:#5a5a5a;
   --red:#e05555;--blue:#5aaae8;
   --font:'Georgia',serif;--radius:12px;--tab-h:72px;
 }
@@ -94,13 +94,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .bar-fill.peak{background:var(--gold)}
 
 /* wind rose */
-.wind-rose{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-top:8px}
-.wr-cell{background:var(--bg);border-radius:8px;padding:7px 4px;text-align:center}
-.wr-dir{font-size:10px;color:var(--text3);margin-bottom:3px}
-.wr-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:3px}
-.wr-fill{height:100%;border-radius:2px;background:var(--green)}
-.wr-fill.top{background:var(--gold)}
-.wr-cnt{font-size:12px;font-weight:700;color:var(--gold)}
+/* wind-rose replaced by SVG radial chart */
 
 /* insight */
 .insight{background:rgba(200,169,81,0.06);border:1px solid rgba(200,169,81,0.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
@@ -1250,6 +1244,101 @@ function showView(n) {
 
 
 // ── log ────────────────────────────────────────────────────────────────────
+
+function buildWindRoseSVG(windCounts, maxWind, topWinds) {
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const cx = 110, cy = 110, maxR = 85;
+  const angleStep = (Math.PI * 2) / 8;
+  const startAngle = -Math.PI / 2; // N at top
+
+  let slices = '';
+  let labels = '';
+  let rings = '';
+
+  // Draw subtle ring guides
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    const r = maxR * pct;
+    rings += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="0.5"/>`;
+  });
+
+  // Draw axis lines
+  WINDS.forEach((w, i) => {
+    const angle = startAngle + i * angleStep;
+    const x2 = cx + Math.cos(angle) * maxR;
+    const y2 = cy + Math.sin(angle) * maxR;
+    slices += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#2a2a2a" stroke-width="0.5"/>`;
+  });
+
+  // Draw filled wedges
+  WINDS.forEach((w, i) => {
+    const cnt = windCounts[w] || 0;
+    if(cnt === 0) return;
+    const pct = cnt / maxWind;
+    const r = Math.max(6, maxR * pct);
+    const isTop = topWinds[0] === w;
+    const isHigh = topWinds.includes(w);
+
+    const angle1 = startAngle + i * angleStep - angleStep * 0.45;
+    const angle2 = startAngle + i * angleStep + angleStep * 0.45;
+    const x1 = cx + Math.cos(angle1) * r;
+    const y1 = cy + Math.sin(angle1) * r;
+    const x2 = cx + Math.cos(angle2) * r;
+    const y2 = cy + Math.sin(angle2) * r;
+
+    // Gradient color: top = gold, high = light gray, normal = dark gray
+    const fill = isTop ? '#c8a951' : isHigh ? '#888888' : '#444444';
+    const opacity = isTop ? '1' : isHigh ? '0.85' : '0.6';
+
+    slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
+      fill="${fill}" fill-opacity="${opacity}" stroke="none"/>`;
+  });
+
+  // Center dot
+  slices += `<circle cx="${cx}" cy="${cy}" r="3" fill="#444"/>`;
+
+  // Direction labels
+  WINDS.forEach((w, i) => {
+    const angle = startAngle + i * angleStep;
+    const labelR = maxR + 14;
+    const lx = cx + Math.cos(angle) * labelR;
+    const ly = cy + Math.sin(angle) * labelR + 4;
+    const isTop = topWinds[0] === w;
+    const color = isTop ? '#c8a951' : '#666666';
+    const weight = isTop ? 'bold' : 'normal';
+    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10"
+      font-family="Georgia,serif" fill="${color}" font-weight="${weight}">${w}</text>`;
+
+    // Count label inside wedge for non-zero
+    const cnt = windCounts[w] || 0;
+    if(cnt > 0) {
+      const pct = cnt / maxWind;
+      const r2 = Math.max(16, maxR * pct * 0.65);
+      const nx = cx + Math.cos(angle) * r2;
+      const ny = cy + Math.sin(angle) * r2 + 4;
+      const txtColor = isTop ? '#0a0a0a' : '#ffffff';
+      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="9"
+        font-family="Georgia,serif" fill="${txtColor}" font-weight="bold">${cnt}</text>`;
+    }
+  });
+
+  // Legend
+  const legendY = 222;
+  const legend = `
+    <rect x="20" y="${legendY}" width="10" height="10" rx="2" fill="#c8a951"/>
+    <text x="34" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Most active</text>
+    <rect x="110" y="${legendY}" width="10" height="10" rx="2" fill="#888888"/>
+    <text x="124" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Active</text>
+    <rect x="175" y="${legendY}" width="10" height="10" rx="2" fill="#444444"/>
+    <text x="189" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Low</text>
+  `;
+
+  return `<div style="display:flex;justify-content:center">
+    <svg width="220" height="240" viewBox="0 0 220 240" style="overflow:visible">
+      ${rings}${slices}${labels}${legend}
+    </svg>
+  </div>`;
+}
+
 function renderLog() {
   if(!document.getElementById("slist")) return;
   const bucks = getNamedBucks();
@@ -1597,13 +1686,10 @@ function renderDash() {
   // ── Property Intelligence ──────────────────────────────────────────────
   html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
 
-  // Wind rose
-  html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; All Deer Activity</div>
-    <div class="wind-rose">${WINDS.map(w => `<div class="wr-cell">
-      <div class="wr-dir">${w}</div>
-      <div class="wr-bar"><div class="wr-fill${topWinds.includes(w)?" top":""}" style="width:${Math.round(windCounts[w]/maxWind*100)}%"></div></div>
-      <div class="wr-cnt">${windCounts[w]}</div>
-    </div>`).join("")}</div></div>`;
+  // Wind rose - radial SVG chart
+  html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; Deer Activity</div>
+    ${buildWindRoseSVG(windCounts, maxWind, topWinds)}
+  </div>`;
 
   // Time of day
   html += `<div class="prop-stat"><div class="cond-title">Movement by Time of Day</div>
