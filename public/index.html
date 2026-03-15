@@ -9,11 +9,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0a0a0a;--surface:#141414;--surface2:#1c1c1c;
-  --border:#242424;--border2:#2e2e2e;
-  --gold:#c8a951;--gold2:#e8c96a;
-  --green:#4a9a58;--text:#f0f0f0;--text2:#a0a0a0;--text3:#5a5a5a;
-  --red:#e05555;--blue:#5aaae8;
+  --bg:#0a0a0a;--surface:#131313;--surface2:#1a1a1a;
+  --border:#222222;--border2:#2c2c2c;
+  --gold:#4a7fc1;--gold2:#6a9fd8;
+  --green:#4a7fc1;--text:#efefef;--text2:#909090;--text3:#505050;
+  --red:#d95f5f;--blue:#4a7fc1;--accent:#4a7fc1;
   --font:'Georgia',serif;--radius:12px;--tab-h:72px;
 }
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
@@ -1339,6 +1339,128 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds) {
   </div>`;
 }
 
+
+// ── 24-hour activity timeline ─────────────────────────────────────────────────
+function build24HrTimeline(sightings) {
+  // Build hourly buckets 0-23
+  const hourly = new Array(24).fill(0);
+  sightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    if(h >= 0 && h < 24) hourly[h]++;
+  });
+  const maxH = Math.max(...hourly, 1);
+  const total = hourly.reduce((a,b) => a+b, 0);
+
+  // Color by time period
+  const periodColor = h => {
+    if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn - blue
+    if(h >= 7 && h < 10) return '#7aafe0';  // morning - lighter blue
+    if(h >= 10 && h < 13) return '#909090'; // midday - gray
+    if(h >= 13 && h < 16) return '#707070'; // afternoon - darker gray
+    if(h >= 16 && h < 20) return '#5a8fc8'; // dusk - blue
+    return '#303030';                         // night - near black
+  };
+
+  const barW = 100/24;
+
+  // SVG bars
+  let bars = '';
+  let ticks = '';
+  hourly.forEach((cnt, h) => {
+    const pct = cnt / maxH;
+    const barH = Math.max(pct * 60, cnt > 0 ? 3 : 0);
+    const x = h * barW;
+    const color = periodColor(h);
+    const opacity = cnt > 0 ? (0.4 + pct * 0.6) : 0.1;
+    bars += `<rect x="${x}%" y="${60 - barH}px" width="${barW - 0.3}%" height="${barH}px"
+      fill="${color}" fill-opacity="${opacity}" rx="1"/>`;
+    // Count on top of bar if > 0
+    if(cnt > 0 && barH > 10) {
+      bars += `<text x="${x + barW/2}%" y="${58 - barH}px" text-anchor="middle"
+        font-size="8" fill="${color}" font-family="Georgia,serif">${cnt}</text>`;
+    }
+  });
+
+  // Hour tick marks at key hours
+  [0,3,6,9,12,15,18,21].forEach(h => {
+    const x = h * barW + barW/2;
+    const label = h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h-12}p`;
+    ticks += `<text x="${x}%" y="74" text-anchor="middle" font-size="8"
+      fill="#505050" font-family="Georgia,serif">${label}</text>`;
+  });
+
+  // Period labels
+  const periods = [
+    {label:'Night', start:0, end:5, color:'#303030'},
+    {label:'Dawn', start:5, end:7, color:'#5a8fc8'},
+    {label:'Morning', start:7, end:10, color:'#7aafe0'},
+    {label:'Midday', start:10, end:13, color:'#909090'},
+    {label:'Afternoon', start:13, end:16, color:'#707070'},
+    {label:'Dusk', start:16, end:20, color:'#5a8fc8'},
+    {label:'Night', start:20, end:24, color:'#303030'},
+  ];
+
+  // Peak hour annotation
+  const peakHour = hourly.indexOf(maxH);
+  const peakLabel = peakHour < 12 ? `${peakHour||12}${peakHour<12?'am':'pm'}` : `${peakHour-12||12}pm`;
+
+  return `<div style="position:relative">
+    <svg width="100%" height="80" viewBox="0 0 100% 80" preserveAspectRatio="none" style="overflow:visible;display:block">
+      ${bars}
+      <line x1="0" y1="61" x2="100%" y2="61" stroke="#222" stroke-width="0.5"/>
+      ${ticks}
+    </svg>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:4px">
+      ${periods.filter((p,i,arr) => p.label !== arr[i-1]?.label).map(p => {
+        const cnt = hourly.slice(p.start, p.end).reduce((a,b)=>a+b,0);
+        return `<div style="display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:${p.color};flex-shrink:0"></div>
+          <span style="font-size:9px;color:var(--text3)">${p.label}</span>
+          ${cnt > 0 ? `<span style="font-size:9px;color:var(--text2);font-weight:600">${cnt}</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    ${maxH > 0 ? `<div style="margin-top:6px;font-size:10px;color:var(--text3)">Peak: <span style="color:var(--blue)">${peakLabel}</span> &mdash; ${maxH} sighting${maxH>1?'s':''}</div>` : ''}
+  </div>`;
+}
+
+// ── Camera activity grid ──────────────────────────────────────────────────────
+function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${camNames.map(c => {
+      const cnt = camCounts[c] || 0;
+      const mature = camMatureCounts[c] || 0;
+      const isTop = topCam && topCam[0] === c;
+      const pct = maxCam > 0 ? Math.round(cnt / maxCam * 100) : 0;
+      // Activity ring - SVG circle
+      const r = 18, circ = 2 * Math.PI * r;
+      const dash = (pct / 100) * circ;
+      const ringColor = isTop ? 'var(--blue)' : mature > 0 ? '#7090b0' : 'var(--border2)';
+      return `<div style="background:var(--bg);border:1px solid ${isTop?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+        <div style="position:relative;flex-shrink:0;width:44px;height:44px">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border)" stroke-width="3"/>
+            <circle cx="22" cy="22" r="${r}" fill="none" stroke="${ringColor}" stroke-width="3"
+              stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+              stroke-dashoffset="${(circ/4).toFixed(1)}"
+              stroke-linecap="round"
+              transform="rotate(-90 22 22)"/>
+            <text x="22" y="26" text-anchor="middle" font-size="11" font-weight="bold"
+              fill="${isTop?'var(--blue)':'var(--text2)'}" font-family="Georgia,serif">${cnt}</text>
+          </svg>
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;color:${isTop?'var(--text)':'var(--text2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c}</div>
+          ${mature > 0
+            ? `<div style="font-size:10px;color:var(--blue);margin-top:2px">${mature} mature</div>`
+            : `<div style="font-size:10px;color:var(--text3);margin-top:2px">${cnt > 0 ? pct+'% of total' : 'No sightings'}</div>`}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
 function renderLog() {
   if(!document.getElementById("slist")) return;
   const bucks = getNamedBucks();
@@ -1692,26 +1814,12 @@ function renderDash() {
   </div>`;
 
   // Time of day
-  html += `<div class="prop-stat"><div class="cond-title">Movement by Time of Day</div>
-    ${Object.entries(timeCounts).map(([label,cnt])=>`<div style="margin-bottom:6px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
-        <span style="color:${label===topTime[0]?"#c8a951":"#a0b890"}">${label}</span>
-        <span style="color:#7a9e6a">${cnt}</span>
-      </div>
-      <div class="cond-bar"><div class="cond-bar-fill${label===topTime[0]?" hi":""}" style="width:${Math.round(cnt/maxTime*100)}%"></div></div>
-    </div>`).join("")}</div>`;
-
-  // Camera hotspots
-  html += `<div class="prop-stat"><div class="cond-title">Camera Hotspots</div>
-    ${CAMNAMES.slice(0,5).map(c=>`<div style="margin-bottom:8px">
-      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px">
-        <span style="color:${topCam[0]===c?"#c8a951":"#a0b890"}">${c}</span>
-        <span style="color:#7a9e6a">${camCounts[c]}${camMatureCounts[c]>0?` &middot; <span style="color:#c8a951">${camMatureCounts[c]} mature</span>`:""}</span>
-      </div>
-      <div class="cond-bar"><div class="cond-bar-fill${camMatureCounts[c]>0?" hi":""}" style="width:${Math.round(camCounts[c]/maxCam*100)}%"></div></div>
-    </div>`).join("")}</div>`;
-
-  // Key insights
+    html += `<div class="prop-stat"><div class="cond-title">Activity by Time of Day</div>
+    ${build24HrTimeline(sightings)}
+  </div>`;
+    html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
+    ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
+  </div>`;
   html += `<div class="insight insight-gold">
     <div class="insight-title">&#127919; Key Insights &mdash; ${totalCount} Sightings</div>
     <div class="insight-text">
