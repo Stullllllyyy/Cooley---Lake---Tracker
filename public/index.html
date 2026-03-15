@@ -263,10 +263,7 @@ textarea{resize:none}
 </head>
 <body>
 
-<div id="map"></div>
-<div id="mapLoadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;pointer-events:none">
-  <div style="width:24px;height:24px;border:2px solid #333;border-top-color:#4a7fc1;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div style="font-size:11px;color:#555;font-family:Georgia,serif;letter-spacing:1px">LOADING MAP</div>
+<div id="map"></div>  <div style="font-size:11px;color:#555;font-family:Georgia,serif;letter-spacing:1px">LOADING MAP</div>
 </div>
 
 
@@ -999,37 +996,28 @@ async function saveCamLocation(name, lng, lat) {
 
 function initMap() {
   if(mapInstance) { refreshMapPins(); return; }
-
   mapInstance = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: PROPERTY_CENTER,
     zoom: 15,
     maxBounds: [[-88.35, 44.98], [-88.20, 45.07]],
+    fadeDuration: 0,
   });
-
-  // Zoom controls
   mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-
   mapInstance.on('load', () => {
     addLineLayer();
     addCamMarkers();
     lineLayerAdded = true;
-    // Force resize in case container dimensions weren't computed at init
     mapInstance.resize();
-    // Hide loading overlay
-    const ov = document.getElementById('mapLoadingOverlay');
-    if(ov) ov.style.display = 'none';
   });
-
-  // Also resize after a short delay as failsafe
-  setTimeout(() => { if(mapInstance) mapInstance.resize(); }, 500);
-  setTimeout(() => { if(mapInstance) mapInstance.resize(); }, 1500);
-
   mapInstance.on('style.load', () => {
     if(!lineLayerAdded) return;
     addLineLayer();
   });
+  mapInstance.on('error', e => console.error('Map error:', e.error));
+  // Resize calls to handle container dimension issues
+  [500, 1000, 2000].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
 function addPropertyOutline() { /* removed */ }
@@ -2751,68 +2739,21 @@ function renderDash() {
 
 
 // --- startup
-// Load data immediately
 loadSightings();
 updateMapWeather();
 
-let mapRetries = 0;
-function retryMap() {
-  mapRetries = 0;
-  document.getElementById('mapRetryBtn').style.display = 'none';
-  document.getElementById('mapLoadSpinner').style.display = 'block';
-  document.getElementById('mapLoadText').textContent = 'Loading map...';
-  startMap();
-}
 function startMap() {
-  const overlay = document.getElementById('mapLoadingOverlay');
   if(typeof mapboxgl === 'undefined') {
-    mapRetries++;
-    if(mapRetries > 30) {
-      // After 6 seconds, show retry button
-      if(overlay) {
-        document.getElementById('mapLoadSpinner').style.display = 'none';
-        document.getElementById('mapLoadText').textContent = 'Map failed to load';
-        document.getElementById('mapRetryBtn').style.display = 'block';
-      }
-      return;
-    }
     setTimeout(startMap, 200);
     return;
   }
-  try {
-    mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-    loadCamLocations().then(() => {
-      try {
-        initMap();
-        // Hide overlay once map starts loading
-        if(mapInstance) {
-          mapInstance.once('load', () => {
-            if(overlay) overlay.style.display = 'none';
-          });
-          // Fallback - hide after 3s even if load event doesnt fire
-          setTimeout(() => { if(overlay) overlay.style.display = 'none'; }, 3000);
-        }
-      } catch(e) {
-        console.error('Map init error:', e);
-        if(overlay) {
-          document.getElementById('mapLoadSpinner').style.display = 'none';
-          document.getElementById('mapLoadText').textContent = 'Map error: ' + e.message;
-          document.getElementById('mapRetryBtn').style.display = 'block';
-        }
-      }
-    });
-  } catch(e) {
-    console.error('startMap error:', e);
-  }
+  mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+  loadCamLocations().then(() => initMap());
 }
-// Give DOM time to fully render before init
-setTimeout(startMap, 200);
+setTimeout(startMap, 300);
 </script>
 
-<!-- Map loading overlay -->
-<div id="mapLoadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
-  <div id="mapLoadSpinner" style="width:28px;height:28px;border:2px solid #222;border-top-color:#4a7fc1;border-radius:50%;animation:spin 0.8s linear infinite"></div>
-  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:Georgia,serif">Loading map...</div>
+<!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:Georgia,serif">Loading map...</div>
   <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #4a7fc1;border-radius:8px;background:transparent;color:#4a7fc1;font-size:12px;cursor:pointer;font-family:Georgia,serif">Retry Map</button>
 </div>
 </body>
