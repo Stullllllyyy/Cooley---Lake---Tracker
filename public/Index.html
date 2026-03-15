@@ -1,0 +1,2804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Cooley Lake</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#0a0a0a;--surface:#131313;--surface2:#1a1a1a;
+  --border:#222222;--border2:#2c2c2c;
+  --gold:#4a7fc1;--gold2:#6a9fd8;
+  --green:#4a7fc1;--text:#efefef;--text2:#909090;--text3:#505050;
+  --red:#d95f5f;--blue:#4a7fc1;--accent:#4a7fc1;
+  --font:'Georgia',serif;--radius:12px;--tab-h:72px;
+}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
+#map{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0}
+
+/* map overlays */
+.map-hdr{position:fixed;top:0;left:0;right:0;z-index:50;padding:50px 16px 16px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,transparent 100%);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between}
+.map-title-main{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
+.map-title-sub{font-size:9px;color:rgba(180,200,170,0.7);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
+.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(8,13,8,0.85);border:1px solid rgba(200,169,81,0.25);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
+.wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
+
+/* map filter dropdown */
+.map-filter-bar{position:fixed;top:108px;left:0;right:0;z-index:50;display:flex;gap:8px;padding:0 14px;pointer-events:none;align-items:flex-start}
+.map-filter-wrap{position:relative;pointer-events:auto}
+.map-select-wrap{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;background:rgba(10,10,10,0.88);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap;user-select:none;transition:border-color 0.2s;min-width:140px;justify-content:space-between}
+.map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
+.map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
+.map-select-arrow.open{transform:rotate(180deg)}
+.buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:120;pointer-events:none}
+.buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
+.buck-drop-item:last-child{border:none}
+.buck-drop-item:active,.buck-drop-item:hover{background:var(--surface2)}
+.buck-drop-item.selected{color:var(--blue)}
+.buck-drop-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.buck-drop-divider{height:1px;background:var(--border2);margin:4px 0}
+/* heatmap small fab */
+.map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
+.map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
+
+.map-fabs{position:fixed;bottom:calc(var(--tab-h) + 16px);right:14px;z-index:50;display:flex;flex-direction:column;gap:8px}
+.map-fab{width:46px;height:46px;border-radius:13px;background:rgba(8,13,8,0.88);border:1px solid var(--border2);color:var(--text2);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s}
+.map-fab:active{transform:scale(0.9)}
+.map-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
+.layers-btn{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:50;background:rgba(8,13,8,0.88);border:1px solid var(--border2);border-radius:13px;padding:8px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5)}
+.layers-lbl{font-size:12px;font-weight:700;color:var(--text);display:block;line-height:1.3}
+.layers-sub{font-size:9px;color:var(--text3)}
+
+/* camera popup */
+.cam-popup{position:fixed;bottom:calc(var(--tab-h) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
+.cam-popup.show{transform:translateY(0)}
+.cam-popup.gold{border-color:rgba(200,169,81,0.4)}
+.popup-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
+.popup-title{font-size:16px;font-weight:700;color:var(--gold)}
+.popup-close{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
+.popup-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 16px 12px}
+.pstat{background:var(--bg);border-radius:8px;padding:8px 6px;text-align:center}
+.pstat-n{font-size:18px;font-weight:700;color:var(--gold)}
+.pstat-l{font-size:9px;color:var(--text3);text-transform:uppercase}
+.popup-s{padding:10px 16px;border-top:1px solid var(--border)}
+.popup-s-img{width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:7px}
+.pp-empty{padding:10px 16px;font-size:12px;color:var(--text3);font-style:italic}
+.popup-more{width:100%;padding:10px;background:var(--surface2);border:none;border-top:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)}
+
+/* tab bar */
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
+.tab-btn.on{color:var(--gold)}
+.tab-btn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px}
+.tab-ico{font-size:21px;line-height:1;display:flex;align-items:center;justify-content:center}
+.tab-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px}
+
+/* sheets */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
+.overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
+.sheet{position:fixed;bottom:var(--tab-h);left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h));height:calc(92vh - var(--tab-h));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
+.sheet.open{transform:translateY(0) !important}
+.sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
+.sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.sheet-title{font-size:16px;font-weight:700;color:var(--text)}
+.sheet-x{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sheet-body{overflow-y:auto;padding:16px 16px 48px;flex:1;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+.sheet-body::-webkit-scrollbar{display:none}
+
+/* cards */
+.card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+.card.gold{border-color:rgba(200,169,81,0.35)}
+.card.intel-card{background:rgba(6,14,4,0.9);border-color:rgba(200,169,81,0.2)}
+.sec-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
+.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;text-align:center;position:relative;overflow:hidden}
+.stat-num{font-size:26px;font-weight:700;color:var(--blue);line-height:1}
+.stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+
+/* bar charts */
+.bar-row{margin-bottom:7px}
+.bar-meta{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.bar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--green);transition:width 0.5s}
+.bar-fill.peak{background:var(--gold)}
+
+/* wind rose */
+/* wind-rose replaced by SVG radial chart */
+
+/* insight */
+.insight{background:rgba(200,169,81,0.06);border:1px solid rgba(200,169,81,0.2);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+.insight-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:7px;font-weight:700}
+.insight-text{font-size:12px;color:var(--text2);line-height:1.8}
+
+/* buck intel */
+.buck-intel{background:var(--surface2);border:1px solid rgba(200,169,81,0.25);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+.bi-hdr{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;background:none;border:none;width:100%;text-align:left;font-family:var(--font)}
+.bi-body{display:none;padding:0 14px 14px}
+.bi-body.open{display:block}
+.bi-arrow{font-size:16px;color:var(--text3);margin-left:auto;transition:transform 0.2s}
+.cond-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.cond-box{background:var(--bg);border-radius:10px;padding:10px}
+.cond-title{font-size:9px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;font-weight:700}
+.cond-bar-wrap{margin-bottom:5px}
+.cond-bar-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:2px}
+.cond-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.cond-bar-fill{height:100%;border-radius:2px;background:var(--green)}
+.cond-bar-fill.hi{background:var(--gold)}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px}
+.stat-row:last-child{border:none}
+.stat-row-lbl{color:var(--text2)}
+.stat-row-val{color:var(--text);font-weight:600;text-align:right;max-width:58%;font-size:11px}
+.prop-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
+
+/* sightings */
+.filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px}
+.filter-scroll::-webkit-scrollbar{display:none}
+.fchip{padding:5px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;transition:all 0.2s;letter-spacing:0.3px}
+.fchip.on{border-color:var(--blue);background:rgba(74,127,193,0.1);color:var(--blue)}
+.sight-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
+.sight-card.mature{border-color:rgba(200,169,81,0.4)}
+.sight-card:active{opacity:0.85}
+.sight-img{width:100%;height:170px;object-fit:cover;display:block}
+.sight-body{padding:12px 14px}
+.sight-type{font-size:14px;font-weight:700}
+.sight-buck{font-size:12px;margin-top:2px}
+.sight-cam{font-size:11px;color:var(--text3);margin-top:2px}
+.sight-meta{display:flex;justify-content:space-between;align-items:flex-start}
+.sight-date{font-size:11px;color:var(--text2);text-align:right}
+.sight-time{font-size:11px;color:var(--text3)}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+.tag{font-size:10px;padding:3px 9px;background:var(--border);border-radius:8px;color:var(--text2)}
+.sight-notes{font-size:11px;color:var(--text3);margin-top:7px;font-style:italic;line-height:1.5}
+.sight-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.edit-btn{padding:5px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
+.edit-btn:active{background:rgba(200,169,81,0.1);color:var(--gold);border-color:var(--gold)}
+
+/* log form */
+input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+textarea{resize:none}
+.field-lbl{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;display:block;margin-bottom:6px;font-weight:700}
+.field-grp{margin-bottom:12px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.sel-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s;letter-spacing:0.3px}
+.chip{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s;letter-spacing:0.3px}
+.chip.on{border-color:var(--blue);background:rgba(74,127,193,0.12);color:var(--blue)}
+.sel-chip.on{border-color:var(--blue);background:rgba(74,127,193,0.12);color:var(--blue)}
+.photo-box{background:var(--bg);border:1.5px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color 0.2s}
+.photo-box:active{border-color:var(--gold)}
+.log-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;transition:all 0.2s}
+.log-btn.rdy{background:var(--gold);color:var(--bg)}
+.log-btn.dis{background:var(--border);color:var(--text3);cursor:not-allowed}
+.log-btn.rdy:active{opacity:0.85}
+.moon-row{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.wx-panel{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:12px}
+.wx-panel-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.wx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.wx-cell{background:var(--surface2);border-radius:8px;padding:8px 6px;text-align:center}
+.wx-val{font-size:16px;font-weight:700;color:var(--blue)}
+.wx-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+.wx-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+.wx-apply{width:100%;margin-top:8px;padding:9px;background:rgba(200,169,81,0.08);border:1px solid rgba(200,169,81,0.25);border-radius:8px;color:var(--gold);font-size:12px;cursor:pointer;font-family:var(--font)}
+
+/* detail */
+.detail-img{width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.d-cell{background:var(--bg);border-radius:10px;padding:10px}
+.d-cell-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.d-cell-val{font-size:13px;color:var(--text)}
+
+/* edit modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.on{display:flex}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:0 16px 32px;width:100%;max-height:88vh;overflow-y:auto}
+.modal::-webkit-scrollbar{display:none}
+.modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0}
+.modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 0 12px}
+.modal-title{font-size:16px;font-weight:700;color:var(--text)}
+.modal-x{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.save-btn{width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
+.del-btn{width:100%;padding:11px;border:1px solid rgba(224,85,85,0.3);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px}
+
+/* mapbox overrides */
+.mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
+.mapboxgl-ctrl-group{background:rgba(8,13,8,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
+.mapboxgl-ctrl-group button{background:transparent !important;color:var(--text2) !important}
+.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo{display:none !important}
+
+/* teardrop marker */
+.cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s;user-select:none}
+.cam-marker:active{transform:scale(0.88)}
+.cam-marker.faded{opacity:0.3}
+.cam-pin{width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center}
+.cam-pin svg.pin-bg{position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))}
+.cam-pin-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding-bottom:10px}
+.cam-pin-ico{font-size:11px;color:#fff;line-height:1}
+.cam-pin-cnt{font-size:10px;font-weight:700;color:#fff;line-height:1;margin-top:1px;font-family:var(--font)}
+.cam-lbl{font-size:9px;background:rgba(10,10,10,0.92);color:var(--text2);padding:2px 7px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.08);margin-top:2px;letter-spacing:0.3px}
+/* add camera cursor */
+.map-add-mode{cursor:crosshair !important}
+/* context menu */
+.pin-menu{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px}
+.pin-menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);border-bottom:1px solid var(--border)}
+.pin-menu-item:last-child{border:none}
+.pin-menu-item:active{background:var(--surface2)}
+.pin-menu-item.danger{color:var(--red)}
+/* add cam modal */
+.add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.add-cam-modal.open{transform:translateY(0)}
+/* conditions overlay */
+.map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,10,10,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
+.map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.map-cond-sep{width:1px;height:12px;background:var(--border2)}
+
+/* misc */
+.loading{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+.spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;margin-left:4px;vertical-align:middle;transition:background 0.3s}
+.sync-dot.on{background:var(--gold)}
+.bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
+
+.movement-legend{position:fixed;bottom:calc(var(--tab-h) + 10px);left:14px;z-index:50;background:rgba(10,10,10,0.88);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;backdrop-filter:blur(10px);display:none}
+.movement-legend.show{display:block}
+.ml-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.ml-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:10px;color:var(--text2)}
+.ml-line{height:2px;width:22px;border-radius:1px;flex-shrink:0}
+.ml-line.dashed{background:repeating-linear-gradient(90deg,#5a8fc8 0,#5a8fc8 4px,transparent 4px,transparent 8px)}
+
+
+/* stats strip */
+.sgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.sbox{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 8px;text-align:center}
+.snum{font-size:26px;font-weight:700;color:var(--blue);line-height:1}
+.slbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
+.stitle{font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
+</style>
+</head>
+<body>
+
+<div id="map"></div>
+
+<!-- Map header -->
+<div class="map-hdr">
+  <div>
+    <div class="map-title-main">Cooley Lake <span class="sync-dot" id="syncDot"></span></div>
+    <div class="map-title-sub">Deer Intelligence &nbsp;<span id="hcount" style="color:var(--text3);font-size:9px"></span></div>
+  </div>
+  <div class="wx-pill" onclick="openSheet('intel')">
+    <div>
+      <div class="wx-pill-temp" id="mapWeatherTemp">--&#176;</div>
+      <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+    </div>
+    <div style="font-size:22px" id="mapWeatherIcon">&#127956;</div>
+  </div>
+</div>
+
+<!-- Map filter bar -->
+<div class="map-filter-bar" id="mapFilters">
+  <div class="map-filter-wrap">
+    <div class="map-select-wrap" onclick="toggleBuckDropdown()">
+      <span id="filterLabel">&#128200; All Deer</span>
+      <span class="map-select-arrow" id="filterArrow">&#8964;</span>
+    </div>
+    <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
+  </div>
+</div>
+<div id="mapLegend" style="display:none"></div>
+
+<!-- FABs -->
+<div class="map-fabs">
+  <div class="map-fab" id="editModeBtn" onclick="toggleEditMode()" title="Move pins">&#9998;&#xFE0E;</div>
+  <div class="map-fab" id="addCamBtn" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px">&#128247;&#43;</div>
+  <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:22px;color:var(--blue)">&#43;</div>
+</div>
+
+<!-- Layers -->
+<div class="layers-btn" onclick="toggleMapStyle()">
+  <span style="font-size:18px">&#9783;&#xFE0E;</span>
+  <div>
+    <span class="layers-lbl" id="mapStyleLabel">Satellite</span>
+    <span class="layers-sub">Map Style</span>
+  </div>
+</div>
+
+<!-- Camera popup -->
+<div class="cam-popup" id="camPopup">
+  <div class="popup-hdr">
+    <div class="popup-title" id="popupTitle">Camera</div>
+    <button class="popup-close" onclick="closePopup()">&#215;</button>
+  </div>
+  <div class="popup-stats" id="popupStats"></div>
+  <div id="popupSightings"></div>
+</div>
+
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn on" id="tab-map" onclick="activateTab('map')">
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+    <span class="tab-lbl">Map</span>
+  </button>
+  <button class="tab-btn" id="tab-intel" onclick="openSheet('intel')">
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg></span>
+    <span class="tab-lbl">Intel</span>
+  </button>
+  <button class="tab-btn" id="tab-log" onclick="openSheet('log')">
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+    <span class="tab-lbl">Log</span>
+  </button>
+  <button class="tab-btn" id="tab-sightings" onclick="openSheet('sightings')">
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
+    <span class="tab-lbl">Sightings</span>
+  </button>
+</div>
+
+<!-- INTEL SHEET -->
+<div class="overlay" id="overlay-intel" onclick="closeSheet('intel')"></div>
+<div class="sheet" id="sheet-intel">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg> Intelligence</div>
+    <button class="sheet-x" onclick="closeSheet('intel')">&#215;</button>
+  </div>
+  <div class="sheet-body" id="intelContent">
+    <div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>
+  </div>
+</div>
+
+<!-- LOG SHEET -->
+<div class="overlay" id="overlay-log" onclick="closeSheet('log')"></div>
+<div class="sheet" id="sheet-log">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Log Sighting</div>
+    <button class="sheet-x" onclick="closeSheet('log')">&#215;</button>
+  </div>
+  <div class="sheet-body">
+    <div class="photo-box" onclick="document.getElementById('finput').click()">
+      <div id="uph"><div style="font-size:32px">&#128247;</div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
+      <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
+    </div>
+    <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+    <div class="two-col">
+      <div><span class="field-lbl">Date</span><input type="date" id="fd" onchange="updateMoon();autoWx()"/></div>
+      <div><span class="field-lbl" id="tlbl">Time</span><input type="time" id="ft" onchange="autoWx()"/></div>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Camera Location *</span><div class="chip-row" id="cch"></div></div>
+    <div class="field-grp"><span class="field-lbl">Deer Type *</span><div class="chip-row" id="dch"></div></div>
+    <div class="field-grp"><span class="field-lbl">Behavior</span><div class="chip-row" id="bch"></div></div>
+    <div class="field-grp">
+      <span class="field-lbl">Buck Name <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
+      <input type="text" id="fbuckname" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off" list="bucknamelist"/>
+      <datalist id="bucknamelist"></datalist>
+    </div>
+    <div class="two-col">
+      <div><span class="field-lbl">Wind Dir</span>
+        <select id="fwind"><option value="">--</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option><option>Calm</option></select>
+      </div>
+      <div><span class="field-lbl">Temp &deg;F</span><input type="number" id="ftemp" placeholder="--"/></div>
+    </div>
+    <div id="wxpanel">
+      <div class="wx-panel">
+        <div class="wx-panel-title">&#127780; Weather <span id="wxstat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
+        <div id="wxload" style="font-size:11px;color:var(--text3);font-style:italic;padding:4px 0 8px">Fetching conditions...</div>
+        <div id="wxdata" style="display:none">
+          <div class="wx-grid">
+            <div class="wx-cell"><div class="wx-val" id="wx-t">--</div><div class="wx-lbl">Temp F</div></div>
+            <div class="wx-cell"><div class="wx-val" id="wx-w">--</div><div class="wx-lbl">Wind mph</div></div>
+            <div class="wx-cell"><div class="wx-val" id="wx-g">--</div><div class="wx-lbl">Gust mph</div></div>
+          </div>
+          <div class="wx-row2">
+            <div class="wx-cell"><div class="wx-val" id="wx-d">--</div><div class="wx-lbl">Wind Dir</div></div>
+            <div class="wx-cell"><div class="wx-val" id="wx-h">--</div><div class="wx-lbl">Humidity</div></div>
+            <div class="wx-cell"><div class="wx-val" id="wx-p">--</div><div class="wx-lbl">Precip in</div></div>
+          </div>
+          <div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl" style="margin-bottom:2px">Barometric Pressure</div><div style="font-size:13px;color:var(--text)"><span id="wx-bp">--</span> hPa &nbsp;<span id="wx-bpt" style="font-size:11px;color:var(--text2)"></span></div></div></div>
+          <button class="wx-apply" onclick="applyWx()">&#8593; Apply weather to sighting</button>
+        </div>
+      </div>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Notes</span><textarea id="fnotes" rows="3" placeholder="Antler details, travel direction, buck ID notes..."></textarea></div>
+    <div class="moon-row">
+      <div style="font-size:26px" id="micon">&#127761;</div>
+      <div><div style="font-size:13px;color:var(--text);font-weight:600" id="mlbl">Select a date</div><div style="font-size:10px;color:var(--text3)" id="msub">Moon phase auto-calculated</div></div>
+    </div>
+    <button class="log-btn dis" id="sbtn" onclick="submitSighting()">Log Sighting</button>
+  </div>
+</div>
+
+<!-- SIGHTINGS SHEET -->
+<div class="overlay" id="overlay-sightings" onclick="closeSheet('sightings')"></div>
+<div class="sheet" id="sheet-sightings">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Sightings</div>
+    <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
+  </div>
+  <div class="sheet-body">
+    <div class="filter-scroll" id="frow"></div>
+    <div id="slist"><div class="loading"><div class="spinner"></div><br/>Loading...</div></div>
+  </div>
+</div>
+
+<!-- DETAIL SHEET -->
+<div class="overlay" id="overlay-detail" onclick="closeSheet('detail')"></div>
+<div class="sheet" id="sheet-detail">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <button class="bbtn" onclick="closeSheet('detail')">&#8592; Back</button>
+    <button class="sheet-x" onclick="closeSheet('detail')">&#215;</button>
+  </div>
+  <div class="sheet-body" id="detcontent"></div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title">Edit Sighting</div>
+      <button class="modal-x" onclick="document.getElementById('editModal').classList.remove('on')">&#215;</button>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Buck Name</span><input type="text" id="eBuckName" placeholder="Name this buck..." list="bucknamelist"/></div>
+    <div class="field-grp"><span class="field-lbl">Deer Type</span>
+      <select id="eDeerType"><option>Buck - Mature (4.5+)</option><option>Buck - 3.5</option><option>Buck - 2.5</option><option>Buck - 1.5</option><option>Doe</option><option>Fawn</option><option>Unknown</option></select>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Camera</span>
+      <select id="eCamera"><option>Dan</option><option>Colin</option><option>Ridge</option><option>Behind Rons</option><option>By Eric</option><option>Other</option></select>
+    </div>
+    <div class="two-col" style="margin-bottom:12px">
+      <div><span class="field-lbl">Date</span><input type="date" id="eDate"/></div>
+      <div><span class="field-lbl">Time</span><input type="time" id="eTime"/></div>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Behavior</span>
+      <select id="eBehavior"><option value="">--</option><option>Feeding</option><option>Traveling</option><option>Scraping/Rubbing</option><option>Bedding</option><option>Chasing</option><option>Breeding</option><option>Alert/Spooked</option><option>Other</option></select>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Notes</span><textarea id="eNotes" rows="3"></textarea></div>
+    <div class="field-grp">
+      <span class="field-lbl">Photo</span>
+      <div id="ePhotoWrap" style="margin-bottom:8px"></div>
+      <button onclick="document.getEl
+
+
+<!-- Add camera modal -->
+<div class="add-cam-modal" id="addCamModal">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="addCamCoords">Tap confirmed location</div>
+  <div class="field-grp"><span class="field
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+// --- Sheet & Tab Management -
+const SHEETS = ['intel','log','sightings','detail'];
+
+function openSheet(name) {
+  // Close others first
+  SHEETS.forEach(s => {
+    if(s !== name) {
+      document.getElementById('sheet-'+s)?.classList.remove('open');
+      document.getElementById('overlay-'+s)?.classList.remove('on');
+    }
+  });
+  const sheet = document.getElementById('sheet-'+name);
+  const overlay = document.getElementById('overlay-'+name);
+  if(!sheet) return;
+  sheet.classList.add('open');
+  if(overlay) overlay.classList.add('on');
+  // Set active tab state
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  const tabBtn = document.getElementById('tab-'+name);
+  if(tabBtn) tabBtn.classList.add('on');
+  // Trigger renders
+  if(name === 'intel') {
+    document.getElementById('intelContent').innerHTML = '<div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>';
+    setTimeout(() => { renderDash(); setTimeout(loadHuntForecast, 300); }, 10);
+  }
+  if(name === 'sightings') renderLog();
+  if(name === 'log') initForm();
+}
+
+function closeSheet(name) {
+  document.getElementById('sheet-'+name)?.classList.remove('open');
+  document.getElementById('overlay-'+name)?.classList.remove('on');
+  // Return map tab to active
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-map')?.classList.add('on');
+}
+
+function activateTab(name) {
+  SHEETS.forEach(s => {
+    document.getElementById('sheet-'+s)?.classList.remove('open');
+    document.getElementById('overlay-'+s)?.classList.remove('on');
+  });
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-'+name)?.classList.add('on');
+}
+
+function closeEditModal(e) {
+  if(e.target === document.getElementById('editModal'))
+    document.getElementById('editModal').classList.remove('on');
+}
+
+function openEdit(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  editId = id; editImgChanged = false; editImgFile = null;
+  document.getElementById('eBuckName').value = s.buck_name||'';
+  document.getElementById('eDeerType').value = s.deer_type||'Unknown';
+  document.getElementById('eCamera').value = s.camera_name||'Other';
+  document.getElementById('eDate').value = s.date||'';
+  document.getElementById('eTime').value = (s.time||'').slice(0,5);
+  document.getElementById('eBehavior').value = s.behavior||'';
+  document.getElementById('eNotes').value = s.notes||'';
+  const pw = document.getElementById('ePhotoWrap');
+  pw.innerHTML = s.image_url
+    ? `<img src="${s.image_url}" style="width:100%;height:130px;object-fit:cover;border-radius:10px"/>`
+    : `<div style="font-size:11px;color:var(--text3);font-style:italic">No photo attached</div>`;
+  document.getElementById('editModal').classList.add('on');
+}
+
+function showDet(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  const m = moonPhase(s.date);
+  const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const wxHtml = s.wind_speed ? `
+    <div class="wx-panel" style="margin-top:10px">
+      <div class="wx-panel-title">&#127780; Conditions at Sighting</div>
+      <div class="wx-grid">
+        <div class="wx-cell"><div class="wx-val">${s.temp_f||'--'}</div><div class="wx-lbl">Temp F</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_speed||'--'}</div><div class="wx-lbl">Wind mph</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_gust||'--'}</div><div class="wx-lbl">Gust mph</div></div>
+      </div>
+      <div class="wx-row2">
+        <div class="wx-cell"><div class="wx-val">${s.wind_dir||'--'}</div><div class="wx-lbl">Wind Dir</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.humidity?s.humidity+'%':'--'}</div><div class="wx-lbl">Humidity</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.precip?s.precip+'"':'--'}</div><div class="wx-lbl">Precip</div></div>
+      </div>
+      ${s.pressure?`<div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl">Barometric Pressure</div><div style="font-size:13px;color:var(--text)">${s.pressure} hPa</div></div></div>`:''}
+    </div>` : '';
+  document.getElementById('detcontent').innerHTML = `
+    ${s.image_url ? `<img class="detail-img" src="${s.image_url}" alt=""/>` : ''}
+    <div class="card${s.deer_type&&s.deer_type.includes('Mature')?' gold':''}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="font-size:18px;font-weight:700;color:${s.deer_type&&s.deer_type.includes('Mature')?'var(--gold)':'var(--text)'}">${s.deer_type}</div>
+        ${s.buck_name?`<div style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</div>`:''}
+      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:14px">${s.camera_name}</div>
+      <div class="detail-grid">
+        <div class="d-cell"><div class="d-cell-lbl">Date</div><div class="d-cell-val">${fmtD(s.date)}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Time</div><div class="d-cell-val">${fmtT(s.time)}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Moon</div><div class="d-cell-val">${m.i} ${m.l}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Behavior</div><div class="d-cell-val">${s.behavior||'--'}</div></div>
+      </div>
+      ${wxHtml}
+      ${s.notes?`<div style="background:var(--bg);border-radius:10px;padding:10px;margin-top:10px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div><div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">${s.notes}</div></div>`:''}
+      <button class="edit-btn" style="margin-top:12px;width:100%;padding:10px" onclick="openEdit(${s.id})">&#9998; Edit Sighting</button>
+    </div>`;
+  openSheet('detail');
+}
+
+// Map weather pill updater
+function updateMapWeather() {
+  const now = new Date();
+  const date = now.toISOString().split('T')[0];
+  const hour = now.getHours();
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
+  fetch(url).then(r=>r.json()).then(j=>{
+    if(!j.hourly) return;
+    const temp = Math.round(j.hourly.temperature_2m[hour]);
+    const wind = Math.round(j.hourly.windspeed_10m[hour]);
+    const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+    const dir = dirs[Math.round(j.hourly.winddirection_10m[hour]/22.5)%16];
+    document.getElementById('mapWeatherTemp').textContent = temp+'F';
+    document.getElementById('mapWeatherDetail').textContent = `${dir} ${wind}mph`;
+  }).catch(()=>{});
+}
+
+// Compatibility shim - old showView calls still work
+function showView(n) {
+  if(n === 'log') openSheet('log');
+  else if(n === 'sightings') openSheet('sightings');
+  else if(n === 'dash' || n === 'intel') openSheet('intel');
+  else if(n === 'det' || n === 'detail') openSheet('detail');
+}
+
+function filterGo(c) { curFilter = c; openSheet('sightings'); }
+
+// map style toggle
+let mapStyleSat = true;
+function toggleMapStyle() {
+  if(!mapInstance) return;
+  mapStyleSat = !mapStyleSat;
+  const style = mapStyleSat ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/outdoors-v12';
+  mapInstance.setStyle(style);
+  document.getElementById('mapStyleLabel').textContent = mapStyleSat ? 'Satellite' : 'Outdoors';
+  lineLayerAdded = false;
+  setTimeout(() => {
+    addLineLayer();
+    lineLayerAdded = true;
+    updateBuckLines();
+  }, 800);
+}
+
+// cam popup helpers
+function closePopup() {
+  document.getElementById('camPopup').classList.remove('show');
+}
+
+
+const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const CLAT = 45.0200, CLNG = -88.2756;
+const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
+const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
+const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
+const DTYPES = ["Buck - Mature (4.5+)","Buck - 3.5","Buck - 2.5","Buck - 1.5","Doe","Fawn","Unknown"];
+const BEHS = ["Feeding","Traveling","Scraping/Rubbing","Bedding","Chasing","Breeding","Alert/Spooked","Other"];
+const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a","#8ae84a","#f0a050"];
+const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+
+let sightings = [], curFilter = "all", curMapFilter = "all";
+let wxFetched = null, wxApplied = null;
+let formImgFile = null;
+let editId = null, editImgFile = null, editImgChanged = false;
+
+// --- utils -
+const fmtT = t => {
+  if(!t) return "";
+  const [h,m] = t.slice(0,5).split(":");
+  const hr = parseInt(h);
+  return `${hr>12?hr-12:(hr||12)}:${m} ${hr>=12?"PM":"AM"}`;
+};
+const fmtD = d => {
+  if(!d) return "";
+  return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
+};
+const moonPhase = date => {
+  const p = (((new Date(date) - new Date("2000-01-06")) / 86400000) % 29.53 + 29.53) % 29.53;
+  if(p<1.85) return {i:"New Moon",l:"New Moon"};
+  if(p<7.38) return {i:"Waxing Crescent",l:"Waxing Crescent"};
+  if(p<9.22) return {i:"First Quarter",l:"First Quarter"};
+  if(p<14.76) return {i:"Waxing Gibbous",l:"Waxing Gibbous"};
+  if(p<16.61) return {i:"Full Moon",l:"Full Moon"};
+  if(p<22.15) return {i:"Waning Gibbous",l:"Waning Gibbous"};
+  if(p<23.99) return {i:"Last Quarter",l:"Last Quarter"};
+  return {i:"Waning Crescent",l:"Waning Crescent"};
+};
+const deg2dir = d => DIR_LABELS[Math.round(d/22.5)%16];
+const simpleDir = windDir => {
+  if(!windDir) return "";
+  const simple = ["NW","NE","SE","SW","N","S","E","W"];
+  return simple.find(d => windDir.startsWith(d)) || "";
+};
+function getNamedBucks() {
+  return [...new Set(sightings.filter(s=>s.buck_name&&s.buck_name.trim()).map(s=>s.buck_name.trim()))];
+}
+function buckColor(name) {
+  const names = getNamedBucks();
+  const idx = names.indexOf(name);
+  return idx >= 0 ? BUCK_COLORS[idx % BUCK_COLORS.length] : "#c8a951";
+}
+function syncDot(on) {
+  const d = document.getElementById("syncDot");
+  if(d) d.className = "sync-dot" + (on ? " on" : "");
+}
+
+// --- data -
+async function loadSightings() {
+  syncDot(true);
+  const {data, error} = await sb.from('sightings').select('*')
+    .order('date', {ascending:false})
+    .order('time', {ascending:false});
+  syncDot(false);
+  if(error) {
+    console.error('Load error:', error);
+    document.getElementById('intelContent').innerHTML =
+      `<div class="loading" style="color:#e87a4a">Could not load data.<br/><small>${error.message}</small></div>`;
+    return;
+  }
+  sightings = data || [];
+  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
+  renderDash(); renderLog(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
+}
+
+async function uploadPhoto(file, sightingId) {
+  if(!file) return null;
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = 'sightings/' + sightingId + '.' + ext;
+    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: file.type || 'image/jpeg'});
+    if(error) { console.error('Upload error:', error); return null; }
+    const {data} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
+    return data.publicUrl;
+  } catch(e) {
+    console.error('uploadPhoto exception:', e);
+    return null;
+  }
+}
+
+async function submitSighting() {
+  const c = document.querySelector(".chip[data-k='cam'].on");
+  const d = document.querySelector(".chip[data-k='deer'].on");
+  if(!c || !d) return;
+  const btn = document.getElementById("sbtn");
+  btn.textContent = "Saving..."; btn.classList.remove("rdy"); btn.classList.add("dis");
+  const beh = document.querySelector(".chip[data-k='beh'].on");
+  const wx = wxApplied || {};
+  const newSighting = {
+    date: document.getElementById("fd").value,
+    time: document.getElementById("ft").value + ":00",
+    camera_name: c.dataset.v,
+    deer_type: d.dataset.v,
+    behavior: beh ? beh.dataset.v : null,
+    buck_name: document.getElementById("fbuckname").value.trim() || null,
+    wind_dir: document.getElementById("fwind").value || null,
+    temp_f: parseFloat(document.getElementById("ftemp").value) || null,
+    wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
+    wind_gust: wx.windGust ? parseFloat(wx.windGust) : null,
+    humidity: wx.humidity ? parseInt(wx.humidity) : null,
+    precip: wx.precip ? parseFloat(wx.precip) : null,
+    pressure: wx.pressure ? parseFloat(wx.pressure) : null,
+    notes: document.getElementById("fnotes").value || null,
+    image_url: null,
+    moon_phase: document.getElementById("mlbl").textContent,
+  };
+  syncDot(true);
+  const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
+  syncDot(false);
+  if(error) {
+    console.error('Insert error:', error);
+    btn.textContent = "Error: " + error.message.slice(0,35);
+    btn.classList.add("rdy"); btn.classList.remove("dis");
+    setTimeout(() => { btn.textContent = "Log Sighting"; checkSub(); }, 3000);
+    return;
+  }
+  // Upload photo separately
+  if(formImgFile) {
+    try {
+      syncDot(true);
+      const url = await uploadPhoto(formImgFile, data.id);
+      syncDot(false);
+      if(url) {
+        await sb.from('sightings').update({image_url: url}).eq('id', data.id);
+        data.image_url = url;
+      }
+    } catch(photoErr) {
+      syncDot(false);
+      console.error('Photo upload failed (sighting saved):', photoErr);
+    }
+  }
+  sightings.unshift(data);
+  // Reset form
+  formImgFile = null; wxApplied = null;
+  document.getElementById("fnotes").value = "";
+  document.getElementById("ftemp").value = "";
+  document.getElementById("fwind").value = "";
+  document.getElementById("finput").value = "";
+  document.getElementById("fbuckname").value = "";
+  document.getElementById("uprev").style.display = "none";
+  document.getElementById("uph").style.display = "block";
+  document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
+  btn.textContent = "Saved!";
+  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
+  setTimeout(() => { curFilter = "all"; showView("log"); }, 1000);
+  updatePins(); refreshBucknameList(); renderDash();
+}
+
+async function saveEdit() {
+  const s = sightings.find(x => x.id === editId); if(!s) return;
+  const updates = {
+    buck_name: document.getElementById("eBuckName").value.trim() || null,
+    deer_type: document.getElementById("eDeerType").value,
+    camera_name: document.getElementById("eCamera").value,
+    date: document.getElementById("eDate").value,
+    time: document.getElementById("eTime").value + ":00",
+    behavior: document.getElementById("eBehavior").value || null,
+    notes: document.getElementById("eNotes").value || null,
+  };
+  if(editImgChanged && editImgFile) {
+    try {
+      const url = await uploadPhoto(editImgFile, editId);
+      if(url) updates.image_url = url;
+    } catch(e) { console.error('Edit photo failed:', e); }
+  }
+  syncDot(true);
+  const {error} = await sb.from('sightings').update(updates).eq('id', editId);
+  syncDot(false);
+  if(error) { alert('Save failed: ' + error.message); return; }
+  Object.assign(s, updates);
+  document.getElementById("editModal").style.display = "none";
+  renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
+}
+
+async function deleteSighting() {
+  if(!confirm("Delete this sighting?")) return;
+  syncDot(true);
+  await sb.from('sightings').delete().eq('id', editId);
+  syncDot(false);
+  sightings = sightings.filter(x => x.id !== editId);
+  document.getElementById("editModal").style.display = "none";
+  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
+  renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
+}
+
+// --- edit modal -
+function openEdit(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  editId = id; editImgChanged = false; editImgFile = null;
+  document.getElementById("eBuckName").value = s.buck_name || "";
+  document.getElementById("eDeerType").value = s.deer_type || "Unknown";
+  document.getElementById("eCamera").value = s.camera_name || "Other";
+  document.getElementById("eDate").value = s.date || "";
+  document.getElementById("eTime").value = (s.time || "").slice(0,5);
+  document.getElementById("eBehavior").value = s.behavior || "";
+  document.getElementById("eNotes").value = s.notes || "";
+  const pw = document.getElementById("ePhotoWrap");
+  pw.innerHTML = s.image_url
+    ? `<img src="${s.image_url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px"/>`
+    : `<div style="font-size:11px;color:#4a6a3a;font-style:italic">No photo attached</div>`;
+  document.getElementById("editModal").style.display = "flex";
+}
+function closeModal(e) {
+  if(e.target === document.getElementById("editModal"))
+    document.getElementById("editModal").style.display = "none";
+}
+function handleEditPhoto(inp) {
+  const f = inp.files[0]; if(!f) return;
+  editImgFile = f; editImgChanged = true;
+  const r = new FileReader();
+  r.onload = e => { document.getElementById("ePhotoWrap").innerHTML = `<img src="${e.target.result}" style="width:100%;height:140px;object-fit:cover;border-radius:6px"/>`; };
+  r.readAsDataURL(f);
+}
+
+// --- weather -
+let wxTimer = null;
+function autoWx() {
+  const d = document.getElementById("fd").value;
+  const t = document.getElementById("ft").value;
+  if(!d || !t) return;
+  clearTimeout(wxTimer);
+  wxTimer = setTimeout(() => fetchWx(d, t), 600);
+}
+
+async function fetchWx(date, time) {
+  const load = document.getElementById("wxload");
+  const wxd  = document.getElementById("wxdata");
+  const stat = document.getElementById("wxstat");
+  load.style.display = "block"; wxd.style.display = "none";
+  load.textContent = "Fetching conditions...";
+  stat.textContent = "fetching..."; stat.style.color = "#4a6a3a";
+  try {
+    const h = parseInt(time.split(":")[0]);
+    const inputDate = new Date(date + "T12:00:00");
+    const today = new Date(); today.setHours(0,0,0,0);
+    const diffDays = Math.floor((today - inputDate) / 86400000);
+    if(diffDays < 0) { load.textContent = "Future date -- no weather yet."; return; }
+    let url, isArchive = (diffDays >= 5);
+    if(isArchive) {
+      url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + CLAT
+          + "&longitude=" + CLNG + "&start_date=" + date + "&end_date=" + date
+          + "&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure"
+          + "&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago";
+    } else {
+      url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT
+          + "&longitude=" + CLNG
+          + "&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure"
+          + "&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago"
+          + "&past_days=5&forecast_days=1";
+    }
+    const r = await fetch(url); const j = await r.json();
+    if(!j.hourly) throw new Error("no data");
+    let hi = h;
+    if(!isArchive) {
+      const target = date + "T" + String(h).padStart(2,"0") + ":00";
+      hi = j.hourly.time.findIndex(t => t === target);
+      if(hi === -1) throw new Error("hour not found");
+    }
+    wxFetched = {
+      temp:     Math.round(j.hourly.temperature_2m[hi]),
+      windSpd:  Math.round(j.hourly.windspeed_10m[hi]),
+      windGst:  Math.round(j.hourly.windgusts_10m[hi]),
+      windDir:  deg2dir(j.hourly.winddirection_10m[hi]),
+      humid:    Math.round(j.hourly.relativehumidity_2m[hi]),
+      precip:   j.hourly.precipitation[hi].toFixed(2),
+      press:    Math.round(j.hourly.surface_pressure[hi]),
+    };
+    // Populate display
+    document.getElementById("wx-t").textContent = wxFetched.temp + "\u00b0";
+    document.getElementById("wx-w").textContent = wxFetched.windSpd;
+    document.getElementById("wx-g").textContent = wxFetched.windGst;
+    document.getElementById("wx-d").textContent = wxFetched.windDir;
+    document.getElementById("wx-h").textContent = wxFetched.humid + "%";
+    document.getElementById("wx-p").textContent = wxFetched.precip + '"';
+    document.getElementById("wx-bp").textContent = wxFetched.press;
+    document.getElementById("wx-bpt").textContent =
+      wxFetched.press > 1013 ? "Rising" : wxFetched.press < 1005 ? "Low" : "Stable";
+    stat.textContent = isArchive ? "(historical)" : "(recent data)";
+    stat.style.color = "#7aaa6a";
+    load.style.display = "none"; wxd.style.display = "block";
+    // Auto-apply wind dir and temp immediately
+    applyWx();
+  } catch(e) {
+    load.textContent = "Weather unavailable -- enter manually below.";
+    stat.textContent = "unavailable"; stat.style.color = "#e87a4a";
+    console.error("fetchWx:", e);
+  }
+}
+
+function applyWx() {
+  if(!wxFetched) return;
+  // Auto-fill temp
+  document.getElementById("ftemp").value = wxFetched.temp;
+  // Auto-fill wind direction dropdown
+  const wd = document.getElementById("fwind");
+  const match = simpleDir(wxFetched.windDir);
+  for(let i = 0; i < wd.options.length; i++) {
+    if(wd.options[i].value === match) { wd.selectedIndex = i; break; }
+  }
+  wxApplied = {
+    windSpeed: wxFetched.windSpd,
+    windGust:  wxFetched.windGst,
+    humidity:  wxFetched.humid,
+    precip:    wxFetched.precip,
+    pressure:  wxFetched.press,
+  };
+}
+
+// --- map (Mapbox) -
+// Mapbox token set after DOM ready (see init below)
+
+const PROPERTY_CENTER = [-88.2756, 45.0200];
+const PROPERTY_BOUNDS = [[-88.295, 45.010], [-88.258, 45.035]];
+
+// Camera locations - stored in Supabase, editable via drag
+let camLocations = {
+  'Dan':         { lng: -88.2738, lat: 45.0195 },
+  'Colin':       { lng: -88.2768, lat: 45.0185 },
+  'Ridge':       { lng: -88.2710, lat: 45.0175 },
+  'Behind Rons': { lng: -88.2712, lat: 45.0162 },
+  'By Eric':     { lng: -88.2695, lat: 45.0158 },
+};
+
+let mapInstance = null;
+let mapMarkers = {};
+let lineLayerAdded = false;
+let editMode = false;
+
+async function loadCamLocations() {
+  // Try to load saved cam positions from Supabase
+  try {
+    const { data } = await sb.from('cameras').select('name, lng, lat').order('id');
+    if(data && data.length) {
+      data.forEach(c => {
+        if(c.lng && c.lat) camLocations[c.name] = { lng: c.lng, lat: c.lat };
+      });
+    }
+  } catch(e) { console.log('Using default cam positions'); }
+}
+
+async function saveCamLocation(name, lng, lat) {
+  try {
+    await sb.from('cameras').update({ lng, lat }).eq('name', name);
+    camLocations[name] = { lng, lat };
+  } catch(e) { console.error('Save cam location failed:', e); }
+}
+
+function initMap() {
+  if(mapInstance) { refreshMapPins(); return; }
+
+  mapInstance = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    center: PROPERTY_CENTER,
+    zoom: 15,
+    maxBounds: [[-88.35, 44.98], [-88.20, 45.07]],
+  });
+
+  // Zoom controls
+  mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+
+  mapInstance.on('load', () => {
+    addLineLayer();
+    addCamMarkers();
+    lineLayerAdded = true;
+  });
+
+  mapInstance.on('style.load', () => {
+    if(!lineLayerAdded) return;
+    addLineLayer();
+  });
+}
+
+function addPropertyOutline() { /* removed */ }
+
+function addLineLayer() {
+  if(mapInstance.getSource('buck-lines')) return;
+  mapInstance.addSource('buck-lines', {
+    type: 'geojson',
+    data: { type:'FeatureCollection', features:[] }
+  });
+  // Arrow/symbol layer for direction indicators
+  mapInstance.addSource('buck-arrows', {
+    type: 'geojson',
+    data: { type:'FeatureCollection', features:[] }
+  });
+  // Solid daytime lines
+  mapInstance.addLayer({
+    id: 'buck-lines-day',
+    type: 'line',
+    source: 'buck-lines',
+    filter: ['==',['get','daytime'],true],
+    paint: {
+      'line-color': ['get','color'],
+      'line-width': ['get','width'],
+      'line-opacity': 0.9
+    }
+  });
+  // Dashed night lines
+  mapInstance.addLayer({
+    id: 'buck-lines-night',
+    type: 'line',
+    source: 'buck-lines',
+    filter: ['==',['get','daytime'],false],
+    paint: {
+      'line-color': ['get','color'],
+      'line-width': ['get','width'],
+      'line-dasharray': [2,2],
+      'line-opacity': 0.65
+    }
+  });
+  // Direction arrows along lines
+  mapInstance.addLayer({
+    id: 'buck-arrows-layer',
+    type: 'symbol',
+    source: 'buck-arrows',
+    layout: {
+      'symbol-placement': 'line',
+      'symbol-spacing': 80,
+      'icon-image': 'arrow',
+      'icon-size': 0.8,
+      'icon-rotate': 90,
+      'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': true
+    }
+  });
+}
+
+
+function addCamMarkers() {
+  Object.values(mapMarkers).forEach(m => m.remove());
+  mapMarkers = {};
+
+  Object.entries(camLocations).forEach(([name, pos]) => {
+    const cs = sightings.filter(s => s.camera_name === name);
+    const cnt = cs.length;
+    const mature = cs.some(s => s.deer_type && s.deer_type.includes('Mature'));
+    const buckFiltered = curMapFilter !== 'all' ? cs.filter(s => s.buck_name === curMapFilter) : cs;
+    const hasBuck = buckFiltered.length > 0;
+
+    // Colors
+    let fill, stroke;
+    if(curMapFilter !== 'all') {
+      fill = hasBuck ? buckColor(curMapFilter) : '#1a1a1a';
+      stroke = hasBuck ? buckColor(curMapFilter) : '#333';
+    } else if(mature) {
+      fill = '#4a7fc1'; stroke = '#7aafe0';
+    } else {
+      fill = '#252525'; stroke = '#3a3a3a';
+    }
+
+    const el = document.createElement('div');
+    el.className = 'cam-marker' + (curMapFilter !== 'all' && !hasBuck ? ' faded' : '');
+
+    // Teardrop SVG pin
+    el.innerHTML = `
+      <div class="cam-pin">
+        <svg class="pin-bg" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 26 14 26s14-16 14-26C32 8.268 25.732 2 18 2z"
+            fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+        </svg>
+        <div class="cam-pin-content">
+          <div class="cam-pin-ico">&#128247;</div>
+          <div class="cam-pin-cnt">${cnt > 0 ? cnt : ''}</div>
+        </div>
+      </div>
+      <div class="cam-lbl">${name}</div>
+    `;
+
+    // Single tap - show popup
+    let pressTimer;
+    el.addEventListener('touchstart', e => {
+      pressTimer = setTimeout(() => {
+        e.preventDefault();
+        showPinMenu(name, e.touches[0].clientX, e.touches[0].clientY);
+      }, 600);
+    }, {passive:true});
+    el.addEventListener('touchend', () => clearTimeout(pressTimer));
+    el.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+    el.addEventListener('click', e => {
+      if(editMode) return;
+      e.stopPropagation();
+      showPin(name);
+    });
+
+    // Right click on desktop
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showPinMenu(name, e.clientX, e.clientY);
+    });
+
+    const marker = new mapboxgl.Marker({ element: el, draggable: editMode })
+      .setLngLat([pos.lng, pos.lat])
+      .addTo(mapInstance);
+
+    marker.on('dragend', async () => {
+      const ll = marker.getLngLat();
+      await saveCamLocation(name, ll.lng, ll.lat);
+    });
+
+    mapMarkers[name] = marker;
+  });
+}
+
+function refreshMapPins() {
+  if(!mapInstance) return;
+  addCamMarkers();
+  updateBuckLines();
+  if(dotMapOn) showDotMap();
+}
+
+function updateBuckLines() {
+  if(!mapInstance || !mapInstance.getSource('buck-lines')) return;
+
+  const timeColor = t => {
+    if(!t) return '#555';
+    const h = parseInt(t);
+    if(h >= 5 && h < 7)  return '#5a8fc8';
+    if(h >= 7 && h < 10) return '#7aafe0';
+    if(h >= 10 && h < 16) return '#888';
+    if(h >= 16 && h < 20) return '#5a8fc8';
+    return '#4a4a6a';
+  };
+  const isDaytime = t => { if(!t) return false; const h=parseInt(t); return h>=6&&h<20; };
+
+  const allFeatures = [];
+  const arrowFeatures = [];
+
+  const bucksToShow = curMapFilter === 'all'
+    ? getNamedBucks()
+    : curMapFilter === 'none' ? []
+    : [curMapFilter];
+
+  bucksToShow.forEach(bname => {
+    const bs = sightings
+      .filter(s => s.buck_name === bname && camLocations[s.camera_name])
+      .sort((a,b) => new Date(a.date+'T'+(a.time||'00:00')) - new Date(b.date+'T'+(b.time||'00:00')));
+    if(bs.length < 2) return;
+
+    const color = buckColor(bname);
+
+    // Count corridor frequency for line width
+    const corridorCount = {};
+    for(let i=0; i<bs.length-1; i++) {
+      const key = [bs[i].camera_name, bs[i+1].camera_name].sort().join('|');
+      corridorCount[key] = (corridorCount[key]||0) + 1;
+    }
+    const maxCount = Math.max(...Object.values(corridorCount), 1);
+
+    for(let i=0; i<bs.length-1; i++) {
+      const s1=bs[i], s2=bs[i+1];
+      const p1=camLocations[s1.camera_name];
+      const p2=camLocations[s2.camera_name];
+      const segColor = curMapFilter === 'all' ? color : timeColor(s1.time);
+      const daytime = isDaytime(s1.time);
+      const key = [s1.camera_name, s2.camera_name].sort().join('|');
+      const freq = corridorCount[key] || 1;
+      // Width: 2-6px based on frequency
+      const width = Math.round(2 + (freq/maxCount) * 4);
+
+      allFeatures.push({
+        type:'Feature',
+        properties:{ color:segColor, daytime, width, buckName:bname,
+          label:`${s1.camera_name} -> ${s2.camera_name}`,
+          date:s1.date, time:s1.time||'', freq },
+        geometry:{ type:'LineString', coordinates:[[p1.lng,p1.lat],[p2.lng,p2.lat]] }
+      });
+
+      // Midpoint arrow feature for direction
+      const midLng = (p1.lng + p2.lng) / 2;
+      const midLat = (p1.lat + p2.lat) / 2;
+      arrowFeatures.push({
+        type:'Feature',
+        properties:{ color:segColor },
+        geometry:{ type:'LineString', coordinates:[[p1.lng,p1.lat],[p2.lng,p2.lat]] }
+      });
+    }
+  });
+
+  mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:allFeatures });
+  // Arrows source - using line direction
+  if(mapInstance.getSource('buck-arrows')) {
+    mapInstance.getSource('buck-arrows').setData({ type:'FeatureCollection', features:arrowFeatures });
+  }
+
+  // If filtering to one buck, fit map to their full corridor
+  if(curMapFilter !== 'all' && bucksToShow.length === 1) {
+    const bs = sightings.filter(s => s.buck_name===curMapFilter && camLocations[s.camera_name]);
+    if(bs.length >= 2) {
+      const lngs = bs.map(s => camLocations[s.camera_name].lng);
+      const lats = bs.map(s => camLocations[s.camera_name].lat);
+      mapInstance.fitBounds(
+        [[Math.min(...lngs)-0.004,Math.min(...lats)-0.004],[Math.max(...lngs)+0.004,Math.max(...lats)+0.004]],
+        {padding:80, duration:800}
+      );
+    }
+  }
+}
+
+
+function buildMapFilters() {
+  const bucks = getNamedBucks();
+  const lbl = document.getElementById('filterLabel');
+  if(lbl) {
+    if(curMapFilter === 'all') lbl.innerHTML = '&#128200; All Deer';
+    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '&#128000; All Buck Lines';
+    else lbl.innerHTML = `&#9679; ${curMapFilter}`;
+  }
+  const dd = document.getElementById('buckDropdown');
+  if(!dd) return;
+
+  const allSel = curMapFilter === 'all';
+  const allBucksSel = curMapFilter === 'all-bucks';
+
+  dd.innerHTML = `
+    <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('all')">
+      <div class="buck-drop-dot" style="background:#555"></div>
+      <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">All Deer</div><div style="font-size:10px;color:var(--text3)">${sightings.length} total sightings</div></div>
+      ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
+    </div>
+    <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#4a7fc1,#7aafe0)"></div>
+      <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Buck Lines</div><div style="font-size:10px;color:var(--text3)">Show all movement corridors</div></div>
+      ${allBucksSel?'<span style="color:var(--blue)">&#10003;</span>':''}
+    </div>
+    <div class="buck-drop-divider"></div>
+    ${bucks.map(b => {
+      const color = buckColor(b);
+      const sel = curMapFilter === b;
+      const cnt = sightings.filter(s => s.buck_name === b).length;
+      const cams = [...new Set(sightings.filter(s=>s.buck_name===b).map(s=>s.camera_name))];
+      return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
+        <div class="buck-drop-dot" style="background:${color}"></div>
+        <div style="flex:1">
+          <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
+          <div style="font-size:10px;color:var(--text3)">${cnt} sightings &middot; ${cams.slice(0,2).join(', ')}${cams.length>2?'...':''}</div>
+        </div>
+        ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
+      </div>`;
+    }).join('')}
+    <div class="buck-drop-divider"></div>
+    <div class="buck-drop-item${dotMapOn?' selected':''}" onclick="toggleDotMapFromMenu()">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#4a7fc1)"></div>
+      <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, color by month</div></div>
+      <span style="font-size:11px;color:${dotMapOn?'var(--blue)':'var(--text3)'}">${dotMapOn?'ON':'OFF'}</span>
+    </div>
+    <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#4a7fc1,#a0c8ff)"></div>
+      <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Activity density overlay</div></div>
+      <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
+    </div>
+  `;
+
+  // Show/hide movement legend
+  const leg = document.getElementById('movementLegend');
+  if(leg) leg.classList.toggle('show', curMapFilter !== 'all');
+}
+
+function toggleHeatmapFromMenu() {
+  heatmapOn = !heatmapOn;
+  if(heatmapOn) showHeatmap(); else hideHeatmap();
+  buildMapFilters();
+  // Rebuild dropdown and keep it open
+  const dd = document.getElementById('buckDropdown');
+  if(dd) {
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+  }
+}
+
+
+function toggleBuckDropdown() {
+  const dd = document.getElementById('buckDropdown');
+  const arrow = document.getElementById('filterArrow');
+  const wrap = document.querySelector('.map-select-wrap');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  dd.style.pointerEvents = isOpen ? 'none' : 'auto';
+  if(arrow) arrow.classList.toggle('open', !isOpen);
+  if(wrap) wrap.classList.toggle('active', !isOpen);
+  if(!isOpen) {
+    setTimeout(() => document.addEventListener('click', closeBuckDropdown, {once:true}), 50);
+  }
+}
+
+function closeBuckDropdown() {
+  const dd = document.getElementById('buckDropdown');
+  const arrow = document.getElementById('filterArrow');
+  const wrap = document.querySelector('.map-select-wrap');
+  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
+  if(arrow) arrow.classList.remove('open');
+  if(wrap) wrap.classList.remove('active');
+}
+
+
+function buildMapLegend() {
+  const bucks = getNamedBucks();
+  const leg = document.getElementById('mapLegend');
+  if(!leg) return;
+  let h = `<div class="leg-item"><div class="leg-dot" style="background:#2a6a1a"></div>Camera</div>
+           <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature buck</div>`;
+  bucks.forEach(b => { h += `<div class="leg-item"><div class="leg-dot" style="background:${buckColor(b)}"></div>${b}</div>`; });
+  // Edit mode toggle
+  h += `<button onclick="toggleEditMode()" id="editModeBtn" style="margin-left:auto;padding:4px 10px;border:1px solid #2a3d1e;border-radius:8px;background:transparent;color:#7a9e6a;font-size:10px;cursor:pointer;font-family:Georgia,serif">&#9999; Move Pins</button>`;
+  leg.innerHTML = h;
+}
+
+function setMapFilter(name) {
+  curMapFilter = name;
+  closeBuckDropdown();
+  buildMapFilters();
+  refreshMapPins();
+  updateBuckLines();
+}
+
+
+
+function toggleEditMode() {
+  editMode = !editMode;
+  const btn = document.getElementById('editModeBtn');
+  if(editMode) {
+    btn.innerHTML = '&#10003;';
+    btn.style.background = 'rgba(74,127,193,0.2)';
+    btn.style.borderColor = 'var(--blue)';
+    btn.style.color = 'var(--blue)';
+  } else {
+    btn.innerHTML = '&#9998;&#xFE0E;';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+  addCamMarkers();
+}
+
+function showPin(camName) {
+  const cs = sightings.filter(s => s.camera_name === camName);
+  const bucks = cs.filter(s => s.deer_type && s.deer_type.includes('Buck')).length;
+  const mature = cs.filter(s => s.deer_type && s.deer_type.includes('Mature')).length;
+  const bc_color = mature > 0;
+  const popup = document.getElementById('camPopup');
+  const title = document.getElementById('popupTitle');
+  const stats = document.getElementById('popupStats');
+  const sights = document.getElementById('popupSightings');
+  title.textContent = camName;
+  popup.className = 'cam-popup' + (bc_color ? ' gold' : '');
+  stats.innerHTML = `
+    <div class="pstat"><div class="pstat-n">${cs.length}</div><div class="pstat-l">Total</div></div>
+    <div class="pstat"><div class="pstat-n">${bucks}</div><div class="pstat-l">Bucks</div></div>
+    <div class="pstat"><div class="pstat-n">${mature}</div><div class="pstat-l">Mature</div></div>`;
+  if(cs.length === 0) {
+    sights.innerHTML = '<div class="pp-empty">No sightings logged yet.</div>';
+  } else {
+    const bc2 = s => s.buck_name ? buckColor(s.buck_name) : null;
+    sights.innerHTML = cs.slice(0,2).map(s => `<div class="popup-s" onclick="showDet(${s.id})">
+      ${s.image_url ? `<img class="popup-sight-img" src="${s.image_url}" alt=""/>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <span style="font-size:13px;font-weight:${s.deer_type&&s.deer_type.includes('Mature')?700:400};color:${s.deer_type&&s.deer_type.includes('Mature')?'var(--gold)':'var(--text)'}">${s.deer_type}</span>
+          ${s.buck_name?`<span style="font-size:10px;margin-left:5px;padding:1px 6px;border-radius:8px;background:rgba(0,0,0,0.4);color:${bc2(s)};border:1px solid ${bc2(s)}">&#9679; ${s.buck_name}</span>`:''}
+        </div>
+        <span style="font-size:11px;color:var(--text2)">${fmtT(s.time)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:3px">
+        <span style="font-size:11px;color:var(--text3)">${s.behavior||''}</span>
+        <span style="font-size:11px;color:var(--text3)">${fmtD(s.date)}</span>
+      </div>
+    </div>`).join('');
+    if(cs.length > 2) {
+      sights.innerHTML += `<button class="popup-more" onclick="filterGo('${camName}')">View all ${cs.length} sightings &rarr;</button>`;
+    }
+  }
+  popup.classList.add('show');
+}
+
+
+function filterGo(c) { curFilter = c; showView('log'); }
+
+
+function toggleBuckIntel(btn) {
+  const body = btn.nextElementSibling;
+  const arrow = btn.querySelector(".bi-arrow");
+  body.classList.toggle("open");
+  if(arrow) arrow.style.transform = body.classList.contains("open") ? "rotate(180deg)" : "";
+}
+
+function goToBuck(name) {
+  curMapFilter = name;
+  showView("map");
+  setTimeout(() => { buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines(); }, 300);
+}
+
+// --- views -
+function showView(n) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
+  document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
+  const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet"};
+  document.getElementById(vm[n] || "v"+n).classList.add("on");
+  const nb = document.getElementById("nn-"+n);
+  if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
+  if(n === "dash") {
+    document.getElementById("intelContent").innerHTML = '<div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>';
+    setTimeout(renderDash, 10);
+  }
+  if(n === "map") {
+    buildMapFilters(); buildMapLegend();
+    setTimeout(async () => {
+      if(!mapInstance) await loadCamLocations();
+      initMap();
+    }, 50);
+  }
+  if(n === "log") renderLog();
+  if(n === "add") initForm();
+}
+
+
+
+
+// --- log -
+
+function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
+  if(!size) size = 110;
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const cx = size, cy = size, maxR = size * 0.77;
+  const angleStep = (Math.PI * 2) / 8;
+  const startAngle = -Math.PI / 2; // N at top
+
+  let slices = '';
+  let labels = '';
+  let rings = '';
+
+  // Draw subtle ring guides
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    const r = maxR * pct;
+    rings += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="0.5"/>`;
+  });
+
+  // Draw axis lines
+  WINDS.forEach((w, i) => {
+    const angle = startAngle + i * angleStep;
+    const x2 = cx + Math.cos(angle) * maxR;
+    const y2 = cy + Math.sin(angle) * maxR;
+    slices += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#2a2a2a" stroke-width="0.5"/>`;
+  });
+
+  // Draw filled wedges
+  WINDS.forEach((w, i) => {
+    const cnt = windCounts[w] || 0;
+    if(cnt === 0) return;
+    const pct = cnt / maxWind;
+    const r = Math.max(6, maxR * pct);
+    const isTop = topWinds[0] === w;
+    const isHigh = topWinds.includes(w);
+
+    const angle1 = startAngle + i * angleStep - angleStep * 0.45;
+    const angle2 = startAngle + i * angleStep + angleStep * 0.45;
+    const x1 = cx + Math.cos(angle1) * r;
+    const y1 = cy + Math.sin(angle1) * r;
+    const x2 = cx + Math.cos(angle2) * r;
+    const y2 = cy + Math.sin(angle2) * r;
+
+    // Gradient color: top = gold, high = light gray, normal = dark gray
+    const fill = isTop ? '#c8a951' : isHigh ? '#888888' : '#444444';
+    const opacity = isTop ? '1' : isHigh ? '0.85' : '0.6';
+
+    slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
+      fill="${fill}" fill-opacity="${opacity}" stroke="none"/>`;
+  });
+
+  // Center dot
+  slices += `<circle cx="${cx}" cy="${cy}" r="3" fill="#444"/>`;
+
+  // Direction labels
+  WINDS.forEach((w, i) => {
+    const angle = startAngle + i * angleStep;
+    const labelR = maxR + 14;
+    const lx = cx + Math.cos(angle) * labelR;
+    const ly = cy + Math.sin(angle) * labelR + 4;
+    const isTop = topWinds[0] === w;
+    const color = isTop ? '#c8a951' : '#666666';
+    const weight = isTop ? 'bold' : 'normal';
+    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10"
+      font-family="Georgia,serif" fill="${color}" font-weight="${weight}">${w}</text>`;
+
+    // Count label inside wedge for non-zero
+    const cnt = windCounts[w] || 0;
+    if(cnt > 0) {
+      const pct = cnt / maxWind;
+      const r2 = Math.max(16, maxR * pct * 0.65);
+      const nx = cx + Math.cos(angle) * r2;
+      const ny = cy + Math.sin(angle) * r2 + 4;
+      const txtColor = isTop ? '#0a0a0a' : '#ffffff';
+      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="9"
+        font-family="Georgia,serif" fill="${txtColor}" font-weight="bold">${cnt}</text>`;
+    }
+  });
+
+  // Legend
+  const legendY = size * 2 + 4;
+  const legend = `
+    <rect x="20" y="${legendY}" width="10" height="10" rx="2" fill="#c8a951"/>
+    <text x="34" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Most active</text>
+    <rect x="110" y="${legendY}" width="10" height="10" rx="2" fill="#888888"/>
+    <text x="124" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Active</text>
+    <rect x="175" y="${legendY}" width="10" height="10" rx="2" fill="#444444"/>
+    <text x="189" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Low</text>
+  `;
+
+  return `<div style="display:flex;justify-content:center">
+    <svg width="220" height="240" viewBox="0 0 220 240" style="overflow:visible">
+      ${rings}${slices}${labels}${legend}
+    </svg>
+  </div>`;
+}
+
+
+// --- 24-hour activity timeline -
+function build24HrTimeline(sightings, mini) {
+  // Build hourly buckets 0-23
+  const hourly = new Array(24).fill(0);
+  sightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    if(h >= 0 && h < 24) hourly[h]++;
+  });
+  const maxH = Math.max(...hourly, 1);
+  const total = hourly.reduce((a,b) => a+b, 0);
+
+  // Color by time period
+  const periodColor = h => {
+    if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn - blue
+    if(h >= 7 && h < 10) return '#7aafe0';  // morning - lighter blue
+    if(h >= 10 && h < 13) return '#909090'; // midday - gray
+    if(h >= 13 && h < 16) return '#707070'; // afternoon - darker gray
+    if(h >= 16 && h < 20) return '#5a8fc8'; // dusk - blue
+    return '#303030';                         // night - near black
+  };
+
+  const barW = 100/24;
+
+  // SVG bars
+  let bars = '';
+  let ticks = '';
+  hourly.forEach((cnt, h) => {
+    const pct = cnt / maxH;
+    const barH = Math.max(pct * 60, cnt > 0 ? 3 : 0);
+    const x = h * barW;
+    const color = periodColor(h);
+    const opacity = cnt > 0 ? (0.4 + pct * 0.6) : 0.1;
+    bars += `<rect x="${x}%" y="${60 - barH}px" width="${barW - 0.3}" height="${barH}px"
+      fill="${color}" fill-opacity="${opacity}" rx="1"/>`;
+    // Count on top of bar if > 0
+    if(cnt > 0 && barH > 10) {
+      bars += `<text x="${x + barW/2}%" y="${58 - barH}px" text-anchor="middle"
+        font-size="8" fill="${color}" font-family="Georgia,serif">${cnt}</text>`;
+    }
+  });
+
+  // Hour tick marks at key hours
+  [0,3,6,9,12,15,18,21].forEach(h => {
+    const x = h * barW + barW/2;
+    const label = h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h-12}p`;
+    ticks += `<text x="${x}%" y="74" text-anchor="middle" font-size="8"
+      fill="#505050" font-family="Georgia,serif">${label}</text>`;
+  });
+
+  // Period labels
+  const periods = [
+    {label:'Night', start:0, end:5, color:'#303030'},
+    {label:'Dawn', start:5, end:7, color:'#5a8fc8'},
+    {label:'Morning', start:7, end:10, color:'#7aafe0'},
+    {label:'Midday', start:10, end:13, color:'#909090'},
+    {label:'Afternoon', start:13, end:16, color:'#707070'},
+    {label:'Dusk', start:16, end:20, color:'#5a8fc8'},
+    {label:'Night', start:20, end:24, color:'#303030'},
+  ];
+
+  // Peak hour annotation
+  const peakHour = hourly.indexOf(maxH);
+  const peakLabel = peakHour < 12 ? `${peakHour||12}${peakHour<12?'am':'pm'}` : `${peakHour-12||12}pm`;
+
+  if(mini) return buildMiniTimeline(hourly, maxH);
+  return `<div style="position:relative">
+    <svg width="100%" height="80" viewBox="0 0 240 80" preserveAspectRatio="xMidYMid slice" style="overflow:visible;display:block">
+      ${bars}
+      <line x1="0" y1="61" x2="240" y2="61" stroke="#222" stroke-width="0.5"/>
+      ${ticks}
+    </svg>
+    <div style="display:flex;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:4px">
+      ${periods.filter((p,i,arr) => p.label !== arr[i-1]?.label).map(p => {
+        const cnt = hourly.slice(p.start, p.end).reduce((a,b)=>a+b,0);
+        return `<div style="display:flex;align-items:center;gap:4px">
+          <div style="width:8px;height:8px;border-radius:2px;background:${p.color};flex-shrink:0"></div>
+          <span style="font-size:9px;color:var(--text3)">${p.label}</span>
+          ${cnt > 0 ? `<span style="font-size:9px;color:var(--text2);font-weight:600">${cnt}</span>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+    ${maxH > 0 ? `<div style="margin-top:6px;font-size:10px;color:var(--text3)">Peak: <span style="color:var(--blue)">${peakLabel}</span> &mdash; ${maxH} sighting${maxH>1?'s':''}</div>` : ''}
+  </div>`;
+}
+
+// --- Camera activity grid -
+
+function buildMiniTimeline(hourly, maxH) {
+  const barW = 10; // 240 / 24 hours = 10 units per hour in viewBox coords
+  const periodColor = h => {
+    if(h >= 5 && h < 7)  return '#5a8fc8';
+    if(h >= 7 && h < 10) return '#7aafe0';
+    if(h >= 10 && h < 16) return '#888';
+    if(h >= 16 && h < 20) return '#5a8fc8';
+    return '#303030';
+  };
+  let bars = '';
+  hourly.forEach((cnt, h) => {
+    const pct = cnt / (maxH||1);
+    const barH = Math.max(pct * 40, cnt > 0 ? 2 : 0);
+    const x = h * barW;
+    bars += `<rect x="${x}%" y="${40-barH}px" width="${barW - 0.3}" height="${barH}px"
+      fill="${periodColor(h)}" fill-opacity="${0.4 + pct*0.6}" rx="1"/>`;
+  });
+  const peakHour = hourly.indexOf(maxH||0);
+  const pl = peakHour < 12 ? `${peakHour||12}am` : `${peakHour-12||12}pm`;
+  return `<div>
+    <svg width="100%" height="44" style="display:block;overflow:visible">
+      ${bars}
+      <line x1="0" y1="41" x2="100%" y2="41" stroke="#222" stroke-width="0.5"/>
+      <text x="0%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">12a</text>
+      <text x="25%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">6a</text>
+      <text x="50%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">12p</text>
+      <text x="75%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">6p</text>
+    </svg>
+    ${maxH > 0 ? `<div style="font-size:9px;color:var(--text3);margin-top:2px">Peak: <span style="color:var(--blue)">${pl}</span></div>` : ''}
+  </div>`;
+}
+
+
+// --- Weather correlation analysis -
+function buildWeatherCorrelation(sightings) {
+  if(sightings.length < 5) return '<div style="font-size:11px;color:var(--text3);padding:8px 0">Log at least 5 sightings with weather data to see correlations.</div>';
+
+  const withWeather = sightings.filter(s => s.pressure || s.temp_f || s.wind_speed);
+  if(withWeather.length < 3) return '<div style="font-size:11px;color:var(--text3);padding:8px 0">Add weather data when logging to see correlations.</div>';
+
+  // Pressure buckets
+  const pressGroups = { low:[], mid:[], high:[] };
+  withWeather.forEach(s => {
+    if(!s.pressure) return;
+    const p = parseFloat(s.pressure);
+    if(p < 1008) pressGroups.low.push(s);
+    else if(p < 1018) pressGroups.mid.push(s);
+    else pressGroups.high.push(s);
+  });
+  const buckRate = arr => arr.length ? Math.round(arr.filter(s=>s.deer_type&&s.deer_type.includes('Buck')).length/arr.length*100) : 0;
+  const matureRate = arr => arr.length ? Math.round(arr.filter(s=>s.deer_type&&s.deer_type.includes('Mature')).length/arr.length*100) : 0;
+
+  // Temp buckets
+  const tempGroups = { cold:[], cool:[], mild:[] };
+  withWeather.forEach(s => {
+    if(!s.temp_f) return;
+    const t = parseFloat(s.temp_f);
+    if(t < 35) tempGroups.cold.push(s);
+    else if(t < 50) tempGroups.cool.push(s);
+    else tempGroups.mild.push(s);
+  });
+
+  // Wind speed buckets
+  const windGroups = { calm:[], moderate:[], strong:[] };
+  withWeather.forEach(s => {
+    if(!s.wind_speed) return;
+    const w = parseFloat(s.wind_speed);
+    if(w < 5) windGroups.calm.push(s);
+    else if(w < 12) windGroups.moderate.push(s);
+    else windGroups.strong.push(s);
+  });
+
+  // Precip buckets - before/during/after rain
+  const rainSightings = withWeather.filter(s => s.precip && parseFloat(s.precip) > 0.05);
+  const dryHighPressure = withWeather.filter(s => (!s.precip || parseFloat(s.precip) < 0.05) && s.pressure && parseFloat(s.pressure) > 1018);
+
+  const maxBuckRate = Math.max(buckRate(pressGroups.low), buckRate(pressGroups.mid), buckRate(pressGroups.high),
+    buckRate(tempGroups.cold), buckRate(tempGroups.cool), buckRate(tempGroups.mild), 1);
+
+  const statBar = (pct, isTop) =>
+    `<div style="height:3px;background:var(--border);border-radius:2px;margin-top:3px;overflow:hidden">
+      <div style="height:100%;width:${pct}%;background:${isTop?'var(--blue)':'#444'};border-radius:2px"></div>
+    </div>`;
+
+  const col = (label, arr, allGroups) => {
+    const rate = buckRate(arr);
+    const max = Math.max(...allGroups.map(a => buckRate(a)), 1);
+    const isTop = rate === max && rate > 0;
+    return `<div style="text-align:center;padding:6px 4px;background:var(--bg);border-radius:8px;${isTop?'border:1px solid rgba(74,127,193,0.3)':''}">
+      <div style="font-size:9px;color:${isTop?'var(--blue)':'var(--text3)'};font-weight:${isTop?700:400}">${label}</div>
+      <div style="font-size:15px;font-weight:700;color:${isTop?'var(--blue)':'var(--text2)'};">${arr.length > 0 ? rate+'%' : '--'}</div>
+      <div style="font-size:8px;color:var(--text3)">${arr.length} sightings</div>
+      ${statBar(arr.length > 0 ? (rate/max*100) : 0, isTop)}
+    </div>`;
+  };
+
+  return `
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600">Buck Activity by Barometric Pressure <span style="color:var(--text3);font-weight:400">(% of sightings that are bucks)</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${col('Low (<1008)', pressGroups.low, [pressGroups.low, pressGroups.mid, pressGroups.high])}
+        ${col('Mid (1008-18)', pressGroups.mid, [pressGroups.low, pressGroups.mid, pressGroups.high])}
+        ${col('High (>1018)', pressGroups.high, [pressGroups.low, pressGroups.mid, pressGroups.high])}
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600">Buck Activity by Temperature</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${col('Cold (<35F)', tempGroups.cold, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Cool (35-50F)', tempGroups.cool, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Mild (50F+)', tempGroups.mild, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600">Buck Activity by Wind Speed</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
+        ${col('Calm (<5mph)', windGroups.calm, [windGroups.calm, windGroups.moderate, windGroups.strong])}
+        ${col('Moderate', windGroups.moderate, [windGroups.calm, windGroups.moderate, windGroups.strong])}
+        ${col('Strong (12+)', windGroups.strong, [windGroups.calm, windGroups.moderate, windGroups.strong])}
+      </div>
+    </div>
+    ${rainSightings.length > 0 ? `
+    <div style="background:var(--bg);border-radius:10px;padding:10px;margin-top:8px">
+      <div style="font-size:10px;color:var(--text2);font-weight:600;margin-bottom:6px">Precipitation Events</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
+          <span style="font-size:14px">&#127783;</span>
+          <span><strong style="color:var(--text)">${rainSightings.length}</strong> sightings during rain/precip events</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
+          <span style="font-size:14px">&#127774;</span>
+          <span><strong style="color:var(--blue)">${dryHighPressure.length}</strong> sightings post-front (dry + high pressure)</span>
+        </div>
+      </div>
+      ${dryHighPressure.length > rainSightings.length ? '<div style="font-size:10px;color:var(--blue);margin-top:6px;font-style:italic">&#8599; Post-front clear days produce more activity on this property.</div>' :
+        rainSightings.length > 0 ? '<div style="font-size:10px;color:var(--text3);margin-top:6px;font-style:italic">Deer moving during precipitation detected -- log more to confirm pattern.</div>' : ''}
+    </div>` : ''}
+  `;
+}
+
+// --- 7-day hunt forecast -
+async function loadHuntForecast() {
+  const el = document.getElementById('forecastContent');
+  if(!el) return;
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756' +
+      '&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,winddirection_10m_dominant,precipitation_sum,weathercode' +
+      '&hourly=surface_pressure' +
+      '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
+      '&timezone=America%2FChicago&forecast_days=7';
+    const r = await fetch(url);
+    const j = await r.json();
+    if(!j.daily) { el.textContent = 'Forecast unavailable'; return; }
+
+    // Get historical best conditions from sightings
+    const withData = sightings.filter(s => s.pressure || s.temp_f || s.wind_dir);
+    const bestWinds = (() => {
+      const wc = {};
+      withData.filter(s=>s.deer_type&&s.deer_type.includes('Buck')).forEach(s => {
+        if(s.wind_dir) wc[s.wind_dir] = (wc[s.wind_dir]||0)+1;
+      });
+      return Object.entries(wc).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([w])=>w);
+    })();
+    const buckTemps = withData.filter(s=>s.deer_type&&s.deer_type.includes('Buck')&&s.temp_f).map(s=>parseFloat(s.temp_f));
+    const idealTempMin = buckTemps.length ? Math.min(...buckTemps) - 5 : 25;
+    const idealTempMax = buckTemps.length ? Math.max(...buckTemps) + 10 : 60;
+
+    const days = j.daily.time;
+    const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+
+    // WMO weather code descriptions
+    const weatherDesc = code => {
+      if(code === 0) return {label:'Clear', icon:'&#9728;'};
+      if(code <= 3) return {label:'Cloudy', icon:'P.Cloudy'};
+      if(code <= 49) return {label:'Fog', icon:'Fog'};
+      if(code <= 67) return {label:'Rain', icon:'Rain'};
+      if(code <= 77) return {label:'Snow', icon:'Snow'};
+      if(code <= 82) return {label:'Showers', icon:'Showers'};
+      if(code <= 99) return {label:'Storms', icon:'Storms'};
+      return {label:'Mixed', icon:'Mixed'};
+    };
+
+    // Score each day based on historical patterns
+    const scoreDay = (i) => {
+      let score = 50; // base
+      let flags = [];
+      const tmax = j.daily.temperature_2m_max[i];
+      const tmin = j.daily.temperature_2m_min[i];
+      const tavg = (tmax + tmin) / 2;
+      const wind = j.daily.windspeed_10m_max[i];
+      const precip = j.daily.precipitation_sum[i];
+      const wdir = dirs[Math.round(j.daily.winddirection_10m_dominant[i]/22.5)%16];
+      const code = j.daily.weathercode[i];
+
+      // Temp scoring
+      if(tavg >= idealTempMin && tavg <= idealTempMax) { score += 15; flags.push({text:'Good temp', good:true}); }
+      else if(tavg < idealTempMin - 10 || tavg > idealTempMax + 10) score -= 15;
+
+      // Wind direction
+      const simpleDir = wdir.length > 2 ? wdir.slice(0,2) : wdir;
+      if(bestWinds.some(w => w.startsWith(simpleDir) || simpleDir.startsWith(w))) {
+        score += 20; flags.push({text:wdir+' wind &#x2713;', good:true});
+      }
+
+      // Wind speed
+      if(wind < 8) { score += 10; flags.push({text:'Light wind', good:true}); }
+      else if(wind > 20) { score -= 15; flags.push({text:'Too windy', good:false}); }
+
+      // Precip
+      if(precip > 0.5) { score -= 20; flags.push({text:'Heavy rain', good:false}); }
+      else if(precip > 0 && precip < 0.1) { score += 5; flags.push({text:'Light precip', good:true}); }
+      else if(precip === 0 && i > 0 && j.daily.precipitation_sum[i-1] > 0.3) {
+        score += 25; flags.push({text:'Post-rain! &#x1F525;', good:true});
+      }
+
+      // Cold front aftermath (pressure rising implied by clear after rain)
+      if(code === 0 && i > 0 && j.daily.weathercode[i-1] >= 51) {
+        score += 20; flags.push({text:'Post-front clear', good:true});
+      }
+
+      // Cap score
+      score = Math.max(0, Math.min(100, score));
+      return {score, flags};
+    };
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    el.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+      ${days.slice(0,7).map((date, i) => {
+        const d = new Date(date+'T12:00:00');
+        const dayName = i === 0 ? 'Today' : dayNames[d.getDay()];
+        const {score, flags} = scoreDay(i);
+        const tmax = Math.round(j.daily.temperature_2m_max[i]);
+        const tmin = Math.round(j.daily.temperature_2m_min[i]);
+        const wind = Math.round(j.daily.windspeed_10m_max[i]);
+        const wdir = dirs[Math.round(j.daily.winddirection_10m_dominant[i]/22.5)%16];
+        const precip = j.daily.precipitation_sum[i];
+        const {label:wLabel, icon:wIcon} = weatherDesc(j.daily.weathercode[i]);
+        const scoreColor = score >= 75 ? 'var(--blue)' : score >= 55 ? '#7aafe0' : score >= 40 ? '#888' : '#555';
+        const scoreLabel = score >= 75 ? 'Hunt it' : score >= 55 ? 'Good' : score >= 40 ? 'Average' : 'Skip';
+        return `<div style="background:var(--bg);border-radius:10px;padding:10px 12px;border:1px solid ${score >= 75 ? 'rgba(74,127,193,0.4)' : 'var(--border)'}">
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="min-width:40px">
+              <div style="font-size:12px;font-weight:600;color:var(--text)">${dayName}</div>
+              <div style="font-size:9px;color:var(--text3)">${d.toLocaleDateString('en-US',{month:'short',day:'numeric'})}</div>
+            </div>
+            <div style="font-size:20px">${wIcon}</div>
+            <div style="flex:1">
+              <div style="font-size:11px;color:var(--text2)">${tmax}F/${tmin}F &middot; ${wdir} ${wind}mph${precip > 0 ? ' &middot; '+precip.toFixed(2)+'"' : ''}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">
+                ${flags.map(f=>`<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:${f.good?'rgba(74,127,193,0.15)':'rgba(80,80,80,0.3)'};color:${f.good?'var(--blue)':'var(--text3)'}">${f.text}</span>`).join('')}
+              </div>
+            </div>
+            <div style="text-align:right;min-width:52px">
+              <div style="font-size:18px;font-weight:700;color:${scoreColor}">${score}</div>
+              <div style="font-size:9px;color:${scoreColor};font-weight:600">${scoreLabel}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('')}
+      <div style="font-size:9px;color:var(--text3);padding:4px 0;line-height:1.6">Score based on your historical deer movement patterns: preferred wind directions, temperature ranges, and barometric conditions. ${bestWinds.length ? 'Your best winds: '+bestWinds.join(', ')+'. ' : ''}Post-front clear days get a bonus.</div>
+    </div>`;
+  } catch(e) {
+    const el2 = document.getElementById('forecastContent');
+    if(el2) el2.textContent = 'Forecast unavailable';
+    console.error('Forecast error:', e);
+  }
+}
+
+
+
+// --- Heatmap -
+let heatmapOn = false;
+
+function toggleHeatmap() {
+  heatmapOn = !heatmapOn;
+  const btn = document.getElementById('heatmapBtn');
+  if(btn) btn.classList.toggle('active', heatmapOn);
+  if(heatmapOn) showHeatmap(); else hideHeatmap();
+}
+
+function showHeatmap() {
+  if(!mapInstance) return;
+  // Build GeoJSON points from sightings with camera locations
+  const features = sightings
+    .filter(s => camLocations[s.camera_name])
+    .map(s => {
+      const pos = camLocations[s.camera_name];
+      const isBuck = s.deer_type && s.deer_type.includes('Buck');
+      const isMature = s.deer_type && s.deer_type.includes('Mature');
+      return {
+        type: 'Feature',
+        properties: { weight: isMature ? 3 : isBuck ? 2 : 1 },
+        geometry: { type: 'Point', coordinates: [pos.lng, pos.lat] }
+      };
+    });
+
+  if(mapInstance.getSource('heatmap-data')) {
+    mapInstance.getSource('heatmap-data').setData({ type:'FeatureCollection', features });
+  } else {
+    mapInstance.addSource('heatmap-data', {
+      type: 'geojson',
+      data: { type:'FeatureCollection', features }
+    });
+    mapInstance.addLayer({
+      id: 'heatmap-layer',
+      type: 'heatmap',
+      source: 'heatmap-data',
+      paint: {
+        'heatmap-weight': ['get','weight'],
+        'heatmap-intensity': ['interpolate',['linear'],['zoom'],13,0.6,16,1.4],
+        'heatmap-color': [
+          'interpolate',['linear'],['heatmap-density'],
+          0,'rgba(0,0,0,0)',
+          0.2,'rgba(30,60,120,0.5)',
+          0.4,'rgba(60,100,200,0.65)',
+          0.6,'rgba(100,160,255,0.75)',
+          0.8,'rgba(180,210,255,0.85)',
+          1,'rgba(255,255,255,0.95)'
+        ],
+        'heatmap-radius': ['interpolate',['linear'],['zoom'],13,25,16,50],
+        'heatmap-opacity': 0.75
+      }
+    }, 'buck-lines-day');
+  }
+  if(mapInstance.getLayer('heatmap-layer'))
+    mapInstance.setLayoutProperty('heatmap-layer','visibility','visible');
+}
+
+function hideHeatmap() {
+  if(!mapInstance) return;
+  if(mapInstance.getLayer('heatmap-layer'))
+    mapInstance.setLayoutProperty('heatmap-layer','visibility','none');
+}
+
+function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${camNames.map(c => {
+      const cnt = camCounts[c] || 0;
+      const mature = camMatureCounts[c] || 0;
+      const isTop = topCam && topCam[0] === c;
+      const pct = maxCam > 0 ? Math.round(cnt / maxCam * 100) : 0;
+      // Activity ring - SVG circle
+      const r = 18, circ = 2 * Math.PI * r;
+      const dash = (pct / 100) * circ;
+      const ringColor = isTop ? 'var(--blue)' : mature > 0 ? '#7090b0' : 'var(--border2)';
+      return `<div style="background:var(--bg);border:1px solid ${isTop?'var(--blue)':'var(--border)'};border-radius:10px;padding:12px;display:flex;align-items:center;gap:10px">
+        <div style="position:relative;flex-shrink:0;width:44px;height:44px">
+          <svg width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--border)" stroke-width="3"/>
+            <circle cx="22" cy="22" r="${r}" fill="none" stroke="${ringColor}" stroke-width="3"
+              stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+              stroke-dashoffset="${(circ/4).toFixed(1)}"
+              stroke-linecap="round"
+              transform="rotate(-90 22 22)"/>
+            <text x="22" y="26" text-anchor="middle" font-size="11" font-weight="bold"
+              fill="${isTop?'var(--blue)':'var(--text2)'}" font-family="Georgia,serif">${cnt}</text>
+          </svg>
+        </div>
+        <div style="min-width:0">
+          <div style="font-size:12px;font-weight:600;color:${isTop?'var(--text)':'var(--text2)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c}</div>
+          ${mature > 0
+            ? `<div style="font-size:10px;color:var(--blue);margin-top:2px">${mature} mature</div>`
+            : `<div style="font-size:10px;color:var(--text3);margin-top:2px">${cnt > 0 ? pct+'% of total' : 'No sightings'}</div>`}
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+
+// --- Add camera -
+let addCamMode = false;
+let pendingCamLngLat = null;
+
+function toggleAddCamMode() {
+  addCamMode = !addCamMode;
+  const btn = document.getElementById('addCamBtn');
+
+  if(addCamMode) {
+    // Disable pointer events on all map overlays so clicks reach the map
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+      el.dataset.oldPe = el.style.pointerEvents;
+      el.style.pointerEvents = 'none';
+    });
+    document.getElementById('map').style.cursor = 'crosshair';
+    if(btn) {
+      btn.style.pointerEvents = 'auto';
+      btn.style.background = 'rgba(74,127,193,0.3)';
+      btn.style.borderColor = 'var(--blue)';
+      btn.style.color = 'var(--blue)';
+      btn.innerHTML = '&#10005;';
+    }
+    // Show hint
+    const hint = document.createElement('div');
+    hint.id = 'addCamHint';
+    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,10,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
+    hint.innerHTML = '<div style="font-size:26px;margin-bottom:8px">&#128247;</div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
+    document.body.appendChild(hint);
+    setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 3000);
+
+    // Use map click event
+    mapInstance.once('click', e => {
+      if(!addCamMode) return;
+      pendingCamLngLat = e.lngLat;
+      // Restore pointer events
+      document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+        el.style.pointerEvents = el.dataset.oldPe || '';
+      });
+      document.getElementById('map').style.cursor = '';
+      const coordEl = document.getElementById('addCamCoords');
+      if(coordEl) coordEl.textContent = e.lngLat.lat.toFixed(5) + ', ' + e.lngLat.lng.toFixed(5);
+      const nameEl = document.getElementById('addCamName');
+      if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
+      const modal = document.getElementById('addCamModal');
+      if(modal) modal.classList.add('open');
+      if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;'; }
+      const hintEl = document.getElementById('addCamHint');
+      if(hintEl) hintEl.remove();
+    });
+
+  } else {
+    // Restore everything
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+      el.style.pointerEvents = el.dataset.oldPe || '';
+    });
+    document.getElementById('map').style.cursor = '';
+    if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;';btn.style.pointerEvents=''; }
+    cancelAddCamera();
+  }
+}
+
+async function confirmAddCamera() {
+  const name = document.getElementById('addCamName').value.trim();
+  if(!name || !pendingCamLngLat) return;
+  // Save to Supabase
+  try {
+    await sb.from('cameras').insert({
+      name, lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat, active: true
+    });
+  } catch(e) { console.error('Insert cam error:', e); }
+  // Add to local camLocations
+  camLocations[name] = { lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat };
+  // Add to CAMNAMES if not there
+  if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length-1, 0, name);
+  cancelAddCamera();
+  addCamMarkers();
+  buildMapFilters();
+}
+
+function cancelAddCamera() {
+  addCamMode = false;
+  pendingCamLngLat = null;
+  const modal = document.getElementById('addCamModal');
+  if(modal) modal.classList.remove('open');
+  document.getElementById('map').style.cursor = '';
+  const btn = document.getElementById('addCamBtn');
+  if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;'; }
+  const hint = document.getElementById('addCamHint');
+  if(hint) hint.remove();
+}
+
+// --- Pin context menu -
+let menuTargetCam = null;
+
+function showPinMenu(name, x, y) {
+  menuTargetCam = name;
+  const menu = document.getElementById('pinMenu');
+  menu.style.display = 'block';
+  // Position near tap point
+  const menuW = 180;
+  const left = Math.min(x, window.innerWidth - menuW - 10);
+  const top = Math.min(y + 8, window.innerHeight - 150);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  // Close on outside tap
+  setTimeout(() => document.addEventListener('click', closePinMenu, {once:true}), 50);
+}
+
+function closePinMenu() {
+  document.getElementById('pinMenu').style.display = 'none';
+  menuTargetCam = null;
+}
+
+async function renameCameraFromMenu() {
+  if(!menuTargetCam) return;
+  closePinMenu();
+  const newName = prompt(`Rename "${menuTargetCam}" to:`, menuTargetCam);
+  if(!newName || newName === menuTargetCam) return;
+  try {
+    await sb.from('cameras').update({name: newName}).eq('name', menuTargetCam);
+    // Update sightings
+    await sb.from('sightings').update({camera_name: newName}).eq('camera_name', menuTargetCam);
+  } catch(e) { console.error(e); }
+  // Update local state
+  camLocations[newName] = camLocations[menuTargetCam];
+  delete camLocations[menuTargetCam];
+  const idx = CAMNAMES.indexOf(menuTargetCam);
+  if(idx > -1) CAMNAMES[idx] = newName;
+  sightings.forEach(s => { if(s.camera_name === menuTargetCam) s.camera_name = newName; });
+  addCamMarkers();
+  buildMapFilters();
+  await loadSightings();
+}
+
+async function deleteCameraFromMenu() {
+  if(!menuTargetCam) return;
+  closePinMenu();
+  if(!confirm(`Delete camera "${menuTargetCam}"? Sightings will not be deleted.`)) return;
+  try {
+    await sb.from('cameras').delete().eq('name', menuTargetCam);
+  } catch(e) { console.error(e); }
+  delete camLocations[menuTargetCam];
+  const idx = CAMNAMES.indexOf(menuTargetCam);
+  if(idx > -1) CAMNAMES.splice(idx, 1);
+  if(mapMarkers[menuTargetCam]) { mapMarkers[menuTargetCam].remove(); delete mapMarkers[menuTargetCam]; }
+  buildMapFilters();
+}
+
+// --- Conditions overlay -
+function updateConditionsOverlay() {
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756" +
+    "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph" +
+    "&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1")
+  .then(r => r.json()).then(j => {
+    if(!j.hourly) return;
+    const h = new Date().getHours();
+    const temp = Math.round(j.hourly.temperature_2m[h]);
+    const wind = Math.round(j.hourly.windspeed_10m[h]);
+    const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+    const dir = dirs[Math.round(j.hourly.winddirection_10m[h]/22.5)%16];
+    document.getElementById('condWind').textContent = 'Wind: ' + dir + ' ' + wind + 'mph';
+    document.getElementById('condTemp').textContent = temp + 'F';
+    document.getElementById('mapWeatherTemp').textContent = temp + 'F';
+    document.getElementById('mapWeatherDetail').textContent = dir + ' ' + wind + 'mph';
+    document.getElementById('mapConditions').style.display = 'flex';
+  }).catch(() => {});
+  // Update coords on map move
+  if(mapInstance) {
+    mapInstance.on('move', () => {
+      const c = mapInstance.getCenter();
+      document.getElementById('condCoords').textContent =
+        c.lat.toFixed(4) + ', ' + c.lng.toFixed(4);
+    });
+  }
+}
+
+
+// &#9472;&#9472; Dot Map &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+let dotMapOn = false;
+let dotMarkers = [];
+
+// Month color coding
+const monthColor = m => {
+  const colors = {9:'#e8a040',10:'#e8c840',11:'#d94040',12:'#4a7fc1'};
+  return colors[m] || '#888';
+};
+const monthLabel = m => ['','','','','','','','','','Sep','Oct','Nov','Dec'][m] || '';
+
+function toggleDotMapFromMenu() {
+  dotMapOn = !dotMapOn;
+  if(dotMapOn) showDotMap(); else hideDotMap();
+  buildMapFilters();
+  const dd = document.getElementById('buckDropdown');
+  if(dd) { dd.style.display='block'; dd.style.pointerEvents='auto'; }
+}
+
+function showDotMap() {
+  hideDotMap(); // clear existing
+  if(!mapInstance) return;
+
+  const filtered = curMapFilter === 'all'
+    ? sightings
+    : sightings.filter(s => s.buck_name === curMapFilter);
+
+  filtered.forEach(s => {
+    const pos = camLocations[s.camera_name];
+    if(!pos) return;
+
+    const d = new Date(s.date + 'T12:00:00');
+    const month = d.getMonth() + 1;
+    const color = monthColor(month);
+    const isMature = s.deer_type && s.deer_type.includes('Mature');
+    const isBuck = s.deer_type && s.deer_type.includes('Buck');
+
+    // Random offset so stacked dots spread into a cluster
+    const offsetLng = (Math.random() - 0.5) * 0.0008;
+    const offsetLat = (Math.random() - 0.5) * 0.0008;
+    const lngLat = [pos.lng + offsetLng, pos.lat + offsetLat];
+
+    const size = isMature ? 10 : isBuck ? 7 : 5;
+    const opacity = isMature ? 1 : isBuck ? 0.85 : 0.6;
+    const border = isMature ? '2px solid rgba(255,255,255,0.8)' : '1px solid rgba(255,255,255,0.3)';
+
+    const el = document.createElement('div');
+    el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${color};opacity:${opacity};border:${border};cursor:default;pointer-events:none`;
+
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat(lngLat)
+      .addTo(mapInstance);
+
+    dotMarkers.push(marker);
+  });
+
+  // Show legend
+  showDotLegend();
+}
+
+function hideDotMap() {
+  dotMarkers.forEach(m => m.remove());
+  dotMarkers = [];
+  const leg = document.getElementById('dotLegend');
+  if(leg) leg.remove();
+}
+
+function showDotLegend() {
+  let leg = document.getElementById('dotLegend');
+  if(!leg) {
+    leg = document.createElement('div');
+    leg.id = 'dotLegend';
+    leg.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 80px);left:14px;z-index:50;background:rgba(10,10,10,0.9);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;backdrop-filter:blur(10px)';
+    document.body.appendChild(leg);
+  }
+  leg.innerHTML = `
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Dot Map</div>
+    ${[9,10,11,12].map(m => `
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${monthColor(m)};flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">${monthLabel(m)}</span>
+      </div>`).join('')}
+    <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <div style="width:10px;height:10px;border-radius:50%;background:#888;border:2px solid rgba(255,255,255,0.8);flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Mature buck</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <div style="width:7px;height:7px;border-radius:50%;background:#888;flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Buck</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:5px;height:5px;border-radius:50%;background:#888;flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Doe / other</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderLog() {
+  if(!document.getElementById("slist")) return;
+  const bucks = getNamedBucks();
+  document.getElementById("frow").innerHTML =
+    ["all",...CAMNAMES.slice(0,5)].map(f =>
+      `<button class="chip${curFilter===f?" on":""}" onclick="setFilt('${f}')">${f==="all"?"All":f}</button>`
+    ).join("")
+    + (bucks.length ? bucks.map(b =>
+        `<button class="chip${curFilter===b?" on":""}" onclick="setFilt('${b}')"
+          style="border-color:${buckColor(b)};${curFilter===b?"background:#1a2d14;color:"+buckColor(b):""}">&#9679; ${b}</button>`
+      ).join("") : "");
+  const fil = curFilter === "all" ? sightings
+    : bucks.includes(curFilter) ? sightings.filter(s => s.buck_name === curFilter)
+    : sightings.filter(s => s.camera_name === curFilter);
+  const sl = document.getElementById("slist");
+  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4a6a3a;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
+  sl.innerHTML = fil.map(s => {
+    const bc = s.buck_name ? buckColor(s.buck_name) : null;
+    return `<div class="sc${s.deer_type&&s.deer_type.includes("Mature")?" m":""}">
+      ${s.image_url ? `<img class="sc-img" src="${s.image_url}" alt="" onclick="showDet(${s.id})"/>` : ""}
+      <div class="sc-body" onclick="showDet(${s.id})">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-size:14px;font-weight:600;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
+            ${s.buck_name ? `<div style="font-size:12px;margin-top:3px;color:${bc}">&#9679; ${s.buck_name}</div>` : ""}
+            <div style="font-size:12px;color:#7a9e6a;margin-top:2px">${s.camera_name}</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;color:#a0b890">${fmtD(s.date)}</div>
+            <div style="font-size:12px;color:#7a9e6a">${fmtT(s.time)}</div>
+          </div>
+        </div>
+        <div class="tags">
+          ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
+          ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
+          ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}F</span>` : ""}
+          ${s.humidity ? `<span class="tag">&#128167; ${s.humidity}%</span>` : ""}
+          ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
+        </div>
+        ${s.notes ? `<div class="snotes">${s.notes}</div>` : ""}
+      </div>
+      <div class="sc-foot">
+        <button class="edit-btn" onclick="openEdit(${s.id})">&#9998; Edit</button>
+        ${s.buck_name
+          ? `<span style="font-size:11px;color:${bc}">&#9679; ${s.buck_name}</span>`
+          : `<span style="font-size:11px;color:#4a6a3a;font-style:italic">Tap Edit to name buck</span>`}
+      </div>
+    </div>`;
+  }).join("");
+}
+function setFilt(f) { curFilter = f; renderLog(); }
+
+// --- detail -
+function showDet(id) {
+  const s = sightings.find(x => x.id === id); if(!s) return;
+  const m = moonPhase(s.date);
+  const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const wxHtml = s.wind_speed ? `
+    <div class="wx" style="margin-top:10px">
+      <div class="wx-title">&#127780; Conditions at Sighting</div>
+      <div class="wx-grid">
+        <div class="wx-cell"><div class="wx-val">${s.temp_f||"--"}</div><div class="wx-lbl">Temp F</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_speed||"--"}</div><div class="wx-lbl">Wind mph</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_gust||"--"}</div><div class="wx-lbl">Gust mph</div></div>
+      </div>
+      <div class="wx-row2">
+        <div class="wx-cell"><div class="wx-val">${s.wind_dir||"--"}</div><div class="wx-lbl">Wind Dir</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.humidity?s.humidity+"%":"--"}</div><div class="wx-lbl">Humidity</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.precip?s.precip+'"':"--"}</div><div class="wx-lbl">Precip</div></div>
+      </div>
+      ${s.pressure ? `<div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px">
+        <div class="wx-lbl">Barometric Pressure</div>
+        <div style="font-size:13px;color:#e8dcc8">${s.pressure} hPa</div>
+      </div></div>` : ""}
+    </div>` : "";
+  document.getElementById("detcontent").innerHTML = `
+    ${s.image_url ? `<img src="${s.image_url}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:280px;object-fit:cover"/>` : ""}
+    <div class="card${s.deer_type&&s.deer_type.includes("Mature")?" gold":""}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="font-size:18px;font-weight:700;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
+        ${s.buck_name ? `<div style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</div>` : ""}
+      </div>
+      <div style="font-size:13px;color:#7a9e6a;margin-bottom:14px">${s.camera_name}</div>
+      <div class="dgrid">
+        <div class="dc"><div class="dl">Date</div><div class="dv">${fmtD(s.date)}</div></div>
+        <div class="dc"><div class="dl">Time</div><div class="dv">${fmtT(s.time)}</div></div>
+        <div class="dc"><div class="dl">Moon</div><div class="dv">${m.i} ${m.l}</div></div>
+        <div class="dc"><div class="dl">Behavior</div><div class="dv">${s.behavior||"--"}</div></div>
+      </div>
+      ${wxHtml}
+      ${s.notes ? `<div style="background:#0d1a0f;border-radius:6px;padding:10px;margin-top:10px">
+        <div style="font-size:10px;color:#4a6a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div>
+        <div style="font-size:13px;color:#a0b890;line-height:1.6;font-style:italic">${s.notes}</div>
+      </div>` : ""}
+      <button class="edit-btn" style="margin-top:12px;width:100%;padding:10px" onclick="openEdit(${s.id})">&#9998; Edit Sighting</button>
+    </div>`;
+  showView("det");
+}
+
+// --- form -
+function initForm() {
+  const now = new Date();
+  document.getElementById("fd").value = now.toISOString().split("T")[0];
+  document.getElementById("ft").value = now.toTimeString().slice(0,5);
+  document.getElementById("fbuckname").value = "";
+  document.getElementById("fnotes").value = "";
+  document.getElementById("ftemp").value = "";
+  document.getElementById("fwind").value = "";
+  wxFetched = null; wxApplied = null; formImgFile = null;
+  document.getElementById("wxload").style.display = "block";
+  document.getElementById("wxload").textContent = "Fetching conditions...";
+  document.getElementById("wxdata").style.display = "none";
+  document.getElementById("wxstat").textContent = "fetching...";
+  document.getElementById("wxstat").style.color = "#4a6a3a";
+  document.getElementById("uprev").style.display = "none";
+  document.getElementById("uph").style.display = "block";
+  refreshBucknameList(); updateMoon(); autoWx();
+  mkChips("cch", CAMNAMES, "cam");
+  mkChips("dch", DTYPES, "deer");
+  mkChips("bch", BEHS, "beh");
+  checkSub();
+}
+function refreshBucknameList() {
+  const dl = document.getElementById("bucknamelist");
+  if(dl) dl.innerHTML = getNamedBucks().map(b => `<option value="${b}">`).join("");
+}
+function mkChips(id, opts, key) {
+  document.getElementById(id).innerHTML = opts.map(o =>
+    `<button class="chip" data-k="${key}" data-v="${o}" onclick="pickChip(this,'${key}')">${o}</button>`
+  ).join("");
+}
+function pickChip(btn, key) {
+  document.querySelectorAll(`.chip[data-k="${key}"]`).forEach(b => b.classList.remove("on"));
+  btn.classList.add("on"); checkSub();
+}
+function checkSub() {
+  const c = document.querySelector(".chip[data-k='cam'].on");
+  const d = document.querySelector(".chip[data-k='deer'].on");
+  const btn = document.getElementById("sbtn");
+  if(c && d) { btn.classList.remove("dis"); btn.classList.add("rdy"); }
+  else { btn.classList.remove("rdy"); btn.classList.add("dis"); }
+}
+function updateMoon() {
+  const d = document.getElementById("fd").value;
+  if(!d) return;
+  const m = moonPhase(d);
+  document.getElementById("micon").textContent = m.i;
+  document.getElementById("mlbl").textContent = m.l;
+  document.getElementById("msub").textContent = "Auto-calculated for " + fmtD(d);
+  document.getElementById("tlbl").textContent = "Time " + m.i;
+}
+function handlePhoto(inp) {
+  const f = inp.files[0]; if(!f) return;
+  formImgFile = f;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById("uph").style.display = "none";
+    const p = document.getElementById("uprev");
+    p.src = e.target.result; p.style.display = "block";
+  };
+  r.readAsDataURL(f);
+}
+
+
+
+// --- init -
+
+// Real-time updates - refresh when another user logs a sighting
+const channel = sb.channel('sightings-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'sightings' }, payload => {
+    // Reload sightings when any change happens from another session
+    if(payload.eventType === 'INSERT') {
+      const exists = sightings.find(s => s.id === payload.new.id);
+      if(!exists) {
+        sightings.unshift(payload.new);
+        document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
+        const activeDash = document.getElementById("sheet-intel")?.classList.contains("open") || false;
+        if(activeDash) renderDash();
+        buildMapFilters(); buildMapLegend(); refreshBucknameList();
+      }
+    }
+  })
+  .subscribe();
+
+function renderDash() {
+  if(!document.getElementById("intelContent")) return;
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
+
+  const totalCount = sightings.length;
+  const buckCount = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
+  const matureList = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
+  const matureCount = matureList.length;
+  const nb = getNamedBucks();
+
+  // Stats strip
+  let html = `<div class="sgrid">
+    <div class="sbox"><div class="snum">${totalCount}</div><div class="slbl">Total</div></div>
+    <div class="sbox"><div class="snum">${buckCount}</div><div class="slbl">Bucks</div></div>
+    <div class="sbox"><div class="snum">${matureCount}</div><div class="slbl">Mature</div></div>
+  </div>`;
+
+  if(!totalCount) {
+    html += `<div class="card"><p style="color:#4a6a3a;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    document.getElementById("intelContent").innerHTML = html;
+    document.getElementById("hcount").textContent = "0 logged";
+    return;
+  }
+  document.getElementById("hcount").textContent = totalCount + " logged";
+
+  // --- Pre-compute all aggregates -
+  // Wind counts
+  const windCounts = {};
+  WINDS.forEach(w => windCounts[w] = 0);
+  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
+  const maxWind = Math.max(...Object.values(windCounts), 1);
+  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
+
+  // Time of day counts
+  const timeCounts = {};
+  Object.keys(TIME_BUCKETS).forEach(k => timeCounts[k] = 0);
+  sightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
+    });
+  });
+  const maxTime = Math.max(...Object.values(timeCounts), 1);
+  const topTime = Object.entries(timeCounts).sort((a,b) => b[1]-a[1])[0];
+
+  // Camera counts
+  const camCounts = {};
+  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
+  const camMatureCounts = {};
+  CAMNAMES.slice(0,5).forEach(c => camMatureCounts[c] = 0);
+  sightings.forEach(s => {
+    if(camCounts[s.camera_name] !== undefined) {
+      camCounts[s.camera_name]++;
+      if(s.deer_type && s.deer_type.includes("Mature")) camMatureCounts[s.camera_name]++;
+    }
+  });
+  const maxCam = Math.max(...Object.values(camCounts), 1);
+  const topCam = Object.entries(camCounts).sort((a,b) => b[1]-a[1])[0];
+
+  // Mature buck conditions
+  const matureTemps = matureList.filter(s => s.temp_f).map(s => s.temp_f);
+  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b)=>a+b,0)/matureTemps.length) : null;
+  const moonCounts = {};
+  matureList.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
+  const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
+  const highP = sightings.filter(s => s.pressure && s.pressure > 1020);
+  const lowP = sightings.filter(s => s.pressure && s.pressure <= 1020);
+  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
+  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
+
+  // --- Named buck cards -
+  if(nb.length > 0) {
+    html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
+    nb.forEach(bname => {
+      const bs = sightings.filter(s => s.buck_name === bname);
+      const color = '#4a7fc1';
+      const cameras = [...new Set(bs.map(s => s.camera_name))];
+      const dates = bs.map(s => s.date).sort();
+      const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
+
+      // Wind aggregates
+      const bWind = {}; WINDS.forEach(w => bWind[w]=0);
+      const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
+      const bMoon = {}; const bBehav = {};
+      const bTemps = [], bPressures = [], bWindSpeeds = [], bHumid = [];
+      const weatherEvents = { rain:0, snow:0, postFront:0, calm:0 };
+
+      bs.forEach(s => {
+        if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++;
+        if(s.temp_f) bTemps.push(parseFloat(s.temp_f));
+        if(s.pressure) bPressures.push(parseFloat(s.pressure));
+        if(s.wind_speed) bWindSpeeds.push(parseFloat(s.wind_speed));
+        if(s.humidity) bHumid.push(parseFloat(s.humidity));
+        if(s.precip && parseFloat(s.precip) > 0.1) weatherEvents.rain++;
+        if(s.wind_speed && parseFloat(s.wind_speed) < 3) weatherEvents.calm++;
+        if(s.pressure && parseFloat(s.pressure) > 1020) weatherEvents.postFront++;
+        if(s.moon_phase) bMoon[s.moon_phase] = (bMoon[s.moon_phase]||0)+1;
+        if(s.behavior) bBehav[s.behavior] = (bBehav[s.behavior]||0)+1;
+        if(s.time) {
+          const h = parseInt(s.time);
+          Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+            if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
+          });
+        }
+      });
+
+      const bMaxWind = Math.max(...Object.values(bWind), 1);
+      const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b_) => bWind[b_]-bWind[a]).slice(0,3);
+      const bTopTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b_)=>b_[1]-a[1]);
+      const bTopMoon = Object.entries(bMoon).sort((a,b_)=>b_[1]-a[1]).slice(0,2);
+      const bTopBehav = Object.entries(bBehav).sort((a,b_)=>b_[1]-a[1]);
+      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b_)=>a+b_,0)/bTemps.length) : null;
+      const bMinTemp = bTemps.length ? Math.round(Math.min(...bTemps)) : null;
+      const bMaxTemp = bTemps.length ? Math.round(Math.max(...bTemps)) : null;
+      const bAvgPress = bPressures.length ? Math.round(bPressures.reduce((a,b_)=>a+b_,0)/bPressures.length) : null;
+      const bMinPress = bPressures.length ? Math.round(Math.min(...bPressures)) : null;
+      const bMaxPress = bPressures.length ? Math.round(Math.max(...bPressures)) : null;
+      const bAvgWind = bWindSpeeds.length ? Math.round(bWindSpeeds.reduce((a,b_)=>a+b_,0)/bWindSpeeds.length) : null;
+      const bAvgHumid = bHumid.length ? Math.round(bHumid.reduce((a,b_)=>a+b_,0)/bHumid.length) : null;
+      const camSeq = [...new Set(bs.sort((a,b_)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b_.date+'T'+(b_.time||'00:00'))).map(s=>s.camera_name))];
+
+      // Build mini wind rose SVG for buck card
+      const miniRose = buildWindRoseSVG(bWind, bMaxWind, bTopWinds, 70);
+
+      // Build mini 24hr timeline
+      const miniTimeline = build24HrTimeline(bs, true);
+
+      html += `<div class="buck-intel">
+        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
+          ${recentImg
+            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
+            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="15" rx="5" ry="4"/><line x1="12" y1="11" x2="12" y2="8"/><circle cx="12" cy="7" r="2"/><path d="M10 5 L8 2 M8 2 L6 3"/><path d="M14 5 L16 2 M16 2 L18 3"/></svg></div>`}
+          <div style="flex:1;min-width:0">
+            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
+            <div style="font-size:11px;color:var(--text2)">${bs.length} sightings &middot; ${cameras.join(', ')}</div>
+            <div style="font-size:10px;color:var(--text3)">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
+          </div>
+          <div class="bi-arrow">&#8964;</div>
+        </button>
+        <div class="bi-body">
+
+          <!-- Wind + Time row -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+            <div style="background:var(--bg);border-radius:10px;padding:10px">
+              <div class="cond-title">Wind Pattern</div>
+              ${miniRose}
+            </div>
+            <div style="background:var(--bg);border-radius:10px;padding:10px">
+              <div class="cond-title">Activity Hours</div>
+              ${miniTimeline}
+            </div>
+          </div>
+
+          <!-- Weather conditions grid -->
+          <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
+            <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
+              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'' : '--'}</div>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
+                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}F-${bMaxTemp}F</div>` : ''}
+              </div>
+              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
+                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
+              </div>
+              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
+                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgWind !== null ? bAvgWind : '--'}</div>
+                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Wind mph</div>
+                ${bAvgHumid !== null ? `<div style="font-size:9px;color:var(--text3)">${bAvgHumid}% humid</div>` : ''}
+              </div>
+            </div>
+            <!-- Weather event tags -->
+            ${(weatherEvents.postFront > 0 || weatherEvents.calm > 0 || weatherEvents.rain > 0) ? `
+            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
+              ${weatherEvents.postFront > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a2535;border:1px solid #2a4060;border-radius:8px;color:#7aafe0">&#8679; High pressure: ${weatherEvents.postFront}x</span>` : ''}
+              ${weatherEvents.calm > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:var(--text2)">Calm wind: ${weatherEvents.calm}x</span>` : ''}
+              ${weatherEvents.rain > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#151a20;border:1px solid #2a3540;border-radius:8px;color:#6090b0">Rain event: ${weatherEvents.rain}x</span>` : ''}
+            </div>` : ''}
+          </div>
+
+          <!-- Stats rows -->
+          <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px">
+            <div class="stat-row"><span class="stat-row-lbl">Top moon phases</span><span class="stat-row-val">${bTopMoon.map(([m,c])=>`${m} (${c})`).join(', ')||'--'}</span></div>
+            <div class="stat-row"><span class="stat-row-lbl">Top behaviors</span><span class="stat-row-val">${bTopBehav.slice(0,2).map(([b,c])=>`${b} (${c})`).join(', ')||'--'}</span></div>
+            <div class="stat-row"><span class="stat-row-lbl">Camera pattern</span><span class="stat-row-val" style="font-size:10px">${camSeq.join(' &rarr; ')}</span></div>
+          </div>
+
+          ${bs.length >= 3 ? `<div class="insight" style="margin-bottom:10px">
+            <div class="insight-title">&#129504; Pattern Analysis</div>
+            <div class="insight-text">
+              ${bTopWinds.length ? `Most active on <strong style="color:var(--blue)">${bTopWinds[0]}${bTopWinds[1]?' / '+bTopWinds[1]:''} wind</strong>. ` : ''}
+              ${bTopTime.length ? `Peak: <strong style="color:var(--blue)">${bTopTime[0][0]}</strong>. ` : ''}
+              ${bAvgTemp !== null ? `Moves in <strong style="color:var(--blue)">${bAvgTemp < 40 ? 'cold' : bAvgTemp < 55 ? 'cool' : 'mild'} temps</strong> (avg ${bAvgTemp}F). ` : ''}
+              ${bAvgPress !== null && bAvgPress > 1018 ? `Favors <strong style="color:var(--blue)">high pressure</strong> days. ` : ''}
+              ${camSeq.length > 1 ? `Confirmed corridor: <strong style="color:var(--blue)">${camSeq.join(' &rarr; ')}</strong>.` : ''}
+            </div>
+          </div>` : `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:6px 0">Log ${3-bs.length} more sighting${3-bs.length>1?'s':''} to unlock pattern analysis.</div>`}
+
+          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)">&#128506; View movement map</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // --- Property Intelligence -
+  html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
+
+  // Wind rose - radial SVG chart
+  html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; Deer Activity</div>
+    ${buildWindRoseSVG(windCounts, maxWind, topWinds)}
+  </div>`;
+
+  // Time of day
+    html += `<div class="prop-stat"><div class="cond-title">Activity by Time of Day</div>
+    ${build24HrTimeline(sightings)}
+  </div>`;
+    html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
+    ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
+  </div>`;
+  html += `<div class="insight insight-gold">
+    <div class="insight-title">&#127919; Key Insights &mdash; ${totalCount} Sightings</div>
+    <div class="insight-text">
+      ${topWinds.length?`<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
+      ${topTime?`<strong style="color:#c8a951">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
+      ${avgMatureTemp?`<strong style="color:#c8a951">Mature buck temp:</strong> avg ${avgMatureTemp}F at sighting.<br/>`:""}
+      ${topMoon?`<strong style="color:#c8a951">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
+      ${highP.length&&lowP.length?`<strong style="color:#c8a951">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
+      ${topCam?`<strong style="color:#c8a951">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
+    </div>
+  </div>`;
+
+  // --- 7-day hunt forecast -
+  html += `<div class="prop-stat">
+    <div class="cond-title" style="margin-bottom:8px">&#128197; 7-Day Hunt Forecast</div>
+    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+  </div>`;
+
+  // --- Weather & movement correlation -
+  html += `<div class="prop-stat">
+    <div class="cond-title" style="margin-bottom:10px">&#127782; Weather Impact on Movement</div>
+    ${buildWeatherCorrelation(sightings)}
+  </div>`;
+
+  // Season intel
+  html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
+    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+  </div>`;
+
+  document.getElementById("intelContent").innerHTML = html;
+}
+
+
+// --- startup
+// Load data immediately
+loadSightings();
+updateMapWeather();
+
+let mapRetries = 0;
+function retryMap() {
+  mapRetries = 0;
+  document.getElementById('mapRetryBtn').style.display = 'none';
+  document.getElementById('mapLoadSpinner').style.display = 'block';
+  document.getElementById('mapLoadText').textContent = 'Loading map...';
+  startMap();
+}
+function startMap() {
+  const overlay = document.getElementById('mapLoadingOverlay');
+  if(typeof mapboxgl === 'undefined') {
+    mapRetries++;
+    if(mapRetries > 30) {
+      // After 6 seconds, show retry button
+      if(overlay) {
+        document.getElementById('mapLoadSpinner').style.display = 'none';
+        document.getElementById('mapLoadText').textContent = 'Map failed to load';
+        document.getElementById('mapRetryBtn').style.display = 'block';
+      }
+      return;
+    }
+    setTimeout(startMap, 200);
+    return;
+  }
+  try {
+    mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+    loadCamLocations().then(() => {
+      try {
+        initMap();
+        // Hide overlay once map starts loading
+        if(mapInstance) {
+          mapInstance.once('load', () => {
+            if(overlay) overlay.style.display = 'none';
+          });
+          // Fallback - hide after 3s even if load event doesnt fire
+          setTimeout(() => { if(overlay) overlay.style.display = 'none'; }, 3000);
+        }
+      } catch(e) {
+        console.error('Map init error:', e);
+        if(overlay) {
+          document.getElementById('mapLoadSpinner').style.display = 'none';
+          document.getElementById('mapLoadText').textContent = 'Map error: ' + e.message;
+          document.getElementById('mapRetryBtn').style.display = 'block';
+        }
+      }
+    });
+  } catch(e) {
+    console.error('startMap error:', e);
+  }
+}
+setTimeout(startMap, 50);
+</script>
+
+<!-- Map loading overlay -->
+<div id="mapLoadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:1;background:#0a0a0a;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px">
+  <div id="mapLoadSpinner" style="width:28px;height:28px;border:2px solid #222;border-top-color:#4a7fc1;border-radius:50%;animation:spin 0.8s linear infinite"></div>
+  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:Georgia,serif">Loading map...</div>
+  <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #4a7fc1;border-radius:8px;background:transparent;color:#4a7fc1;font-size:12px;cursor:pointer;font-family:Georgia,serif">Retry Map</button>
+</div>
+</body>
+</html>
