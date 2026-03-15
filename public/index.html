@@ -1608,11 +1608,11 @@ function build24HrTimeline(sightings, mini) {
     const x = h * barW;
     const color = periodColor(h);
     const opacity = cnt > 0 ? (0.4 + pct * 0.6) : 0.1;
-    bars += `<rect x="${x}%" y="${60 - barH}px" width="${barW - 0.3}" height="${barH}px"
+    bars += `<rect x="${x}" y="${60 - barH}" width="${barW - 0.3}" height="${barH}"
       fill="${color}" fill-opacity="${opacity}" rx="1"/>`;
     // Count on top of bar if > 0
     if(cnt > 0 && barH > 10) {
-      bars += `<text x="${x + barW/2}%" y="${58 - barH}px" text-anchor="middle"
+      bars += `<text x="${x + barW/2}" y="${58 - barH}" text-anchor="middle"
         font-size="8" fill="${color}" font-family="Georgia,serif">${cnt}</text>`;
     }
   });
@@ -1621,7 +1621,7 @@ function build24HrTimeline(sightings, mini) {
   [0,3,6,9,12,15,18,21].forEach(h => {
     const x = h * barW + barW/2;
     const label = h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h-12}p`;
-    ticks += `<text x="${x}%" y="74" text-anchor="middle" font-size="8"
+    ticks += `<text x="${x}" y="74" text-anchor="middle" font-size="8"
       fill="#505050" font-family="Georgia,serif">${label}</text>`;
   });
 
