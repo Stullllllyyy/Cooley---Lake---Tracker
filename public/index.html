@@ -242,6 +242,14 @@ textarea{resize:none}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;margin-left:4px;vertical-align:middle;transition:background 0.3s}
 .sync-dot.on{background:var(--gold)}
 .bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
+
+.movement-legend{position:fixed;bottom:calc(var(--tab-h) + 10px);left:14px;z-index:50;background:rgba(10,10,10,0.88);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;backdrop-filter:blur(10px);display:none}
+.movement-legend.show{display:block}
+.ml-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
+.ml-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:10px;color:var(--text2)}
+.ml-line{height:2px;width:22px;border-radius:1px;flex-shrink:0}
+.ml-line.dashed{background:repeating-linear-gradient(90deg,#5a8fc8 0,#5a8fc8 4px,transparent 4px,transparent 8px)}
+
 </style>
 </head>
 <body>
@@ -272,7 +280,6 @@ textarea{resize:none}
     </div>
     <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
   </div>
-  <div class="map-fab-sm" id="heatmapBtn" onclick="toggleHeatmap()" title="Heat map">&#127787;&#xFE0E;</div>
 </div>
 <div id="mapLegend" style="display:none"></div>
 
@@ -453,6 +460,14 @@ textarea{resize:none}
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<!-- Movement legend -->
+<div class="movement-legend" id="movementLegend">
+  <div class="ml-title">Movement Lines</div>
+  <div class="ml-row"><div class="ml-line" style="background:#7aafe0"></div>Daytime</div>
+  <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
+  <div class="ml-row" style="margin-top:4px;color:var(--text3);font-size:9px">Thicker = more frequent corridor</div>
+</div>
 <script>
 
 // ── Sheet & Tab Management ────────────────────────────────────────────────────
@@ -1034,33 +1049,57 @@ function addPropertyOutline() {
 
 function addLineLayer() {
   if(mapInstance.getSource('buck-lines')) return;
-  mapInstance.addSource('buck-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-  // Solid line layer (daytime)
+  mapInstance.addSource('buck-lines', {
+    type: 'geojson',
+    data: { type:'FeatureCollection', features:[] }
+  });
+  // Arrow/symbol layer for direction indicators
+  mapInstance.addSource('buck-arrows', {
+    type: 'geojson',
+    data: { type:'FeatureCollection', features:[] }
+  });
+  // Solid daytime lines
   mapInstance.addLayer({
     id: 'buck-lines-day',
     type: 'line',
     source: 'buck-lines',
-    filter: ['==', ['get','daytime'], true],
+    filter: ['==',['get','daytime'],true],
     paint: {
       'line-color': ['get','color'],
-      'line-width': 2.5,
-      'line-opacity': 0.85
+      'line-width': ['get','width'],
+      'line-opacity': 0.9
     }
   });
-  // Dashed line layer (night/dawn)
+  // Dashed night lines
   mapInstance.addLayer({
     id: 'buck-lines-night',
     type: 'line',
     source: 'buck-lines',
-    filter: ['==', ['get','daytime'], false],
+    filter: ['==',['get','daytime'],false],
     paint: {
       'line-color': ['get','color'],
-      'line-width': 2,
-      'line-dasharray': [2, 2],
-      'line-opacity': 0.6
+      'line-width': ['get','width'],
+      'line-dasharray': [2,2],
+      'line-opacity': 0.65
+    }
+  });
+  // Direction arrows along lines
+  mapInstance.addLayer({
+    id: 'buck-arrows-layer',
+    type: 'symbol',
+    source: 'buck-arrows',
+    layout: {
+      'symbol-placement': 'line',
+      'symbol-spacing': 80,
+      'icon-image': 'arrow',
+      'icon-size': 0.8,
+      'icon-rotate': 90,
+      'icon-rotation-alignment': 'map',
+      'icon-allow-overlap': true
     }
   });
 }
+
 
 function addCamMarkers() {
   Object.values(mapMarkers).forEach(m => m.remove());
@@ -1146,99 +1185,155 @@ function refreshMapPins() {
 
 function updateBuckLines() {
   if(!mapInstance || !mapInstance.getSource('buck-lines')) return;
-  if(curMapFilter === 'all') {
-    mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:[] });
-    return;
-  }
-  const bs = sightings
-    .filter(s => s.buck_name === curMapFilter && camLocations[s.camera_name])
-    .sort((a,b) => new Date(a.date+'T'+(a.time||'00:00')) - new Date(b.date+'T'+(b.time||'00:00')));
-  if(bs.length < 2) {
-    mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:[] });
-    return;
-  }
 
-  // Time-of-day color for each segment
   const timeColor = t => {
-    if(!t) return '#555555';
+    if(!t) return '#555';
     const h = parseInt(t);
-    if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn
-    if(h >= 7 && h < 10) return '#7aafe0';  // morning
-    if(h >= 10 && h < 16) return '#888888'; // midday/afternoon
-    if(h >= 16 && h < 20) return '#5a8fc8'; // dusk
-    return '#303060';                         // night
+    if(h >= 5 && h < 7)  return '#5a8fc8';
+    if(h >= 7 && h < 10) return '#7aafe0';
+    if(h >= 10 && h < 16) return '#888';
+    if(h >= 16 && h < 20) return '#5a8fc8';
+    return '#4a4a6a';
   };
+  const isDaytime = t => { if(!t) return false; const h=parseInt(t); return h>=6&&h<20; };
 
-  const isDaytime = t => {
-    if(!t) return false;
-    const h = parseInt(t);
-    return h >= 6 && h < 20;
-  };
+  const allFeatures = [];
+  const arrowFeatures = [];
 
-  // Build one feature per segment so each can have its own color + dash pattern
-  const features = [];
-  for(let i = 0; i < bs.length - 1; i++) {
-    const s1 = bs[i], s2 = bs[i+1];
-    const p1 = camLocations[s1.camera_name];
-    const p2 = camLocations[s2.camera_name];
-    const color = timeColor(s1.time);
-    const daytime = isDaytime(s1.time);
-    features.push({
-      type: 'Feature',
-      properties: { color, daytime, label: `${s1.camera_name} → ${s2.camera_name}` },
-      geometry: {
-        type: 'LineString',
-        coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]]
-      }
-    });
+  const bucksToShow = curMapFilter === 'all'
+    ? getNamedBucks()
+    : curMapFilter === 'none' ? []
+    : [curMapFilter];
+
+  bucksToShow.forEach(bname => {
+    const bs = sightings
+      .filter(s => s.buck_name === bname && camLocations[s.camera_name])
+      .sort((a,b) => new Date(a.date+'T'+(a.time||'00:00')) - new Date(b.date+'T'+(b.time||'00:00')));
+    if(bs.length < 2) return;
+
+    const color = buckColor(bname);
+
+    // Count corridor frequency for line width
+    const corridorCount = {};
+    for(let i=0; i<bs.length-1; i++) {
+      const key = [bs[i].camera_name, bs[i+1].camera_name].sort().join('|');
+      corridorCount[key] = (corridorCount[key]||0) + 1;
+    }
+    const maxCount = Math.max(...Object.values(corridorCount), 1);
+
+    for(let i=0; i<bs.length-1; i++) {
+      const s1=bs[i], s2=bs[i+1];
+      const p1=camLocations[s1.camera_name];
+      const p2=camLocations[s2.camera_name];
+      const segColor = curMapFilter === 'all' ? color : timeColor(s1.time);
+      const daytime = isDaytime(s1.time);
+      const key = [s1.camera_name, s2.camera_name].sort().join('|');
+      const freq = corridorCount[key] || 1;
+      // Width: 2-6px based on frequency
+      const width = Math.round(2 + (freq/maxCount) * 4);
+
+      allFeatures.push({
+        type:'Feature',
+        properties:{ color:segColor, daytime, width, buckName:bname,
+          label:`${s1.camera_name} → ${s2.camera_name}`,
+          date:s1.date, time:s1.time||'', freq },
+        geometry:{ type:'LineString', coordinates:[[p1.lng,p1.lat],[p2.lng,p2.lat]] }
+      });
+
+      // Midpoint arrow feature for direction
+      const midLng = (p1.lng + p2.lng) / 2;
+      const midLat = (p1.lat + p2.lat) / 2;
+      arrowFeatures.push({
+        type:'Feature',
+        properties:{ color:segColor },
+        geometry:{ type:'LineString', coordinates:[[p1.lng,p1.lat],[p2.lng,p2.lat]] }
+      });
+    }
+  });
+
+  mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:allFeatures });
+  // Arrows source - using line direction
+  if(mapInstance.getSource('buck-arrows')) {
+    mapInstance.getSource('buck-arrows').setData({ type:'FeatureCollection', features:arrowFeatures });
   }
 
-  mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features });
-
-  // Fit to show full route
-  const lngs = bs.map(s => camLocations[s.camera_name].lng);
-  const lats = bs.map(s => camLocations[s.camera_name].lat);
-  if(lngs.length >= 2) {
-    mapInstance.fitBounds(
-      [[Math.min(...lngs)-0.003, Math.min(...lats)-0.003],[Math.max(...lngs)+0.003, Math.max(...lats)+0.003]],
-      {padding:80, duration:800}
-    );
+  // If filtering to one buck, fit map to their full corridor
+  if(curMapFilter !== 'all' && bucksToShow.length === 1) {
+    const bs = sightings.filter(s => s.buck_name===curMapFilter && camLocations[s.camera_name]);
+    if(bs.length >= 2) {
+      const lngs = bs.map(s => camLocations[s.camera_name].lng);
+      const lats = bs.map(s => camLocations[s.camera_name].lat);
+      mapInstance.fitBounds(
+        [[Math.min(...lngs)-0.004,Math.min(...lats)-0.004],[Math.max(...lngs)+0.004,Math.max(...lats)+0.004]],
+        {padding:80, duration:800}
+      );
+    }
   }
 }
 
+
 function buildMapFilters() {
   const bucks = getNamedBucks();
-  // Update label
   const lbl = document.getElementById('filterLabel');
-  if(lbl) lbl.innerHTML = curMapFilter === 'all'
-    ? '&#128200; All Deer'
-    : `&#9679; ${curMapFilter}`;
-  // Build dropdown items
+  if(lbl) {
+    if(curMapFilter === 'all') lbl.innerHTML = '&#128200; All Deer';
+    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '&#128000; All Buck Lines';
+    else lbl.innerHTML = `&#9679; ${curMapFilter}`;
+  }
   const dd = document.getElementById('buckDropdown');
   if(!dd) return;
-  const allSelected = curMapFilter === 'all';
+
+  const allSel = curMapFilter === 'all';
+  const allBucksSel = curMapFilter === 'all-bucks';
+
   dd.innerHTML = `
-    <div class="buck-drop-item${allSelected?' selected':''}" onclick="setMapFilter('all')">
+    <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('all')">
       <div class="buck-drop-dot" style="background:#555"></div>
-      <span>All Deer</span>
-      ${allSelected ? '<span style="margin-left:auto;font-size:11px">&#10003;</span>' : ''}
+      <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">All Deer</div><div style="font-size:10px;color:var(--text3)">${sightings.length} total sightings</div></div>
+      ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
+    </div>
+    <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#4a7fc1,#7aafe0)"></div>
+      <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Buck Lines</div><div style="font-size:10px;color:var(--text3)">Show all movement corridors</div></div>
+      ${allBucksSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
     <div class="buck-drop-divider"></div>
     ${bucks.map(b => {
       const color = buckColor(b);
       const sel = curMapFilter === b;
       const cnt = sightings.filter(s => s.buck_name === b).length;
+      const cams = [...new Set(sightings.filter(s=>s.buck_name===b).map(s=>s.camera_name))];
       return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
         <div class="buck-drop-dot" style="background:${color}"></div>
         <div style="flex:1">
           <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
-          <div style="font-size:10px;color:var(--text3)">${cnt} sightings</div>
+          <div style="font-size:10px;color:var(--text3)">${cnt} sightings &middot; ${cams.slice(0,2).join(', ')}${cams.length>2?'...':''}</div>
         </div>
-        ${sel ? '<span style="color:var(--blue);font-size:11px">&#10003;</span>' : ''}
+        ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
       </div>`;
     }).join('')}
+    <div class="buck-drop-divider"></div>
+    <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#4a7fc1,#a0c8ff)"></div>
+      <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Buck activity density overlay</div></div>
+      <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
+    </div>
   `;
+
+  // Show/hide movement legend
+  const leg = document.getElementById('movementLegend');
+  if(leg) leg.classList.toggle('show', curMapFilter !== 'all');
 }
+
+function toggleHeatmapFromMenu() {
+  toggleHeatmap();
+  buildMapFilters();
+  // Keep dropdown open so user sees ON/OFF toggle
+  const dd = document.getElementById('buckDropdown');
+  if(dd) dd.style.display = 'block';
+  setTimeout(() => document.addEventListener('click', closeBuckDropdown, {once:true}), 50);
+}
+
 
 function toggleBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
@@ -1282,6 +1377,7 @@ function setMapFilter(name) {
   refreshMapPins();
   updateBuckLines();
 }
+
 
 
 function toggleEditMode() {
