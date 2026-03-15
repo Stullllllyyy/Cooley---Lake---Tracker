@@ -27,10 +27,23 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
-.map-filter-bar{position:fixed;top:108px;left:0;right:0;z-index:50;display:flex;gap:6px;padding:0 14px;overflow-x:auto}
-.map-filter-bar::-webkit-scrollbar{display:none}
-.mfchip{padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);background:rgba(8,13,8,0.85);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;backdrop-filter:blur(10px);transition:all 0.2s}
-.mfchip.on{background:rgba(200,169,81,0.18);border-color:var(--gold);color:var(--gold)}
+/* map filter dropdown */
+.map-filter-bar{position:fixed;top:108px;left:0;right:0;z-index:50;display:flex;gap:8px;padding:0 14px;pointer-events:none;align-items:flex-start}
+.map-filter-wrap{position:relative;pointer-events:auto}
+.map-select-wrap{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;background:rgba(10,10,10,0.88);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap;user-select:none;transition:border-color 0.2s;min-width:140px;justify-content:space-between}
+.map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
+.map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
+.map-select-arrow.open{transform:rotate(180deg)}
+.buck-dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:200px;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);backdrop-filter:blur(16px)}
+.buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
+.buck-drop-item:last-child{border:none}
+.buck-drop-item:active,.buck-drop-item:hover{background:var(--surface2)}
+.buck-drop-item.selected{color:var(--blue)}
+.buck-drop-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.buck-drop-divider{height:1px;background:var(--border2);margin:4px 0}
+/* heatmap small fab */
+.map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
+.map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
 
 .map-fabs{position:fixed;bottom:calc(var(--tab-h) + 16px);right:14px;z-index:50;display:flex;flex-direction:column;gap:8px}
 .map-fab{width:46px;height:46px;border-radius:13px;background:rgba(8,13,8,0.88);border:1px solid var(--border2);color:var(--text2);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s}
@@ -250,8 +263,17 @@ textarea{resize:none}
   </div>
 </div>
 
-<!-- Buck filter chips on map -->
-<div class="map-filter-bar" id="mapFilters"></div>
+<!-- Map filter bar -->
+<div class="map-filter-bar" id="mapFilters">
+  <div class="map-filter-wrap">
+    <div class="map-select-wrap" onclick="toggleBuckDropdown()">
+      <span id="filterLabel">&#128200; All Deer</span>
+      <span class="map-select-arrow" id="filterArrow">&#8964;</span>
+    </div>
+    <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
+  </div>
+  <div class="map-fab-sm" id="heatmapBtn" onclick="toggleHeatmap()" title="Heat map">&#127787;&#xFE0E;</div>
+</div>
 <div id="mapLegend" style="display:none"></div>
 
 <!-- FABs -->
@@ -1186,15 +1208,60 @@ function updateBuckLines() {
 
 function buildMapFilters() {
   const bucks = getNamedBucks();
-  const bar = document.getElementById('mapFilters');
-  if(!bar) return;
-  bar.innerHTML =
-    `<button class="mfchip${curMapFilter==='all'?' on':''}" onclick="setMapFilter('all',this)">All Cameras</button>`
-    + bucks.map(b =>
-        `<button class="mfchip${curMapFilter===b?' on':''}" onclick="setMapFilter('${b}',this)"
-          style="${curMapFilter===b?'border-color:'+buckColor(b)+';color:'+buckColor(b):''}">&#9679; ${b}</button>`
-      ).join('');
+  // Update label
+  const lbl = document.getElementById('filterLabel');
+  if(lbl) lbl.innerHTML = curMapFilter === 'all'
+    ? '&#128200; All Deer'
+    : `&#9679; ${curMapFilter}`;
+  // Build dropdown items
+  const dd = document.getElementById('buckDropdown');
+  if(!dd) return;
+  const allSelected = curMapFilter === 'all';
+  dd.innerHTML = `
+    <div class="buck-drop-item${allSelected?' selected':''}" onclick="setMapFilter('all')">
+      <div class="buck-drop-dot" style="background:#555"></div>
+      <span>All Deer</span>
+      ${allSelected ? '<span style="margin-left:auto;font-size:11px">&#10003;</span>' : ''}
+    </div>
+    <div class="buck-drop-divider"></div>
+    ${bucks.map(b => {
+      const color = buckColor(b);
+      const sel = curMapFilter === b;
+      const cnt = sightings.filter(s => s.buck_name === b).length;
+      return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
+        <div class="buck-drop-dot" style="background:${color}"></div>
+        <div style="flex:1">
+          <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
+          <div style="font-size:10px;color:var(--text3)">${cnt} sightings</div>
+        </div>
+        ${sel ? '<span style="color:var(--blue);font-size:11px">&#10003;</span>' : ''}
+      </div>`;
+    }).join('')}
+  `;
 }
+
+function toggleBuckDropdown() {
+  const dd = document.getElementById('buckDropdown');
+  const arrow = document.getElementById('filterArrow');
+  const wrap = document.querySelector('.map-select-wrap');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if(arrow) arrow.classList.toggle('open', !isOpen);
+  if(wrap) wrap.classList.toggle('active', !isOpen);
+  if(!isOpen) {
+    setTimeout(() => document.addEventListener('click', closeBuckDropdown, {once:true}), 50);
+  }
+}
+
+function closeBuckDropdown() {
+  const dd = document.getElementById('buckDropdown');
+  const arrow = document.getElementById('filterArrow');
+  const wrap = document.querySelector('.map-select-wrap');
+  if(dd) dd.style.display = 'none';
+  if(arrow) arrow.classList.remove('open');
+  if(wrap) wrap.classList.remove('active');
+}
+
 
 function buildMapLegend() {
   const bucks = getNamedBucks();
@@ -1208,14 +1275,14 @@ function buildMapLegend() {
   leg.innerHTML = h;
 }
 
-function setMapFilter(name, btn) {
+function setMapFilter(name) {
   curMapFilter = name;
-  document.querySelectorAll('.mfchip').forEach(c => { c.classList.remove('on'); c.style.borderColor=''; c.style.color=''; });
-  btn.classList.add('on');
-  if(name !== 'all') { btn.style.borderColor = buckColor(name); btn.style.color = buckColor(name); }
+  closeBuckDropdown();
+  buildMapFilters();
   refreshMapPins();
   updateBuckLines();
 }
+
 
 function toggleEditMode() {
   editMode = !editMode;
@@ -1772,6 +1839,71 @@ async function loadHuntForecast() {
   }
 }
 
+
+
+// ── Heatmap ───────────────────────────────────────────────────────────────────
+let heatmapOn = false;
+
+function toggleHeatmap() {
+  heatmapOn = !heatmapOn;
+  const btn = document.getElementById('heatmapBtn');
+  if(btn) btn.classList.toggle('active', heatmapOn);
+  if(heatmapOn) showHeatmap(); else hideHeatmap();
+}
+
+function showHeatmap() {
+  if(!mapInstance) return;
+  // Build GeoJSON points from sightings with camera locations
+  const features = sightings
+    .filter(s => camLocations[s.camera_name])
+    .map(s => {
+      const pos = camLocations[s.camera_name];
+      const isBuck = s.deer_type && s.deer_type.includes('Buck');
+      const isMature = s.deer_type && s.deer_type.includes('Mature');
+      return {
+        type: 'Feature',
+        properties: { weight: isMature ? 3 : isBuck ? 2 : 1 },
+        geometry: { type: 'Point', coordinates: [pos.lng, pos.lat] }
+      };
+    });
+
+  if(mapInstance.getSource('heatmap-data')) {
+    mapInstance.getSource('heatmap-data').setData({ type:'FeatureCollection', features });
+  } else {
+    mapInstance.addSource('heatmap-data', {
+      type: 'geojson',
+      data: { type:'FeatureCollection', features }
+    });
+    mapInstance.addLayer({
+      id: 'heatmap-layer',
+      type: 'heatmap',
+      source: 'heatmap-data',
+      paint: {
+        'heatmap-weight': ['get','weight'],
+        'heatmap-intensity': ['interpolate',['linear'],['zoom'],13,0.6,16,1.4],
+        'heatmap-color': [
+          'interpolate',['linear'],['heatmap-density'],
+          0,'rgba(0,0,0,0)',
+          0.2,'rgba(30,60,120,0.5)',
+          0.4,'rgba(60,100,200,0.65)',
+          0.6,'rgba(100,160,255,0.75)',
+          0.8,'rgba(180,210,255,0.85)',
+          1,'rgba(255,255,255,0.95)'
+        ],
+        'heatmap-radius': ['interpolate',['linear'],['zoom'],13,25,16,50],
+        'heatmap-opacity': 0.75
+      }
+    }, 'buck-lines-day');
+  }
+  if(mapInstance.getLayer('heatmap-layer'))
+    mapInstance.setLayoutProperty('heatmap-layer','visibility','visible');
+}
+
+function hideHeatmap() {
+  if(!mapInstance) return;
+  if(mapInstance.getLayer('heatmap-layer'))
+    mapInstance.setLayoutProperty('heatmap-layer','visibility','none');
+}
 
 function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
   return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
