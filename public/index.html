@@ -264,7 +264,7 @@ textarea{resize:none}
   </div>
   <div class="wx-pill" onclick="openSheet('intel')">
     <div>
-      <div class="wx-pill-temp" id="mapWeatherTemp">--°</div>
+      <div class="wx-pill-temp" id="mapWeatherTemp">--&#176;</div>
       <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
     </div>
     <div style="font-size:22px" id="mapWeatherIcon">&#127956;</div>
@@ -468,7 +468,7 @@ textarea{resize:none}
   <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
   <div class="ml-row" style="
 <script>
-// ── Sheet & Tab Management ────────────────────────────────────────────────────
+// --- Sheet & Tab Management -
 const SHEETS = ['intel','log','sightings','detail'];
 
 function openSheet(name) {
@@ -588,7 +588,7 @@ function updateMapWeather() {
     const wind = Math.round(j.hourly.windspeed_10m[hour]);
     const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
     const dir = dirs[Math.round(j.hourly.winddirection_10m[hour]/22.5)%16];
-    document.getElementById('mapWeatherTemp').textContent = temp+'°F';
+    document.getElementById('mapWeatherTemp').textContent = temp+'&deg;F';
     document.getElementById('mapWeatherDetail').textContent = `${dir} ${wind}mph`;
   }).catch(()=>{});
 }
@@ -644,7 +644,7 @@ let wxFetched = null, wxApplied = null;
 let formImgFile = null;
 let editId = null, editImgFile = null, editImgChanged = false;
 
-// ── utils ──────────────────────────────────────────────────────────────────
+// --- utils -
 const fmtT = t => {
   if(!t) return "";
   const [h,m] = t.slice(0,5).split(":");
@@ -657,14 +657,14 @@ const fmtD = d => {
 };
 const moonPhase = date => {
   const p = (((new Date(date) - new Date("2000-01-06")) / 86400000) % 29.53 + 29.53) % 29.53;
-  if(p<1.85) return {i:"🌑",l:"New Moon"};
-  if(p<7.38) return {i:"🌒",l:"Waxing Crescent"};
-  if(p<9.22) return {i:"🌓",l:"First Quarter"};
-  if(p<14.76) return {i:"🌔",l:"Waxing Gibbous"};
-  if(p<16.61) return {i:"🌕",l:"Full Moon"};
-  if(p<22.15) return {i:"🌖",l:"Waning Gibbous"};
-  if(p<23.99) return {i:"🌗",l:"Last Quarter"};
-  return {i:"🌘",l:"Waning Crescent"};
+  if(p<1.85) return {i:"New Moon",l:"New Moon"};
+  if(p<7.38) return {i:"Waxing Crescent",l:"Waxing Crescent"};
+  if(p<9.22) return {i:"First Quarter",l:"First Quarter"};
+  if(p<14.76) return {i:"Waxing Gibbous",l:"Waxing Gibbous"};
+  if(p<16.61) return {i:"Full Moon",l:"Full Moon"};
+  if(p<22.15) return {i:"Waning Gibbous",l:"Waning Gibbous"};
+  if(p<23.99) return {i:"Last Quarter",l:"Last Quarter"};
+  return {i:"Waning Crescent",l:"Waning Crescent"};
 };
 const deg2dir = d => DIR_LABELS[Math.round(d/22.5)%16];
 const simpleDir = windDir => {
@@ -685,7 +685,7 @@ function syncDot(on) {
   if(d) d.className = "sync-dot" + (on ? " on" : "");
 }
 
-// ── data ───────────────────────────────────────────────────────────────────
+// --- data -
 async function loadSightings() {
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
@@ -780,7 +780,7 @@ async function submitSighting() {
   document.getElementById("uprev").style.display = "none";
   document.getElementById("uph").style.display = "block";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
-  btn.textContent = "✓ Saved!";
+  btn.textContent = "Saved!";
   document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
   setTimeout(() => { curFilter = "all"; showView("log"); }, 1000);
   updatePins(); refreshBucknameList(); renderDash();
@@ -823,7 +823,7 @@ async function deleteSighting() {
   renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
 }
 
-// ── edit modal ─────────────────────────────────────────────────────────────
+// --- edit modal -
 function openEdit(id) {
   const s = sightings.find(x => x.id === id); if(!s) return;
   editId = id; editImgChanged = false; editImgFile = null;
@@ -852,7 +852,7 @@ function handleEditPhoto(inp) {
   r.readAsDataURL(f);
 }
 
-// ── weather ────────────────────────────────────────────────────────────────
+// --- weather -
 let wxTimer = null;
 function autoWx() {
   const d = document.getElementById("fd").value;
@@ -874,7 +874,7 @@ async function fetchWx(date, time) {
     const inputDate = new Date(date + "T12:00:00");
     const today = new Date(); today.setHours(0,0,0,0);
     const diffDays = Math.floor((today - inputDate) / 86400000);
-    if(diffDays < 0) { load.textContent = "Future date — no weather yet."; return; }
+    if(diffDays < 0) { load.textContent = "Future date -- no weather yet."; return; }
     let url, isArchive = (diffDays >= 5);
     if(isArchive) {
       url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + CLAT
@@ -921,7 +921,7 @@ async function fetchWx(date, time) {
     // Auto-apply wind dir and temp immediately
     applyWx();
   } catch(e) {
-    load.textContent = "Weather unavailable — enter manually below.";
+    load.textContent = "Weather unavailable -- enter manually below.";
     stat.textContent = "unavailable"; stat.style.color = "#e87a4a";
     console.error("fetchWx:", e);
   }
@@ -946,7 +946,7 @@ function applyWx() {
   };
 }
 
-// ── map (Mapbox) ──────────────────────────────────────────────────────────────
+// --- map (Mapbox) -
 // Mapbox token set after DOM ready (see init below)
 
 const PROPERTY_CENTER = [-88.2756, 45.0200];
@@ -1233,7 +1233,7 @@ function updateBuckLines() {
       allFeatures.push({
         type:'Feature',
         properties:{ color:segColor, daytime, width, buckName:bname,
-          label:`${s1.camera_name} → ${s2.camera_name}`,
+          label:`${s1.camera_name} -> ${s2.camera_name}`,
           date:s1.date, time:s1.time||'', freq },
         geometry:{ type:'LineString', coordinates:[[p1.lng,p1.lat],[p2.lng,p2.lat]] }
       });
@@ -1452,7 +1452,7 @@ function goToBuck(name) {
   setTimeout(() => { buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines(); }, 300);
 }
 
-// ── views ────────────────────────────────────────────────────────────────────
+// --- views -
 function showView(n) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
   document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
@@ -1478,7 +1478,7 @@ function showView(n) {
 
 
 
-// ── log ────────────────────────────────────────────────────────────────────
+// --- log -
 
 function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
   if(!size) size = 110;
@@ -1576,7 +1576,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
 }
 
 
-// ── 24-hour activity timeline ─────────────────────────────────────────────────
+// --- 24-hour activity timeline -
 function build24HrTimeline(sightings, mini) {
   // Build hourly buckets 0-23
   const hourly = new Array(24).fill(0);
@@ -1662,7 +1662,7 @@ function build24HrTimeline(sightings, mini) {
   </div>`;
 }
 
-// ── Camera activity grid ──────────────────────────────────────────────────────
+// --- Camera activity grid -
 
 function buildMiniTimeline(hourly, maxH) {
   const barW = 100/24;
@@ -1697,7 +1697,7 @@ function buildMiniTimeline(hourly, maxH) {
 }
 
 
-// ── Weather correlation analysis ─────────────────────────────────────────────
+// --- Weather correlation analysis -
 function buildWeatherCorrelation(sightings) {
   if(sightings.length < 5) return '<div style="font-size:11px;color:var(--text3);padding:8px 0">Log at least 5 sightings with weather data to see correlations.</div>';
 
@@ -1772,9 +1772,9 @@ function buildWeatherCorrelation(sightings) {
     <div style="margin-bottom:10px">
       <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600">Buck Activity by Temperature</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-        ${col('Cold (<35°F)', tempGroups.cold, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
-        ${col('Cool (35-50°)', tempGroups.cool, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
-        ${col('Mild (50°+)', tempGroups.mild, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Cold (<35&deg;F)', tempGroups.cold, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Cool (35-50&deg;)', tempGroups.cool, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Mild (50&deg;+)', tempGroups.mild, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
       </div>
     </div>
     <div style="margin-bottom:10px">
@@ -1799,12 +1799,12 @@ function buildWeatherCorrelation(sightings) {
         </div>
       </div>
       ${dryHighPressure.length > rainSightings.length ? '<div style="font-size:10px;color:var(--blue);margin-top:6px;font-style:italic">&#8599; Post-front clear days produce more activity on this property.</div>' :
-        rainSightings.length > 0 ? '<div style="font-size:10px;color:var(--text3);margin-top:6px;font-style:italic">Deer moving during precipitation detected — log more to confirm pattern.</div>' : ''}
+        rainSightings.length > 0 ? '<div style="font-size:10px;color:var(--text3);margin-top:6px;font-style:italic">Deer moving during precipitation detected -- log more to confirm pattern.</div>' : ''}
     </div>` : ''}
   `;
 }
 
-// ── 7-day hunt forecast ───────────────────────────────────────────────────────
+// --- 7-day hunt forecast -
 async function loadHuntForecast() {
   const el = document.getElementById('forecastContent');
   if(!el) return;
@@ -1836,14 +1836,14 @@ async function loadHuntForecast() {
 
     // WMO weather code descriptions
     const weatherDesc = code => {
-      if(code === 0) return {label:'Clear', icon:'☀️'};
-      if(code <= 3) return {label:'Cloudy', icon:'⛅'};
-      if(code <= 49) return {label:'Fog', icon:'🌫'};
-      if(code <= 67) return {label:'Rain', icon:'🌧'};
-      if(code <= 77) return {label:'Snow', icon:'❄️'};
-      if(code <= 82) return {label:'Showers', icon:'🌦'};
-      if(code <= 99) return {label:'Storms', icon:'⛈'};
-      return {label:'Mixed', icon:'🌥'};
+      if(code === 0) return {label:'Clear', icon:'&#9728;'};
+      if(code <= 3) return {label:'Cloudy', icon:'P.Cloudy'};
+      if(code <= 49) return {label:'Fog', icon:'Fog'};
+      if(code <= 67) return {label:'Rain', icon:'Rain'};
+      if(code <= 77) return {label:'Snow', icon:'Snow'};
+      if(code <= 82) return {label:'Showers', icon:'Showers'};
+      if(code <= 99) return {label:'Storms', icon:'Storms'};
+      return {label:'Mixed', icon:'Mixed'};
     };
 
     // Score each day based on historical patterns
@@ -1865,7 +1865,7 @@ async function loadHuntForecast() {
       // Wind direction
       const simpleDir = wdir.length > 2 ? wdir.slice(0,2) : wdir;
       if(bestWinds.some(w => w.startsWith(simpleDir) || simpleDir.startsWith(w))) {
-        score += 20; flags.push({text:wdir+' wind ✓', good:true});
+        score += 20; flags.push({text:wdir+' wind OK', good:true});
       }
 
       // Wind speed
@@ -1876,7 +1876,7 @@ async function loadHuntForecast() {
       if(precip > 0.5) { score -= 20; flags.push({text:'Heavy rain', good:false}); }
       else if(precip > 0 && precip < 0.1) { score += 5; flags.push({text:'Light precip', good:true}); }
       else if(precip === 0 && i > 0 && j.daily.precipitation_sum[i-1] > 0.3) {
-        score += 25; flags.push({text:'Post-rain! 🔥', good:true});
+        score += 25; flags.push({text:'Post-rain! ', good:true});
       }
 
       // Cold front aftermath (pressure rising implied by clear after rain)
@@ -1912,7 +1912,7 @@ async function loadHuntForecast() {
             </div>
             <div style="font-size:20px">${wIcon}</div>
             <div style="flex:1">
-              <div style="font-size:11px;color:var(--text2)">${tmax}°/${tmin}° &middot; ${wdir} ${wind}mph${precip > 0 ? ' &middot; '+precip.toFixed(2)+'"' : ''}</div>
+              <div style="font-size:11px;color:var(--text2)">${tmax}&deg;/${tmin}&deg; &middot; ${wdir} ${wind}mph${precip > 0 ? ' &middot; '+precip.toFixed(2)+'"' : ''}</div>
               <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">
                 ${flags.map(f=>`<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:${f.good?'rgba(74,127,193,0.15)':'rgba(80,80,80,0.3)'};color:${f.good?'var(--blue)':'var(--text3)'}">${f.text}</span>`).join('')}
               </div>
@@ -1935,7 +1935,7 @@ async function loadHuntForecast() {
 
 
 
-// ── Heatmap ───────────────────────────────────────────────────────────────────
+// --- Heatmap -
 let heatmapOn = false;
 
 function toggleHeatmap() {
@@ -2035,7 +2035,7 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
 }
 
 
-// ── Add camera ────────────────────────────────────────────────────────────────
+// --- Add camera -
 let addCamMode = false;
 let pendingCamLngLat = null;
 
@@ -2126,7 +2126,7 @@ function cancelAddCamera() {
   if(hint) hint.remove();
 }
 
-// ── Pin context menu ──────────────────────────────────────────────────────────
+// --- Pin context menu -
 let menuTargetCam = null;
 
 function showPinMenu(name, x, y) {
@@ -2183,7 +2183,7 @@ async function deleteCameraFromMenu() {
   buildMapFilters();
 }
 
-// ── Conditions overlay ────────────────────────────────────────────────────────
+// --- Conditions overlay -
 function updateConditionsOverlay() {
   fetch("https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756" +
     "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph" +
@@ -2195,9 +2195,9 @@ function updateConditionsOverlay() {
     const wind = Math.round(j.hourly.windspeed_10m[h]);
     const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
     const dir = dirs[Math.round(j.hourly.winddirection_10m[h]/22.5)%16];
-    document.getElementById('condWind').textContent = '💨 ' + dir + ' ' + wind + 'mph';
-    document.getElementById('condTemp').textContent = temp + '°F';
-    document.getElementById('mapWeatherTemp').textContent = temp + '°F';
+    document.getElementById('condWind').textContent = 'Wind: ' + dir + ' ' + wind + 'mph';
+    document.getElementById('condTemp').textContent = temp + '&deg;F';
+    document.getElementById('mapWeatherTemp').textContent = temp + '&deg;F';
     document.getElementById('mapWeatherDetail').textContent = dir + ' ' + wind + 'mph';
     document.getElementById('mapConditions').style.display = 'flex';
   }).catch(() => {});
@@ -2263,7 +2263,7 @@ function renderLog() {
 }
 function setFilt(f) { curFilter = f; renderLog(); }
 
-// ── detail ─────────────────────────────────────────────────────────────────
+// --- detail -
 function showDet(id) {
   const s = sightings.find(x => x.id === id); if(!s) return;
   const m = moonPhase(s.date);
@@ -2310,7 +2310,7 @@ function showDet(id) {
   showView("det");
 }
 
-// ── form ───────────────────────────────────────────────────────────────────
+// --- form -
 function initForm() {
   const now = new Date();
   document.getElementById("fd").value = now.toISOString().split("T")[0];
@@ -2376,7 +2376,7 @@ function handlePhoto(inp) {
 
 
 
-// ── init ───────────────────────────────────────────────────────────────────
+// --- init -
 
 // Real-time updates - refresh when another user logs a sighting
 const channel = sb.channel('sightings-changes')
@@ -2421,7 +2421,7 @@ function renderDash() {
   }
   document.getElementById("hcount").textContent = totalCount + " logged";
 
-  // ── Pre-compute all aggregates ─────────────────────────────────────────
+  // --- Pre-compute all aggregates -
   // Wind counts
   const windCounts = {};
   WINDS.forEach(w => windCounts[w] = 0);
@@ -2467,7 +2467,7 @@ function renderDash() {
   const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
   const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
 
-  // ── Named buck cards ───────────────────────────────────────────────────
+  // --- Named buck cards -
   if(nb.length > 0) {
     html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
     nb.forEach(bname => {
@@ -2555,14 +2555,14 @@ function renderDash() {
             <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'°' : '--'}</div>
+                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'&deg;' : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}°–${bMaxTemp}°F</div>` : ''}
+                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;-${bMaxTemp}&deg;F</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
-                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}–${bMaxPress} hPa</div>` : ''}
+                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgWind !== null ? bAvgWind : '--'}</div>
@@ -2603,7 +2603,7 @@ function renderDash() {
     });
   }
 
-  // ── Property Intelligence ──────────────────────────────────────────────
+  // --- Property Intelligence -
   html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
 
   // Wind rose - radial SVG chart
@@ -2630,13 +2630,13 @@ function renderDash() {
     </div>
   </div>`;
 
-  // ── 7-day hunt forecast ─────────────────────────────────────────────────
+  // --- 7-day hunt forecast -
   html += `<div class="prop-stat">
     <div class="cond-title" style="margin-bottom:8px">&#128197; 7-Day Hunt Forecast</div>
     <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
   </div>`;
 
-  // ── Weather & movement correlation ────────────────────────────────────
+  // --- Weather & movement correlation -
   html += `<div class="prop-stat">
     <div class="cond-title" style="margin-bottom:10px">&#127782; Weather Impact on Movement</div>
     ${buildWeatherCorrelation(sightings)}
@@ -2650,7 +2650,7 @@ function renderDash() {
   document.getElementById("intelContent").innerHTML = html;
 }
 
-// ── startup ───────────────────────────────────────────────────────────────────
+// --- startup -
 // Init app
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
 loadSightings();
@@ -2684,7 +2684,7 @@ setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
 <div class="map-conditions" id="mapConditions" style="display:none">
   <div class="map-cond-item" id="condWind">&#128168; --</div>
   <div class="map-cond-sep"></div>
-  <div class="map-cond-item" id="condTemp">-- °F</div>
+  <div class="map-cond-item" id="condTemp">-- &#176;F</div>
   <div class="map-cond-sep"></div>
   <div class="map-cond-item" id="condCoords">--</div>
 </div>
