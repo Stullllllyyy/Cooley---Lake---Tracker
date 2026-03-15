@@ -74,7 +74,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
 .tab-btn.on{color:var(--gold)}
 .tab-btn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px}
-.tab-ico{font-size:21px;line-height:1}
+.tab-ico{font-size:21px;line-height:1;display:flex;align-items:center;justify-content:center}
 .tab-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px}
 
 /* sheets */
@@ -312,16 +312,20 @@ textarea{resize:none}
 <!-- Tab bar -->
 <div class="tab-bar">
   <button class="tab-btn on" id="tab-map" onclick="activateTab('map')">
-    <span class="tab-ico">&#128506;</span><span class="tab-lbl">Map</span>
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></span>
+    <span class="tab-lbl">Map</span>
   </button>
   <button class="tab-btn" id="tab-intel" onclick="openSheet('intel')">
-    <span class="tab-ico">&#129504;</span><span class="tab-lbl">Intel</span>
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg></span>
+    <span class="tab-lbl">Intel</span>
   </button>
   <button class="tab-btn" id="tab-log" onclick="openSheet('log')">
-    <span class="tab-ico" style="font-size:26px;color:var(--gold)">&#43;</span><span class="tab-lbl">Log</span>
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
+    <span class="tab-lbl">Log</span>
   </button>
   <button class="tab-btn" id="tab-sightings" onclick="openSheet('sightings')">
-    <span class="tab-ico">&#128203;</span><span class="tab-lbl">Sightings</span>
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
+    <span class="tab-lbl">Sightings</span>
   </button>
 </div>
 
@@ -450,24 +454,9 @@ textarea{resize:none}
     <div class="field-grp">
       <span class="field-lbl">Photo</span>
       <div id="ePhotoWrap" style="margin-bottom:8px"></div>
-      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:8px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">&#128247; Change photo</button>
-      <input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
-    </div>
-    <button class="save-btn" onclick="saveEdit()">Save Changes</button>
-    <button class="del-btn" onclick="deleteSighting()">&#128465; Delete Sighting</button>
-  </div>
-</div>
-
+      <button onclick="document.getEl
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- Movement legend -->
-<div class="movement-legend" id="movementLegend">
-  <div class="ml-title">Movement Lines</div>
-  <div class="ml-row"><div class="ml-line" style="background:#7aafe0"></div>Daytime</div>
-  <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
-  <div class="ml-row" style="margin-top:4px;color:var(--text3);font-size:9px">Thicker = more frequent corridor</div>
-</div>
 <script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','log','sightings','detail'];
@@ -614,7 +603,6 @@ function toggleMapStyle() {
   document.getElementById('mapStyleLabel').textContent = mapStyleSat ? 'Satellite' : 'Outdoors';
   lineLayerAdded = false;
   setTimeout(() => {
-    addPropertyOutline();
     addLineLayer();
     lineLayerAdded = true;
     updateBuckLines();
@@ -632,7 +620,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CLAT = 45.0200, CLNG = -88.2756;
-const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Other"];
+const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
 const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
 const DTYPES = ["Buck - Mature (4.5+)","Buck - 3.5","Buck - 2.5","Buck - 1.5","Doe","Fawn","Unknown"];
@@ -1001,7 +989,6 @@ function initMap() {
   mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
 
   mapInstance.on('load', () => {
-    addPropertyOutline();
     addLineLayer();
     addCamMarkers();
     lineLayerAdded = true;
@@ -1009,42 +996,11 @@ function initMap() {
 
   mapInstance.on('style.load', () => {
     if(!lineLayerAdded) return;
-    addPropertyOutline();
     addLineLayer();
   });
 }
 
-function addPropertyOutline() {
-  if(mapInstance.getSource('property')) return;
-  mapInstance.addSource('property', {
-    type: 'geojson',
-    data: {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[
-          [-88.2800, 45.0245], [-88.2690, 45.0245],
-          [-88.2690, 45.0210], [-88.2720, 45.0210],
-          [-88.2720, 45.0170], [-88.2690, 45.0170],
-          [-88.2690, 45.0145], [-88.2800, 45.0145],
-          [-88.2800, 45.0245]
-        ]]
-      }
-    }
-  });
-  mapInstance.addLayer({
-    id: 'property-fill',
-    type: 'fill',
-    source: 'property',
-    paint: { 'fill-color': '#ff5555', 'fill-opacity': 0.06 }
-  });
-  mapInstance.addLayer({
-    id: 'property-outline',
-    type: 'line',
-    source: 'property',
-    paint: { 'line-color': '#ff5555', 'line-width': 2.5, 'line-dasharray': [3,2] }
-  });
-}
+function addPropertyOutline() { /* removed */ }
 
 function addLineLayer() {
   if(mapInstance.getSource('buck-lines')) return;
@@ -1325,12 +1281,15 @@ function buildMapFilters() {
 }
 
 function toggleHeatmapFromMenu() {
-  toggleHeatmap();
+  heatmapOn = !heatmapOn;
+  if(heatmapOn) showHeatmap(); else hideHeatmap();
   buildMapFilters();
-  // Keep dropdown open so user sees ON/OFF toggle
+  // Rebuild dropdown and keep it open
   const dd = document.getElementById('buckDropdown');
-  if(dd) dd.style.display = 'block';
-  setTimeout(() => document.addEventListener('click', closeBuckDropdown, {once:true}), 50);
+  if(dd) {
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+  }
 }
 
 
@@ -1867,7 +1826,7 @@ async function loadHuntForecast() {
       // Wind direction
       const simpleDir = wdir.length > 2 ? wdir.slice(0,2) : wdir;
       if(bestWinds.some(w => w.startsWith(simpleDir) || simpleDir.startsWith(w))) {
-        score += 20; flags.push({text:wdir+' wind &#10003;', good:true});
+        score += 20; flags.push({text:wdir+' wind &#x2713;', good:true});
       }
 
       // Wind speed
@@ -1878,7 +1837,7 @@ async function loadHuntForecast() {
       if(precip > 0.5) { score -= 20; flags.push({text:'Heavy rain', good:false}); }
       else if(precip > 0 && precip < 0.1) { score += 5; flags.push({text:'Light precip', good:true}); }
       else if(precip === 0 && i > 0 && j.daily.precipitation_sum[i-1] > 0.3) {
-        score += 25; flags.push({text:'Post-rain! &#128293;', good:true});
+        score += 25; flags.push({text:'Post-rain! &#x1F525;', good:true});
       }
 
       // Cold front aftermath (pressure rising implied by clear after rain)
@@ -2559,12 +2518,12 @@ function renderDash() {
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'&deg;' : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;&#8211;${bMaxTemp}&deg;F</div>` : ''}
+                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;-${bMaxTemp}&deg;F</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
-                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}&#8211;${bMaxPress} hPa</div>` : ''}
+                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgWind !== null ? bAvgWind : '--'}</div>
@@ -2651,6 +2610,7 @@ function renderDash() {
 
   document.getElementById("intelContent").innerHTML = html;
 }
+
 
 // --- startup
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
