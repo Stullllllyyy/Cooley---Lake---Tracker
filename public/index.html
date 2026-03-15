@@ -80,13 +80,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* sheets */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
-.sheet.open{transform:translateY(0)}
+.sheet{position:fixed;bottom:var(--tab-h);left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h));height:calc(92vh - var(--tab-h));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
+.sheet.open{transform:translateY(0) !important}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
 .sheet-title{font-size:16px;font-weight:700;color:var(--text)}
 .sheet-x{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.sheet-body{overflow-y:auto;padding:16px 16px 32px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-body{overflow-y:auto;padding:16px 16px 48px;flex:1;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .sheet-body::-webkit-scrollbar{display:none}
 
 /* cards */
@@ -472,10 +472,10 @@ textarea{resize:none}
   <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
   <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="addCamCoords">Tap confirmed location</div>
   <div class="field-grp"><span class="field
+
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
-
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','log','sightings','detail'];
 
@@ -596,7 +596,7 @@ function updateMapWeather() {
     const wind = Math.round(j.hourly.windspeed_10m[hour]);
     const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
     const dir = dirs[Math.round(j.hourly.winddirection_10m[hour]/22.5)%16];
-    document.getElementById('mapWeatherTemp').textContent = temp+'&deg;F';
+    document.getElementById('mapWeatherTemp').textContent = temp+'&#176;F';
     document.getElementById('mapWeatherDetail').textContent = `${dir} ${wind}mph`;
   }).catch(()=>{});
 }
@@ -1757,9 +1757,9 @@ function buildWeatherCorrelation(sightings) {
     <div style="margin-bottom:10px">
       <div style="font-size:10px;color:var(--text2);margin-bottom:6px;font-weight:600">Buck Activity by Temperature</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px">
-        ${col('Cold (<35&deg;F)', tempGroups.cold, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
-        ${col('Cool (35-50&deg;)', tempGroups.cool, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
-        ${col('Mild (50&deg;+)', tempGroups.mild, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Cold (<35&#176;F)', tempGroups.cold, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Cool (35-50&#176;)', tempGroups.cool, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
+        ${col('Mild (50&#176;+)', tempGroups.mild, [tempGroups.cold, tempGroups.cool, tempGroups.mild])}
       </div>
     </div>
     <div style="margin-bottom:10px">
@@ -1897,7 +1897,7 @@ async function loadHuntForecast() {
             </div>
             <div style="font-size:20px">${wIcon}</div>
             <div style="flex:1">
-              <div style="font-size:11px;color:var(--text2)">${tmax}&deg;/${tmin}&deg; &middot; ${wdir} ${wind}mph${precip > 0 ? ' &middot; '+precip.toFixed(2)+'"' : ''}</div>
+              <div style="font-size:11px;color:var(--text2)">${tmax}&#176;/${tmin}&#176; &middot; ${wdir} ${wind}mph${precip > 0 ? ' &middot; '+precip.toFixed(2)+'"' : ''}</div>
               <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">
                 ${flags.map(f=>`<span style="font-size:9px;padding:1px 6px;border-radius:6px;background:${f.good?'rgba(74,127,193,0.15)':'rgba(80,80,80,0.3)'};color:${f.good?'var(--blue)':'var(--text3)'}">${f.text}</span>`).join('')}
               </div>
@@ -2181,8 +2181,8 @@ function updateConditionsOverlay() {
     const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
     const dir = dirs[Math.round(j.hourly.winddirection_10m[h]/22.5)%16];
     document.getElementById('condWind').textContent = 'Wind: ' + dir + ' ' + wind + 'mph';
-    document.getElementById('condTemp').textContent = temp + '&deg;F';
-    document.getElementById('mapWeatherTemp').textContent = temp + '&deg;F';
+    document.getElementById('condTemp').textContent = temp + '&#176;F';
+    document.getElementById('mapWeatherTemp').textContent = temp + '&#176;F';
     document.getElementById('mapWeatherDetail').textContent = dir + ' ' + wind + 'mph';
     document.getElementById('mapConditions').style.display = 'flex';
   }).catch(() => {});
@@ -2331,7 +2331,7 @@ function renderLog() {
         <div class="tags">
           ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
           ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
-          ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}&deg;F</span>` : ""}
+          ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}&#176;F</span>` : ""}
           ${s.humidity ? `<span class="tag">&#128167; ${s.humidity}%</span>` : ""}
           ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
         </div>
@@ -2640,9 +2640,9 @@ function renderDash() {
             <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'&deg;' : '--'}</div>
+                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'&#176;' : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&deg;-${bMaxTemp}&deg;F</div>` : ''}
+                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}&#176;-${bMaxTemp}&#176;F</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
                 <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
@@ -2676,7 +2676,7 @@ function renderDash() {
             <div class="insight-text">
               ${bTopWinds.length ? `Most active on <strong style="color:var(--blue)">${bTopWinds[0]}${bTopWinds[1]?' / '+bTopWinds[1]:''} wind</strong>. ` : ''}
               ${bTopTime.length ? `Peak: <strong style="color:var(--blue)">${bTopTime[0][0]}</strong>. ` : ''}
-              ${bAvgTemp !== null ? `Moves in <strong style="color:var(--blue)">${bAvgTemp < 40 ? 'cold' : bAvgTemp < 55 ? 'cool' : 'mild'} temps</strong> (avg ${bAvgTemp}&deg;F). ` : ''}
+              ${bAvgTemp !== null ? `Moves in <strong style="color:var(--blue)">${bAvgTemp < 40 ? 'cold' : bAvgTemp < 55 ? 'cool' : 'mild'} temps</strong> (avg ${bAvgTemp}&#176;F). ` : ''}
               ${bAvgPress !== null && bAvgPress > 1018 ? `Favors <strong style="color:var(--blue)">high pressure</strong> days. ` : ''}
               ${camSeq.length > 1 ? `Confirmed corridor: <strong style="color:var(--blue)">${camSeq.join(' &rarr; ')}</strong>.` : ''}
             </div>
@@ -2708,7 +2708,7 @@ function renderDash() {
     <div class="insight-text">
       ${topWinds.length?`<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
       ${topTime?`<strong style="color:#c8a951">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
-      ${avgMatureTemp?`<strong style="color:#c8a951">Mature buck temp:</strong> avg ${avgMatureTemp}&deg;F at sighting.<br/>`:""}
+      ${avgMatureTemp?`<strong style="color:#c8a951">Mature buck temp:</strong> avg ${avgMatureTemp}&#176;F at sighting.<br/>`:""}
       ${topMoon?`<strong style="color:#c8a951">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
       ${highP.length&&lowP.length?`<strong style="color:#c8a951">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
       ${topCam?`<strong style="color:#c8a951">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
@@ -2737,28 +2737,21 @@ function renderDash() {
 
 
 // --- startup
-// Load data immediately - independent of map
+// Load data immediately
 loadSightings();
 updateMapWeather();
 
-// Init map with retry in case Mapbox CDN is slow
-
-
-
-// Small delay to ensure DOM is fully ready
-
-
-
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
-    setTimeout(startMap, 150);
+    setTimeout(startMap, 200);
     return;
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-  loadCamLocations().then(() => initMap());
+  loadCamLocations().then(() => {
+    try { initMap(); } catch(e) { console.error('Map init error:', e); }
+  });
 }
-startMap();
-
+setTimeout(startMap, 50);
 </script>
 </body>
 </html>
