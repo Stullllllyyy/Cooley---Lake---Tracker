@@ -80,7 +80,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* sheets */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
+.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:90vh;height:90vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
@@ -94,9 +94,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .card.gold{border-color:rgba(200,169,81,0.35)}
 .card.intel-card{background:rgba(6,14,4,0.9);border-color:rgba(200,169,81,0.2)}
 .sec-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
-.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
-.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 8px;text-align:center}
-.stat-num{font-size:28px;font-weight:700;color:var(--gold);line-height:1}
+.stat-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 8px;text-align:center;position:relative;overflow:hidden}
+.stat-num{font-size:26px;font-weight:700;color:var(--blue);line-height:1}
 .stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
 
 /* bar charts */
@@ -137,8 +137,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* sightings */
 .filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px}
 .filter-scroll::-webkit-scrollbar{display:none}
-.fchip{padding:6px 14px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;transition:all 0.2s}
-.fchip.on{border-color:var(--gold);background:rgba(200,169,81,0.1);color:var(--gold)}
+.fchip{padding:5px 11px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;transition:all 0.2s;letter-spacing:0.3px}
+.fchip.on{border-color:var(--blue);background:rgba(74,127,193,0.1);color:var(--blue)}
 .sight-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
 .sight-card.mature{border-color:rgba(200,169,81,0.4)}
 .sight-card:active{opacity:0.85}
@@ -166,8 +166,8 @@ textarea{resize:none}
 .field-grp{margin-bottom:12px}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .chip-row{display:flex;flex-wrap:wrap;gap:6px}
-.sel-chip{padding:7px 13px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
-.sel-chip.on{border-color:var(--gold);background:rgba(200,169,81,0.12);color:var(--gold)}
+.sel-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s;letter-spacing:0.3px}
+.sel-chip.on{border-color:var(--blue);background:rgba(74,127,193,0.12);color:var(--blue)}
 .photo-box{background:var(--bg);border:1.5px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color 0.2s}
 .photo-box:active{border-color:var(--gold)}
 .log-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:1px;text-transform:uppercase;margin-bottom:16px;transition:all 0.2s}
@@ -334,7 +334,7 @@ textarea{resize:none}
 <div class="sheet" id="sheet-intel">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <div class="sheet-title">&#129504; Intelligence</div>
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg> Intelligence</div>
     <button class="sheet-x" onclick="closeSheet('intel')">&#215;</button>
   </div>
   <div class="sheet-body" id="intelContent">
@@ -347,7 +347,7 @@ textarea{resize:none}
 <div class="sheet" id="sheet-log">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <div class="sheet-title">&#128247; Log Sighting</div>
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Log Sighting</div>
     <button class="sheet-x" onclick="closeSheet('log')">&#215;</button>
   </div>
   <div class="sheet-body">
@@ -408,7 +408,7 @@ textarea{resize:none}
 <div class="sheet" id="sheet-sightings">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <div class="sheet-title">&#128203; Sightings</div>
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Sightings</div>
     <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
   </div>
   <div class="sheet-body">
@@ -466,26 +466,7 @@ textarea{resize:none}
     <input type="text" id="addCamName" placeholder="e.g. South Creek, Pine Ridge..."/>
   </div>
   <button onclick="confirmAddCamera()" style="width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--blue);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px">Add Camera</button>
-  <button onclick="cancelAddCamera()" style="width:100%;padding:11px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px">Cancel</button>
-</div>
-
-<!-- Pin context menu -->
-<div class="pin-menu" id="pinMenu" style="display:none">
-  <div class="pin-menu-item" onclick="renameCameraFromMenu()">&#9998; Rename Camera</div>
-  <div class="pin-menu-item danger" onclick="deleteCameraFromMenu()">&#128465; Delete Camera</div>
-  <div class="pin-menu-item" onclick="closePinMenu()">Cancel</div>
-</div>
-
-<!-- Conditions overlay -->
-<div class="map-conditions" id="mapConditions" style="display:none">
-  <div class="map-cond-item" id="condWind">&#128168; --</div>
-  <div class="map-cond-sep"></div>
-  <div class="map-cond-item" id="condTemp">-- &#176;F</div>
-  <div class="map-cond-sep"></div>
-  <div class="map-cond-item" id="condCoords">--</div>
-</div>
-
-
+  <button onclick="cancelAddCamera()" style="width:100%;padding:11px;border:1px solid var(--border2);border-radius:var(--radius);ba
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1167,6 +1148,7 @@ function refreshMapPins() {
   if(!mapInstance) return;
   addCamMarkers();
   updateBuckLines();
+  if(dotMapOn) showDotMap();
 }
 
 function updateBuckLines() {
@@ -1299,9 +1281,14 @@ function buildMapFilters() {
       </div>`;
     }).join('')}
     <div class="buck-drop-divider"></div>
+    <div class="buck-drop-item${dotMapOn?' selected':''}" onclick="toggleDotMapFromMenu()">
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#4a7fc1)"></div>
+      <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, color by month</div></div>
+      <span style="font-size:11px;color:${dotMapOn?'var(--blue)':'var(--text3)'}">${dotMapOn?'ON':'OFF'}</span>
+    </div>
     <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
       <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#4a7fc1,#a0c8ff)"></div>
-      <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Buck activity density overlay</div></div>
+      <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Activity density overlay</div></div>
       <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
     </div>
   `;
@@ -2203,6 +2190,106 @@ function updateConditionsOverlay() {
   }
 }
 
+
+// &#9472;&#9472; Dot Map &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+let dotMapOn = false;
+let dotMarkers = [];
+
+// Month color coding
+const monthColor = m => {
+  const colors = {9:'#e8a040',10:'#e8c840',11:'#d94040',12:'#4a7fc1'};
+  return colors[m] || '#888';
+};
+const monthLabel = m => ['','','','','','','','','','Sep','Oct','Nov','Dec'][m] || '';
+
+function toggleDotMapFromMenu() {
+  dotMapOn = !dotMapOn;
+  if(dotMapOn) showDotMap(); else hideDotMap();
+  buildMapFilters();
+  const dd = document.getElementById('buckDropdown');
+  if(dd) { dd.style.display='block'; dd.style.pointerEvents='auto'; }
+}
+
+function showDotMap() {
+  hideDotMap(); // clear existing
+  if(!mapInstance) return;
+
+  const filtered = curMapFilter === 'all'
+    ? sightings
+    : sightings.filter(s => s.buck_name === curMapFilter);
+
+  filtered.forEach(s => {
+    const pos = camLocations[s.camera_name];
+    if(!pos) return;
+
+    const d = new Date(s.date + 'T12:00:00');
+    const month = d.getMonth() + 1;
+    const color = monthColor(month);
+    const isMature = s.deer_type && s.deer_type.includes('Mature');
+    const isBuck = s.deer_type && s.deer_type.includes('Buck');
+
+    // Random offset so stacked dots spread into a cluster
+    const offsetLng = (Math.random() - 0.5) * 0.0008;
+    const offsetLat = (Math.random() - 0.5) * 0.0008;
+    const lngLat = [pos.lng + offsetLng, pos.lat + offsetLat];
+
+    const size = isMature ? 10 : isBuck ? 7 : 5;
+    const opacity = isMature ? 1 : isBuck ? 0.85 : 0.6;
+    const border = isMature ? '2px solid rgba(255,255,255,0.8)' : '1px solid rgba(255,255,255,0.3)';
+
+    const el = document.createElement('div');
+    el.style.cssText = `width:${size}px;height:${size}px;border-radius:50%;background:${color};opacity:${opacity};border:${border};cursor:default;pointer-events:none`;
+
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat(lngLat)
+      .addTo(mapInstance);
+
+    dotMarkers.push(marker);
+  });
+
+  // Show legend
+  showDotLegend();
+}
+
+function hideDotMap() {
+  dotMarkers.forEach(m => m.remove());
+  dotMarkers = [];
+  const leg = document.getElementById('dotLegend');
+  if(leg) leg.remove();
+}
+
+function showDotLegend() {
+  let leg = document.getElementById('dotLegend');
+  if(!leg) {
+    leg = document.createElement('div');
+    leg.id = 'dotLegend';
+    leg.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 80px);left:14px;z-index:50;background:rgba(10,10,10,0.9);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;backdrop-filter:blur(10px)';
+    document.body.appendChild(leg);
+  }
+  leg.innerHTML = `
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:7px">Dot Map</div>
+    ${[9,10,11,12].map(m => `
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+        <div style="width:8px;height:8px;border-radius:50%;background:${monthColor(m)};flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">${monthLabel(m)}</span>
+      </div>`).join('')}
+    <div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <div style="width:10px;height:10px;border-radius:50%;background:#888;border:2px solid rgba(255,255,255,0.8);flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Mature buck</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+        <div style="width:7px;height:7px;border-radius:50%;background:#888;flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Buck</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:7px">
+        <div style="width:5px;height:5px;border-radius:50%;background:#888;flex-shrink:0"></div>
+        <span style="font-size:10px;color:var(--text2)">Doe / other</span>
+      </div>
+    </div>
+  `;
+}
+
 function renderLog() {
   if(!document.getElementById("slist")) return;
   const bucks = getNamedBucks();
@@ -2520,7 +2607,7 @@ function renderDash() {
         <button class="bi-hdr" onclick="toggleBuckIntel(this)">
           ${recentImg
             ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">&#127956;</div>`}
+            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17c-2.5 0-4.5-2-4.5-4.5 0-1.8 1-3.2 2.5-4"/><path d="M12 17c2.5 0 4.5-2 4.5-4.5 0-1.8-1-3.2-2.5-4"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="10" y1="21" x2="14" y2="21"/><path d="M9.5 8.5c-1 0-2-.5-2.5-1.5"/><path d="M14.5 8.5c1 0 2-.5 2.5-1.5"/><path d="M9 6c0-1-.5-2-1-3"/><path d="M15 6c0-1 .5-2 1-3"/></svg></div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
             <div style="font-size:11px;color:var(--text2)">${bs.length} sightings &middot; ${cameras.join(', ')}</div>
@@ -2649,6 +2736,15 @@ loadSightings();
 updateMapWeather();
 
 // Init map with retry in case Mapbox CDN is slow
+function startMap() {
+  if(typeof mapboxgl === 'undefined') {
+    setTimeout(startMap, 150);
+    return;
+  }
+  mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+  loadCamLocations().then(() => initMap());
+}
+
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
     setTimeout(startMap, 150);
