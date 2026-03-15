@@ -998,10 +998,9 @@ function initMap() {
   if(mapInstance) { refreshMapPins(); return; }
   mapInstance = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    style: 'mapbox://styles/mapbox/outdoors-v12',
     center: PROPERTY_CENTER,
     zoom: 15,
-    maxBounds: [[-88.35, 44.98], [-88.20, 45.07]],
     fadeDuration: 0,
   });
   mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
@@ -1010,14 +1009,25 @@ function initMap() {
     addCamMarkers();
     lineLayerAdded = true;
     mapInstance.resize();
+    // Switch to satellite after initial load confirms token works
+    mapInstance.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
   });
   mapInstance.on('style.load', () => {
     if(!lineLayerAdded) return;
     addLineLayer();
   });
-  mapInstance.on('error', e => console.error('Map error:', e.error));
-  // Resize calls to handle container dimension issues
-  [500, 1000, 2000].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
+  mapInstance.on('error', e => {
+    console.error('Mapbox error:', e.error);
+    // Show error on screen so we can see it
+    const mapEl = document.getElementById('map');
+    if(mapEl && e.error) {
+      const errDiv = document.createElement('div');
+      errDiv.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.8);color:#e87a4a;padding:16px;border-radius:8px;font-size:12px;z-index:10;max-width:80%';
+      errDiv.textContent = 'Map error: ' + (e.error.message || e.error.status || JSON.stringify(e.error));
+      mapEl.appendChild(errDiv);
+    }
+  });
+  [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
 function addPropertyOutline() { /* removed */ }
