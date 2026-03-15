@@ -70,7 +70,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .popup-more{width:100%;padding:10px;background:var(--surface2);border:none;border-top:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)}
 
 /* tab bar */
-.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:150;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
 .tab-btn.on{color:var(--gold)}
 .tab-btn.on::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:28px;height:2px;background:var(--gold);border-radius:0 0 2px 2px}
@@ -78,9 +78,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tab-lbl{font-size:9px;text-transform:uppercase;letter-spacing:1px}
 
 /* sheets */
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:150;pointer-events:none;transition:background 0.3s}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:0;left:0;right:0;z-index:200;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
+.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
@@ -467,6 +467,7 @@ textarea{resize:none}
   <div class="ml-row"><div class="ml-line" style="background:#7aafe0"></div>Daytime</div>
   <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
   <div class="ml-r
+<script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','log','sightings','detail'];
 
@@ -2650,16 +2651,11 @@ function renderDash() {
   document.getElementById("intelContent").innerHTML = html;
 }
 
-// --- startup -
-// Init app
+// --- startup
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
 loadSightings();
 updateMapWeather();
 setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
-ings();
-updateMapWeather();
-setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
-nitMap()); }, 100);
 </script>
 
 <!-- Add camera modal -->
