@@ -34,7 +34,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
 .map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
 .map-select-arrow.open{transform:rotate(180deg)}
-.buck-dropdown{position:absolute;top:calc(100% + 6px);left:0;min-width:200px;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:14px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);backdrop-filter:blur(16px)}
+.buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:500}
 .buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
 .buck-drop-item:last-child{border:none}
 .buck-drop-item:active,.buck-drop-item:hover{background:var(--surface2)}
@@ -466,10 +466,7 @@ textarea{resize:none}
   <div class="ml-title">Movement Lines</div>
   <div class="ml-row"><div class="ml-line" style="background:#7aafe0"></div>Daytime</div>
   <div class="ml-row"><div class="ml-line dashed"></div>Night / Dawn</div>
-  <div class="ml-row" style="margin-top:4px;color:var(--text3);font-size:9px">Thicker = more frequent corridor</div>
-
-
-<script>
+  <div class="ml-row" style="
 // ── Sheet & Tab Management ────────────────────────────────────────────────────
 const SHEETS = ['intel','log','sightings','detail'];
 
@@ -2043,42 +2040,57 @@ let pendingCamLngLat = null;
 
 function toggleAddCamMode() {
   addCamMode = !addCamMode;
-  const mapEl = document.getElementById('map');
   const btn = document.getElementById('addCamBtn');
+
   if(addCamMode) {
-    mapEl.style.cursor = 'crosshair';
+    // Disable pointer events on all map overlays so clicks reach the map
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+      el.dataset.oldPe = el.style.pointerEvents;
+      el.style.pointerEvents = 'none';
+    });
+    document.getElementById('map').style.cursor = 'crosshair';
     if(btn) {
+      btn.style.pointerEvents = 'auto';
       btn.style.background = 'rgba(74,127,193,0.3)';
       btn.style.borderColor = 'var(--blue)';
       btn.style.color = 'var(--blue)';
       btn.innerHTML = '&#10005;';
     }
-    // Show hint overlay
+    // Show hint
     const hint = document.createElement('div');
     hint.id = 'addCamHint';
-    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,10,0.9);border:1px solid var(--blue);border-radius:12px;padding:14px 20px;font-size:13px;color:var(--text);z-index:200;text-align:center;pointer-events:none';
-    hint.innerHTML = '<div style="font-size:22px;margin-bottom:6px">📍</div>Tap the map to place<br/>your new camera pin';
+    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,10,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
+    hint.innerHTML = '<div style="font-size:26px;margin-bottom:8px">&#128247;</div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
     document.body.appendChild(hint);
-    setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 2500);
-    // Listen for tap on map
+    setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 3000);
+
+    // Use map click event
     mapInstance.once('click', e => {
       if(!addCamMode) return;
       pendingCamLngLat = e.lngLat;
+      // Restore pointer events
+      document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+        el.style.pointerEvents = el.dataset.oldPe || '';
+      });
+      document.getElementById('map').style.cursor = '';
       const coordEl = document.getElementById('addCamCoords');
-      if(coordEl) coordEl.textContent = `${e.lngLat.lat.toFixed(5)}, ${e.lngLat.lng.toFixed(5)}`;
+      if(coordEl) coordEl.textContent = e.lngLat.lat.toFixed(5) + ', ' + e.lngLat.lng.toFixed(5);
       const nameEl = document.getElementById('addCamName');
-      if(nameEl) nameEl.value = '';
+      if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
       const modal = document.getElementById('addCamModal');
       if(modal) modal.classList.add('open');
+      if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;'; }
+      const hintEl = document.getElementById('addCamHint');
+      if(hintEl) hintEl.remove();
     });
+
   } else {
-    mapEl.style.cursor = '';
-    if(btn) {
-      btn.style.background = '';
-      btn.style.borderColor = '';
-      btn.style.color = '';
-      btn.innerHTML = '&#128247;&#43;';
-    }
+    // Restore everything
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+      el.style.pointerEvents = el.dataset.oldPe || '';
+    });
+    document.getElementById('map').style.cursor = '';
+    if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;';btn.style.pointerEvents=''; }
     cancelAddCamera();
   }
 }
@@ -2641,6 +2653,9 @@ function renderDash() {
 // Init app
 mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
 loadSightings();
+updateMapWeather();
+setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
+ings();
 updateMapWeather();
 setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
 </script>
