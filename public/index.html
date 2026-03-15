@@ -80,7 +80,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* sheets */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:90vh;height:90vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
+.sheet{position:fixed;bottom:0;left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(100%);transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:92vh;height:92vh;display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7)}
 .sheet.open{transform:translateY(0)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
@@ -167,6 +167,8 @@ textarea{resize:none}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .chip-row{display:flex;flex-wrap:wrap;gap:6px}
 .sel-chip{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s;letter-spacing:0.3px}
+.chip{padding:6px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s;letter-spacing:0.3px}
+.chip.on{border-color:var(--blue);background:rgba(74,127,193,0.12);color:var(--blue)}
 .sel-chip.on{border-color:var(--blue);background:rgba(74,127,193,0.12);color:var(--blue)}
 .photo-box{background:var(--bg);border:1.5px dashed var(--border2);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;margin-bottom:12px;transition:border-color 0.2s}
 .photo-box:active{border-color:var(--gold)}
@@ -466,7 +468,7 @@ textarea{resize:none}
     <input type="text" id="addCamName" placeholder="e.g. South Creek, Pine Ridge..."/>
   </div>
   <button onclick="confirmAddCamera()" style="width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--blue);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px">Add Camera</button>
-  <button onclick="cancelAddCamera()" style="width:100%;padding:11px;border:1px solid var(--border2);border-radius:var(--radius);ba
+  
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -1622,7 +1624,7 @@ function build24HrTimeline(sightings, mini) {
 
   if(mini) return buildMiniTimeline(hourly, maxH);
   return `<div style="position:relative">
-    <svg width="100%" height="80" viewBox="0 0 100% 80" preserveAspectRatio="none" style="overflow:visible;display:block">
+    <svg width="100%" height="80" viewBox="0 0 240 80" preserveAspectRatio="none" style="overflow:visible;display:block">
       ${bars}
       <line x1="0" y1="61" x2="100%" y2="61" stroke="#222" stroke-width="0.5"/>
       ${ticks}
@@ -2744,6 +2746,21 @@ function startMap() {
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
   loadCamLocations().then(() => initMap());
 }
+
+function startMap() {
+  if(typeof mapboxgl === 'undefined') {
+    setTimeout(startMap, 200);
+    return;
+  }
+  try {
+    mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+    loadCamLocations().then(() => {
+      try { initMap(); } catch(e) { console.error('initMap error:', e); }
+    });
+  } catch(e) { console.error('startMap error:', e); }
+}
+// Small delay to ensure DOM is fully ready
+setTimeout(startMap, 50);
 
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
