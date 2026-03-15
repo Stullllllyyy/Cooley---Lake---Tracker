@@ -469,6 +469,7 @@ textarea{resize:none}
   <div class="ml-row" style="margin-top:4px;color:var(--text3);font-size:9px">Thicker = more frequent corridor</div>
 
 
+<script>
 // ── Sheet & Tab Management ────────────────────────────────────────────────────
 const SHEETS = ['intel','log','sightings','detail'];
 
@@ -2642,7 +2643,6 @@ mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc
 loadSightings();
 updateMapWeather();
 setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
-p()); }, 100);
 </script>
 
 <!-- Add camera modal -->
