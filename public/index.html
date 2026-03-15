@@ -197,12 +197,30 @@ textarea{resize:none}
 .mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo{display:none !important}
 
 /* teardrop marker */
-.cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s}
+.cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s;user-select:none}
 .cam-marker:active{transform:scale(0.88)}
-.teardrop{width:38px;height:46px;position:relative;display:flex;align-items:center;justify-content:center;padding-bottom:8px}
-.teardrop svg{position:absolute;top:0;left:0;width:100%;height:100%}
-.teardrop-ico{position:relative;z-index:1;font-size:13px;font-weight:700;color:#fff;padding-bottom:6px;font-family:var(--font)}
-.cam-lbl-txt{font-size:9px;background:rgba(8,13,8,0.92);color:var(--text2);padding:2px 6px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.07);margin-top:-2px}
+.cam-marker.faded{opacity:0.3}
+.cam-pin{width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center}
+.cam-pin svg.pin-bg{position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))}
+.cam-pin-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding-bottom:10px}
+.cam-pin-ico{font-size:11px;color:#fff;line-height:1}
+.cam-pin-cnt{font-size:10px;font-weight:700;color:#fff;line-height:1;margin-top:1px;font-family:var(--font)}
+.cam-lbl{font-size:9px;background:rgba(10,10,10,0.92);color:var(--text2);padding:2px 7px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.08);margin-top:2px;letter-spacing:0.3px}
+/* add camera cursor */
+.map-add-mode{cursor:crosshair !important}
+/* context menu */
+.pin-menu{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px}
+.pin-menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);border-bottom:1px solid var(--border)}
+.pin-menu-item:last-child{border:none}
+.pin-menu-item:active{background:var(--surface2)}
+.pin-menu-item.danger{color:var(--red)}
+/* add cam modal */
+.add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.add-cam-modal.open{transform:translateY(0)}
+/* conditions overlay */
+.map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,10,10,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
+.map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
+.map-cond-sep{width:1px;height:12px;background:var(--border2)}
 
 /* misc */
 .loading{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
@@ -239,7 +257,8 @@ textarea{resize:none}
 <!-- FABs -->
 <div class="map-fabs">
   <div class="map-fab" id="editModeBtn" onclick="toggleEditMode()" title="Move pins">&#9998;&#xFE0E;</div>
-  <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:24px;color:var(--gold)">&#43;</div>
+  <div class="map-fab" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px">&#128247;&#43;</div>
+  <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:22px;color:var(--blue)">&#43;</div>
 </div>
 
 <!-- Layers -->
@@ -994,21 +1013,34 @@ function addPropertyOutline() {
 function addLineLayer() {
   if(mapInstance.getSource('buck-lines')) return;
   mapInstance.addSource('buck-lines', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  // Solid line layer (daytime)
   mapInstance.addLayer({
-    id: 'buck-lines-layer',
+    id: 'buck-lines-day',
     type: 'line',
     source: 'buck-lines',
+    filter: ['==', ['get','daytime'], true],
     paint: {
-      'line-color': ['get', 'color'],
+      'line-color': ['get','color'],
       'line-width': 2.5,
-      'line-dasharray': [2, 1],
-      'line-opacity': 0.8
+      'line-opacity': 0.85
+    }
+  });
+  // Dashed line layer (night/dawn)
+  mapInstance.addLayer({
+    id: 'buck-lines-night',
+    type: 'line',
+    source: 'buck-lines',
+    filter: ['==', ['get','daytime'], false],
+    paint: {
+      'line-color': ['get','color'],
+      'line-width': 2,
+      'line-dasharray': [2, 2],
+      'line-opacity': 0.6
     }
   });
 }
 
 function addCamMarkers() {
-  // Remove existing markers
   Object.values(mapMarkers).forEach(m => m.remove());
   mapMarkers = {};
 
@@ -1019,41 +1051,65 @@ function addCamMarkers() {
     const buckFiltered = curMapFilter !== 'all' ? cs.filter(s => s.buck_name === curMapFilter) : cs;
     const hasBuck = buckFiltered.length > 0;
 
-    let bg = '#2a6a1a', border = '#7aaa6a', opacity = '1';
+    // Colors
+    let fill, stroke;
     if(curMapFilter !== 'all') {
-      bg = hasBuck ? buckColor(curMapFilter) : '#1a2a1a';
-      border = hasBuck ? buckColor(curMapFilter) : '#2a3d1e';
-      opacity = hasBuck ? '1' : '0.3';
+      fill = hasBuck ? buckColor(curMapFilter) : '#1a1a1a';
+      stroke = hasBuck ? buckColor(curMapFilter) : '#333';
     } else if(mature) {
-      bg = '#c8a951'; border = '#fff';
+      fill = '#4a7fc1'; stroke = '#7aafe0';
+    } else {
+      fill = '#252525'; stroke = '#3a3a3a';
     }
 
     const el = document.createElement('div');
-    el.className = 'cam-marker';
-    el.style.opacity = opacity;
+    el.className = 'cam-marker' + (curMapFilter !== 'all' && !hasBuck ? ' faded' : '');
+
+    // Teardrop SVG pin
     el.innerHTML = `
-      <div class="cam-dot" style="background:${bg};border-color:${border}">
-        ${cnt > 0 ? cnt : '&#128247;'}
+      <div class="cam-pin">
+        <svg class="pin-bg" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 26 14 26s14-16 14-26C32 8.268 25.732 2 18 2z"
+            fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+        </svg>
+        <div class="cam-pin-content">
+          <div class="cam-pin-ico">&#128247;</div>
+          <div class="cam-pin-cnt">${cnt > 0 ? cnt : ''}</div>
+        </div>
       </div>
-      <div class="cam-lbl" style="${curMapFilter !== 'all' && hasBuck ? 'color:' + buckColor(curMapFilter) : ''}">${name}</div>
+      <div class="cam-lbl">${name}</div>
     `;
 
-    // Click to show popup
-    el.addEventListener('click', (e) => {
+    // Single tap - show popup
+    let pressTimer;
+    el.addEventListener('touchstart', e => {
+      pressTimer = setTimeout(() => {
+        e.preventDefault();
+        showPinMenu(name, e.touches[0].clientX, e.touches[0].clientY);
+      }, 600);
+    }, {passive:true});
+    el.addEventListener('touchend', () => clearTimeout(pressTimer));
+    el.addEventListener('touchmove', () => clearTimeout(pressTimer));
+
+    el.addEventListener('click', e => {
       if(editMode) return;
       e.stopPropagation();
       showPin(name);
+    });
+
+    // Right click on desktop
+    el.addEventListener('contextmenu', e => {
+      e.preventDefault();
+      showPinMenu(name, e.clientX, e.clientY);
     });
 
     const marker = new mapboxgl.Marker({ element: el, draggable: editMode })
       .setLngLat([pos.lng, pos.lat])
       .addTo(mapInstance);
 
-    // Save position on drag end
     marker.on('dragend', async () => {
-      const lngLat = marker.getLngLat();
-      await saveCamLocation(name, lngLat.lng, lngLat.lat);
-      console.log('Saved', name, lngLat);
+      const ll = marker.getLngLat();
+      await saveCamLocation(name, ll.lng, ll.lat);
     });
 
     mapMarkers[name] = marker;
@@ -1069,36 +1125,61 @@ function refreshMapPins() {
 function updateBuckLines() {
   if(!mapInstance || !mapInstance.getSource('buck-lines')) return;
   if(curMapFilter === 'all') {
-    mapInstance.getSource('buck-lines').setData({ type: 'FeatureCollection', features: [] });
+    mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:[] });
     return;
   }
   const bs = sightings
     .filter(s => s.buck_name === curMapFilter && camLocations[s.camera_name])
     .sort((a,b) => new Date(a.date+'T'+(a.time||'00:00')) - new Date(b.date+'T'+(b.time||'00:00')));
   if(bs.length < 2) {
-    mapInstance.getSource('buck-lines').setData({ type: 'FeatureCollection', features: [] });
+    mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features:[] });
     return;
   }
-  const color = buckColor(curMapFilter);
-  const coords = bs.map(s => {
-    const pos = camLocations[s.camera_name];
-    return [pos.lng, pos.lat];
-  });
-  mapInstance.getSource('buck-lines').setData({
-    type: 'FeatureCollection',
-    features: [{
+
+  // Time-of-day color for each segment
+  const timeColor = t => {
+    if(!t) return '#555555';
+    const h = parseInt(t);
+    if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn
+    if(h >= 7 && h < 10) return '#7aafe0';  // morning
+    if(h >= 10 && h < 16) return '#888888'; // midday/afternoon
+    if(h >= 16 && h < 20) return '#5a8fc8'; // dusk
+    return '#303060';                         // night
+  };
+
+  const isDaytime = t => {
+    if(!t) return false;
+    const h = parseInt(t);
+    return h >= 6 && h < 20;
+  };
+
+  // Build one feature per segment so each can have its own color + dash pattern
+  const features = [];
+  for(let i = 0; i < bs.length - 1; i++) {
+    const s1 = bs[i], s2 = bs[i+1];
+    const p1 = camLocations[s1.camera_name];
+    const p2 = camLocations[s2.camera_name];
+    const color = timeColor(s1.time);
+    const daytime = isDaytime(s1.time);
+    features.push({
       type: 'Feature',
-      properties: { color },
-      geometry: { type: 'LineString', coordinates: coords }
-    }]
-  });
-  // Fit map to show the full route
-  if(bs.length >= 2) {
-    const lngs = coords.map(c => c[0]);
-    const lats = coords.map(c => c[1]);
+      properties: { color, daytime, label: `${s1.camera_name} → ${s2.camera_name}` },
+      geometry: {
+        type: 'LineString',
+        coordinates: [[p1.lng, p1.lat], [p2.lng, p2.lat]]
+      }
+    });
+  }
+
+  mapInstance.getSource('buck-lines').setData({ type:'FeatureCollection', features });
+
+  // Fit to show full route
+  const lngs = bs.map(s => camLocations[s.camera_name].lng);
+  const lats = bs.map(s => camLocations[s.camera_name].lat);
+  if(lngs.length >= 2) {
     mapInstance.fitBounds(
-      [[Math.min(...lngs)-0.003, Math.min(...lats)-0.003], [Math.max(...lngs)+0.003, Math.max(...lats)+0.003]],
-      { padding: 60, duration: 800 }
+      [[Math.min(...lngs)-0.003, Math.min(...lats)-0.003],[Math.max(...lngs)+0.003, Math.max(...lats)+0.003]],
+      {padding:80, duration:800}
     );
   }
 }
@@ -1140,23 +1221,16 @@ function toggleEditMode() {
   editMode = !editMode;
   const btn = document.getElementById('editModeBtn');
   if(editMode) {
-    btn.textContent = '✓ Done Moving';
-    btn.style.borderColor = '#c8a951';
-    btn.style.color = '#c8a951';
-    // Show hint
-    const leg = document.getElementById('mapLegend');
-    const hint = document.createElement('div');
-    hint.id = 'editHint';
-    hint.style.cssText = 'width:100%;padding:6px 0 0;font-size:10px;color:#c8a951;font-style:italic';
-    hint.textContent = 'Drag any camera pin to its exact location. Changes save automatically.';
-    leg.appendChild(hint);
+    btn.innerHTML = '&#10003;';
+    btn.style.background = 'rgba(74,127,193,0.2)';
+    btn.style.borderColor = 'var(--blue)';
+    btn.style.color = 'var(--blue)';
   } else {
-    btn.textContent = '✎ Move Pins';
+    btn.innerHTML = '&#9998;&#xFE0E;';
+    btn.style.background = '';
     btn.style.borderColor = '';
     btn.style.color = '';
-    const hint = document.getElementById('editHint'); if(hint) hint.remove();
   }
-  // Rebuild markers with draggable state
   addCamMarkers();
 }
 
@@ -1459,6 +1533,152 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
       </div>`;
     }).join('')}
   </div>`;
+}
+
+
+// ── Add camera ────────────────────────────────────────────────────────────────
+let addCamMode = false;
+let pendingCamLngLat = null;
+
+function toggleAddCamMode() {
+  addCamMode = !addCamMode;
+  const mapEl = document.getElementById('map');
+  const btn = document.getElementById('editModeBtn');
+  if(addCamMode) {
+    mapEl.style.cursor = 'crosshair';
+    btn.style.background = 'rgba(74,127,193,0.3)';
+    btn.style.borderColor = 'var(--blue)';
+    btn.style.color = 'var(--blue)';
+    btn.textContent = '✕';
+    // Listen for tap
+    mapInstance.once('click', e => {
+      if(!addCamMode) return;
+      pendingCamLngLat = e.lngLat;
+      document.getElementById('addCamCoords').textContent =
+        `${e.lngLat.lat.toFixed(5)}, ${e.lngLat.lng.toFixed(5)}`;
+      document.getElementById('addCamName').value = '';
+      document.getElementById('addCamModal').classList.add('open');
+    });
+  } else {
+    mapEl.style.cursor = '';
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+    btn.textContent = '✎';
+    cancelAddCamera();
+  }
+}
+
+async function confirmAddCamera() {
+  const name = document.getElementById('addCamName').value.trim();
+  if(!name || !pendingCamLngLat) return;
+  // Save to Supabase
+  try {
+    await sb.from('cameras').insert({
+      name, lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat, active: true
+    });
+  } catch(e) { console.error('Insert cam error:', e); }
+  // Add to local camLocations
+  camLocations[name] = { lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat };
+  // Add to CAMNAMES if not there
+  if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length-1, 0, name);
+  cancelAddCamera();
+  addCamMarkers();
+  buildMapFilters();
+}
+
+function cancelAddCamera() {
+  addCamMode = false;
+  pendingCamLngLat = null;
+  document.getElementById('addCamModal').classList.remove('open');
+  document.getElementById('map').style.cursor = '';
+  const btn = document.getElementById('editModeBtn');
+  if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.textContent='✎'; }
+}
+
+// ── Pin context menu ──────────────────────────────────────────────────────────
+let menuTargetCam = null;
+
+function showPinMenu(name, x, y) {
+  menuTargetCam = name;
+  const menu = document.getElementById('pinMenu');
+  menu.style.display = 'block';
+  // Position near tap point
+  const menuW = 180;
+  const left = Math.min(x, window.innerWidth - menuW - 10);
+  const top = Math.min(y + 8, window.innerHeight - 150);
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  // Close on outside tap
+  setTimeout(() => document.addEventListener('click', closePinMenu, {once:true}), 50);
+}
+
+function closePinMenu() {
+  document.getElementById('pinMenu').style.display = 'none';
+  menuTargetCam = null;
+}
+
+async function renameCameraFromMenu() {
+  if(!menuTargetCam) return;
+  closePinMenu();
+  const newName = prompt(`Rename "${menuTargetCam}" to:`, menuTargetCam);
+  if(!newName || newName === menuTargetCam) return;
+  try {
+    await sb.from('cameras').update({name: newName}).eq('name', menuTargetCam);
+    // Update sightings
+    await sb.from('sightings').update({camera_name: newName}).eq('camera_name', menuTargetCam);
+  } catch(e) { console.error(e); }
+  // Update local state
+  camLocations[newName] = camLocations[menuTargetCam];
+  delete camLocations[menuTargetCam];
+  const idx = CAMNAMES.indexOf(menuTargetCam);
+  if(idx > -1) CAMNAMES[idx] = newName;
+  sightings.forEach(s => { if(s.camera_name === menuTargetCam) s.camera_name = newName; });
+  addCamMarkers();
+  buildMapFilters();
+  await loadSightings();
+}
+
+async function deleteCameraFromMenu() {
+  if(!menuTargetCam) return;
+  closePinMenu();
+  if(!confirm(`Delete camera "${menuTargetCam}"? Sightings will not be deleted.`)) return;
+  try {
+    await sb.from('cameras').delete().eq('name', menuTargetCam);
+  } catch(e) { console.error(e); }
+  delete camLocations[menuTargetCam];
+  const idx = CAMNAMES.indexOf(menuTargetCam);
+  if(idx > -1) CAMNAMES.splice(idx, 1);
+  if(mapMarkers[menuTargetCam]) { mapMarkers[menuTargetCam].remove(); delete mapMarkers[menuTargetCam]; }
+  buildMapFilters();
+}
+
+// ── Conditions overlay ────────────────────────────────────────────────────────
+function updateConditionsOverlay() {
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756" +
+    "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph" +
+    "&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1")
+  .then(r => r.json()).then(j => {
+    if(!j.hourly) return;
+    const h = new Date().getHours();
+    const temp = Math.round(j.hourly.temperature_2m[h]);
+    const wind = Math.round(j.hourly.windspeed_10m[h]);
+    const dirs = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+    const dir = dirs[Math.round(j.hourly.winddirection_10m[h]/22.5)%16];
+    document.getElementById('condWind').textContent = '💨 ' + dir + ' ' + wind + 'mph';
+    document.getElementById('condTemp').textContent = temp + '°F';
+    document.getElementById('mapWeatherTemp').textContent = temp + '°F';
+    document.getElementById('mapWeatherDetail').textContent = dir + ' ' + wind + 'mph';
+    document.getElementById('mapConditions').style.display = 'flex';
+  }).catch(() => {});
+  // Update coords on map move
+  if(mapInstance) {
+    mapInstance.on('move', () => {
+      const c = mapInstance.getCenter();
+      document.getElementById('condCoords').textContent =
+        c.lat.toFixed(4) + ', ' + c.lng.toFixed(4);
+    });
+  }
 }
 
 function renderLog() {
@@ -1847,5 +2067,34 @@ loadSightings();
 updateMapWeather();
 setTimeout(() => { loadCamLocations().then(() => initMap()); }, 100);
 </script>
+
+<!-- Add camera modal -->
+<div class="add-cam-modal" id="addCamModal">
+  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
+  <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="addCamCoords">Tap confirmed location</div>
+  <div class="field-grp"><span class="field-lbl">Camera Name</span>
+    <input type="text" id="addCamName" placeholder="e.g. South Creek, Pine Ridge..."/>
+  </div>
+  <button onclick="confirmAddCamera()" style="width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--blue);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:4px">Add Camera</button>
+  <button onclick="cancelAddCamera()" style="width:100%;padding:11px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px">Cancel</button>
+</div>
+
+<!-- Pin context menu -->
+<div class="pin-menu" id="pinMenu" style="display:none">
+  <div class="pin-menu-item" onclick="renameCameraFromMenu()">&#9998; Rename Camera</div>
+  <div class="pin-menu-item danger" onclick="deleteCameraFromMenu()">&#128465; Delete Camera</div>
+  <div class="pin-menu-item" onclick="closePinMenu()">Cancel</div>
+</div>
+
+<!-- Conditions overlay -->
+<div class="map-conditions" id="mapConditions" style="display:none">
+  <div class="map-cond-item" id="condWind">&#128168; --</div>
+  <div class="map-cond-sep"></div>
+  <div class="map-cond-item" id="condTemp">-- °F</div>
+  <div class="map-cond-sep"></div>
+  <div class="map-cond-item" id="condCoords">--</div>
+</div>
+
 </body>
 </html>
