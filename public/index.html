@@ -976,7 +976,6 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  // Try to load saved cam positions from Supabase
   try {
     const { data } = await sb.from('cameras').select('name, lng, lat').order('id');
     if(data && data.length) {
@@ -985,6 +984,8 @@ async function loadCamLocations() {
       });
     }
   } catch(e) { console.log('Using default cam positions'); }
+  // Refresh pins once locations loaded
+  if(mapInstance) addCamMarkers();
 }
 
 async function saveCamLocation(name, lng, lat) {
@@ -2746,7 +2747,9 @@ function startMap() {
     return;
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-  loadCamLocations().then(() => initMap());
+  // Init map immediately, load cam locations in parallel
+  initMap();
+  loadCamLocations();
 }
 setTimeout(startMap, 300);
 </script>
