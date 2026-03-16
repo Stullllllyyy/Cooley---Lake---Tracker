@@ -1387,6 +1387,16 @@ function setMapFilter(name) {
   buildMapFilters();
   refreshMapPins();
   updateBuckLines();
+  // Auto-show heat + core area when a specific buck is selected
+  if(name !== 'all') {
+    heatmapOn = true;
+    showHeatmap(name);
+    showCoreArea(name);
+  } else {
+    heatmapOn = false;
+    hideHeatmap();
+    hideCoreArea();
+  }
 }
 
 
@@ -1520,7 +1530,12 @@ function toggleBuckIntel(btn) {
 function goToBuck(name) {
   curMapFilter = name;
   showView("map");
-  setTimeout(() => { buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines(); }, 300);
+  setTimeout(() => {
+    buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines();
+    heatmapOn = true;
+    showHeatmap(name);
+    showCoreArea(name);
+  }, 400);
 }
 
 // --- views -
@@ -2021,12 +2036,15 @@ function toggleHeatmap() {
   if(heatmapOn) showHeatmap(); else hideHeatmap();
 }
 
-function showHeatmap() {
+function showHeatmap(buckName) {
   if(!mapInstance) return;
-  // Build GeoJSON points from sightings with camera locations
-  const features = sightings
-    .filter(s => camLocations[s.camera_name])
-    .map(s => {
+  const filterName = buckName || curMapFilter;
+  // Build GeoJSON points — when buck filter active, weight by that buck's sightings per camera
+  let sourceSightings = sightings.filter(s => camLocations[s.camera_name]);
+  if(filterName && filterName !== 'all') {
+    sourceSightings = sourceSightings.filter(s => s.buck_name === filterName);
+  }
+  const features = sourceSightings.map(s => {
       const pos = camLocations[s.camera_name];
       const isBuck = s.deer_type && s.deer_type.includes('Buck');
       const isMature = s.deer_type && s.deer_type.includes('Mature');
@@ -2073,6 +2091,152 @@ function hideHeatmap() {
   if(!mapInstance) return;
   if(mapInstance.getLayer('heatmap-layer'))
     mapInstance.setLayoutProperty('heatmap-layer','visibility','none');
+}
+
+function showCoreArea(buckName) {
+  if(!mapInstance) return;
+  const bs = sightings.filter(s => s.buck_name === buckName && camLocations[s.camera_name]);
+  if(bs.length < 3) { hideCoreArea(); return; }
+
+  // Count sightings per camera and weight midday (10am-4pm) hits higher (proximity to bed)
+  const camWeights = {};
+  bs.forEach(s => {
+    const cam = s.camera_name;
+    const h = s.time ? parseInt(s.time) : -1;
+    const isMidday = h >= 10 && h < 16;
+    const w = isMidday ? 2 : 1; // midday = double weight (near bed)
+    camWeights[cam] = (camWeights[cam] || 0) + w;
+  });
+
+  // Weighted centroid
+  let totalW = 0, sumLng = 0, sumLat = 0;
+  Object.entries(camWeights).forEach(([cam, w]) => {
+    const pos = camLocations[cam];
+    if(!pos) return;
+    sumLng += pos.lng * w;
+    sumLat += pos.lat * w;
+    totalW += w;
+  });
+  if(totalW === 0) return;
+  const centLng = sumLng / totalW;
+  const centLat = sumLat / totalW;
+
+  // Calculate spread radius from weighted variance
+  let varLng = 0, varLat = 0;
+  Object.entries(camWeights).forEach(([cam, w]) => {
+    const pos = camLocations[cam];
+    if(!pos) return;
+    varLng += w * Math.pow(pos.lng - centLng, 2);
+    varLat += w * Math.pow(pos.lat - centLat, 2);
+  });
+  const spreadLng = Math.sqrt(varLng / totalW);
+  const spreadLat = Math.sqrt(varLat / totalW);
+  // Radius in degrees — clamp between 0.003 (~300m) and 0.012 (~1.2km)
+  const radiusDeg = Math.min(Math.max(Math.max(spreadLng, spreadLat) * 1.2, 0.003), 0.012);
+  const radiusMeters = radiusDeg * 111000;
+
+  const color = buckColor(buckName);
+  const coreGeoJSON = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: { buck: buckName, color },
+      geometry: { type: 'Point', coordinates: [centLng, centLat] }
+    }]
+  };
+
+  if(mapInstance.getSource('core-area')) {
+    mapInstance.getSource('core-area').setData(coreGeoJSON);
+    if(mapInstance.getLayer('core-fill'))
+      mapInstance.setPaintProperty('core-fill', 'circle-radius', radiusMeters / Math.pow(2, mapInstance.getZoom() - 14) * 2);
+  } else {
+    mapInstance.addSource('core-area', { type:'geojson', data: coreGeoJSON });
+    // Soft fill blob
+    mapInstance.addLayer({
+      id: 'core-fill',
+      type: 'circle',
+      source: 'core-area',
+      paint: {
+        'circle-radius': ['interpolate',['exponential',2],['zoom'],
+          12, radiusMeters / 111000 * Math.pow(2,12) * 256 / 360,
+          16, radiusMeters / 111000 * Math.pow(2,16) * 256 / 360
+        ],
+        'circle-color': color,
+        'circle-opacity': 0.12,
+        'circle-blur': 0.6,
+        'circle-pitch-alignment': 'map'
+      }
+    }, 'heatmap-layer');
+    // Stroke ring
+    mapInstance.addLayer({
+      id: 'core-stroke',
+      type: 'circle',
+      source: 'core-area',
+      paint: {
+        'circle-radius': ['interpolate',['exponential',2],['zoom'],
+          12, radiusMeters / 111000 * Math.pow(2,12) * 256 / 360,
+          16, radiusMeters / 111000 * Math.pow(2,16) * 256 / 360
+        ],
+        'circle-color': 'transparent',
+        'circle-stroke-color': color,
+        'circle-stroke-width': 1.5,
+        'circle-opacity': 0,
+        'circle-stroke-opacity': 0.5,
+        'circle-pitch-alignment': 'map'
+      }
+    }, 'heatmap-layer');
+    // Centroid dot
+    mapInstance.addLayer({
+      id: 'core-dot',
+      type: 'circle',
+      source: 'core-area',
+      paint: {
+        'circle-radius': 5,
+        'circle-color': color,
+        'circle-opacity': 0.85,
+        'circle-stroke-color': '#fff',
+        'circle-stroke-width': 1.5
+      }
+    });
+  }
+  // Label
+  if(mapInstance.getSource('core-label')) {
+    mapInstance.getSource('core-label').setData({
+      type:'FeatureCollection',
+      features:[{ type:'Feature', properties:{ label: buckName + ' Core Area' }, geometry:{ type:'Point', coordinates:[centLng, centLat + radiusDeg * 0.6] } }]
+    });
+  } else {
+    mapInstance.addSource('core-label', { type:'geojson', data:{
+      type:'FeatureCollection',
+      features:[{ type:'Feature', properties:{ label: buckName + ' Core Area' }, geometry:{ type:'Point', coordinates:[centLng, centLat + radiusDeg * 0.6] } }]
+    }});
+    mapInstance.addLayer({
+      id: 'core-label',
+      type: 'symbol',
+      source: 'core-label',
+      layout: {
+        'text-field': ['get','label'],
+        'text-size': 11,
+        'text-anchor': 'bottom',
+        'text-font': ['DIN Offc Pro Medium','Arial Unicode MS Regular']
+      },
+      paint: {
+        'text-color': color,
+        'text-halo-color': 'rgba(0,0,0,0.8)',
+        'text-halo-width': 1.5
+      }
+    });
+  }
+  ['core-fill','core-stroke','core-dot','core-label'].forEach(id => {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id,'visibility','visible');
+  });
+}
+
+function hideCoreArea() {
+  if(!mapInstance) return;
+  ['core-fill','core-stroke','core-dot','core-label'].forEach(id => {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id,'visibility','none');
+  });
 }
 
 function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
@@ -2773,7 +2937,112 @@ function renderDash() {
             </div>
           </div>` : `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:6px 0">Log ${3-bs.length} more sighting${3-bs.length>1?'s':''} to unlock pattern analysis.</div>`}
 
-          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)">&#128506; View movement map</button>
+          ${bs.length >= 4 ? (() => {
+            // Core Area Analysis
+            // Midday hits per cam (10am-4pm = near bedding)
+            const middayCams = {};
+            const dawnDuskCams = {};
+            bs.forEach(s => {
+              if(!s.time) return;
+              const h = parseInt(s.time);
+              const cam = s.camera_name;
+              if(h >= 10 && h < 16) middayCams[cam] = (middayCams[cam]||0) + 1;
+              if((h >= 5 && h < 8) || (h >= 17 && h < 20)) dawnDuskCams[cam] = (dawnDuskCams[cam]||0) + 1;
+            });
+            const topMidday = Object.entries(middayCams).sort((a,b_)=>b_[1]-a[1]);
+            const topDawnDusk = Object.entries(dawnDuskCams).sort((a,b_)=>b_[1]-a[1]);
+
+            // First/last detection sequence per camera
+            const camFirstLast = {};
+            bs.forEach(s => {
+              if(!s.date) return;
+              const cam = s.camera_name;
+              if(!camFirstLast[cam]) camFirstLast[cam] = { first: s.date, last: s.date, count: 0 };
+              if(s.date < camFirstLast[cam].first) camFirstLast[cam].first = s.date;
+              if(s.date > camFirstLast[cam].last) camFirstLast[cam].last = s.date;
+              camFirstLast[cam].count++;
+            });
+
+            // Infer travel direction: cameras with most dawn sightings = entry point from that direction
+            // cameras with most dusk sightings = exit point
+            const dawnCams = {}; const duskCams = {};
+            bs.forEach(s => {
+              if(!s.time) return;
+              const h = parseInt(s.time);
+              const cam = s.camera_name;
+              if(h >= 5 && h < 8) dawnCams[cam] = (dawnCams[cam]||0)+1;
+              if(h >= 17 && h < 20) duskCams[cam] = (duskCams[cam]||0)+1;
+            });
+            const topDawn = Object.entries(dawnCams).sort((a,b_)=>b_[1]-a[1])[0];
+            const topDusk = Object.entries(duskCams).sort((a,b_)=>b_[1]-a[1])[0];
+
+            // Weighted camera density for core area
+            const camW = {}; bs.forEach(s => {
+              const h = s.time ? parseInt(s.time) : -1;
+              const w = (h >= 10 && h < 16) ? 2 : 1;
+              camW[s.camera_name] = (camW[s.camera_name]||0) + w;
+            });
+            const sortedCams = Object.entries(camW).sort((a,b_)=>b_[1]-a[1]);
+            const coreCams = sortedCams.slice(0, Math.min(3, sortedCams.length));
+            const totalCamW = sortedCams.reduce((a,b_)=>a+b_[1],0);
+            const corePct = totalCamW > 0 ? Math.round(coreCams.reduce((a,b_)=>a+b_[1],0)/totalCamW*100) : 0;
+
+            // Plain-language summary
+            let summary = '';
+            if(coreCams.length > 0) {
+              summary += \`Probable core area near <strong style="color:var(--blue)">\${coreCams.map(([c])=>c).join(' / ')}</strong> (\${corePct}% of weighted activity). \`;
+            }
+            if(topMidday && topMidday.length > 0) {
+              summary += \`<strong style="color:var(--blue)">\${topMidday[0][0]}</strong> has the most midday hits (\${topMidday[0][1]}) — likely closest to his bedding area. \`;
+            }
+            if(topDawn && topDusk && topDawn[0] !== topDusk[0]) {
+              summary += \`Likely enters at <strong style="color:var(--blue)">\${topDawn[0]}</strong> (dawn) and exits toward <strong style="color:var(--blue)">\${topDusk[0]}</strong> (dusk). \`;
+            } else if(topDawn) {
+              summary += \`Most dawn activity at <strong style="color:var(--blue)">\${topDawn[0]}</strong>. \`;
+            }
+
+            return \`<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(74,127,193,0.2)">
+              <div class="cond-title" style="margin-bottom:10px">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
+                Core Area Analysis
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+                <div style="background:var(--surface2);border-radius:8px;padding:8px">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Midday Cams (near bed)</div>
+                  \${topMidday.length
+                    ? topMidday.slice(0,3).map(([cam,cnt]) => \`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
+                        <span style="color:var(--text2)">\${cam}</span>
+                        <span style="color:var(--blue);font-weight:600">\${cnt}</span>
+                      </div>\`).join('')
+                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No midday data</div>'}
+                </div>
+                <div style="background:var(--surface2);border-radius:8px;padding:8px">
+                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Dawn/Dusk Travel</div>
+                  \${topDawnDusk.length
+                    ? topDawnDusk.slice(0,3).map(([cam,cnt]) => \`<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
+                        <span style="color:var(--text2)">\${cam}</span>
+                        <span style="color:var(--blue);font-weight:600">\${cnt}</span>
+                      </div>\`).join('')
+                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No travel data</div>'}
+                </div>
+              </div>
+
+              <div style="margin-bottom:10px">
+                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">First → Last Detection per Camera</div>
+                \${Object.entries(camFirstLast).sort((a,b_)=>b_[1].count-a[1].count).slice(0,5).map(([cam,d]) =>
+                  \`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border)">
+                    <span style="font-size:11px;color:var(--text2)">\${cam}</span>
+                    <span style="font-size:10px;color:var(--text3)">\${fmtD(d.first)}\${d.first!==d.last?' → '+fmtD(d.last):''} &middot; <strong style="color:var(--text2)">\${d.count}</strong></span>
+                  </div>\`
+                ).join('')}
+              </div>
+
+              \${summary ? \`<div style="font-size:11px;color:var(--text2);line-height:1.6;padding:8px;background:rgba(74,127,193,0.06);border-radius:8px;border-left:2px solid var(--blue)">\${summary}</div>\` : ''}
+            </div>\`;
+          })() : ''}
+
+          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)">&#128506; View movement map + core area</button>
         </div>
       </div>`;
     });
