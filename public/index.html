@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Cooley Lake</title>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -14,7 +15,7 @@
   --gold:#4a7fc1;--gold2:#6a9fd8;
   --green:#4a7fc1;--text:#efefef;--text2:#909090;--text3:#505050;
   --red:#d95f5f;--blue:#4a7fc1;--accent:#4a7fc1;
-  --font:'Georgia',serif;--radius:12px;--tab-h:72px;
+  --font:'Roboto',sans-serif;--radius:12px;--tab-h:72px;
 }
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
 #map{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0}
@@ -68,6 +69,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .popup-s-img{width:100%;height:100px;object-fit:cover;border-radius:8px;margin-bottom:7px}
 .pp-empty{padding:10px 16px;font-size:12px;color:var(--text3);font-style:italic}
 .popup-more{width:100%;padding:10px;background:var(--surface2);border:none;border-top:1px solid var(--border);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)}
+.popup-act-btn{flex:1;padding:9px 6px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s}
+.popup-act-btn:active{background:var(--border)}
+.popup-act-btn.danger{color:var(--red);border-color:rgba(224,85,85,0.25)}
+.popup-act-btn.danger:active{background:rgba(224,85,85,0.1)}
 
 /* tab bar */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -285,7 +290,7 @@ textarea{resize:none}
 <div class="map-filter-bar" id="mapFilters">
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleBuckDropdown()">
-      <span id="filterLabel">&#128200; All Deer</span>
+      <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer</span>
       <span class="map-select-arrow" id="filterArrow">&#8964;</span>
     </div>
     <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
@@ -317,6 +322,7 @@ textarea{resize:none}
   </div>
   <div class="popup-stats" id="popupStats"></div>
   <div id="popupSightings"></div>
+  <div id="popupActions" style="padding:10px 12px 12px;border-top:1px solid var(--border);display:flex;gap:8px"></div>
 </div>
 
 <!-- Tab bar -->
@@ -1272,7 +1278,7 @@ function buildMapFilters() {
   const bucks = getNamedBucks();
   const lbl = document.getElementById('filterLabel');
   if(lbl) {
-    if(curMapFilter === 'all') lbl.innerHTML = '&#128200; All Deer';
+    if(curMapFilter === 'all') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer';
     else if(curMapFilter === 'all-bucks') lbl.innerHTML = '&#128000; All Buck Lines';
     else lbl.innerHTML = `&#9679; ${curMapFilter}`;
   }
@@ -1371,7 +1377,7 @@ function buildMapLegend() {
            <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature buck</div>`;
   bucks.forEach(b => { h += `<div class="leg-item"><div class="leg-dot" style="background:${buckColor(b)}"></div>${b}</div>`; });
   // Edit mode toggle
-  h += `<button onclick="toggleEditMode()" id="editModeBtn" style="margin-left:auto;padding:4px 10px;border:1px solid #2a3d1e;border-radius:8px;background:transparent;color:#7a9e6a;font-size:10px;cursor:pointer;font-family:Georgia,serif">&#9999; Move Pins</button>`;
+  h += `<button onclick="toggleEditMode()" id="editModeBtn" style="margin-left:auto;padding:4px 10px;border:1px solid #2a3d1e;border-radius:8px;background:transparent;color:#7a9e6a;font-size:10px;cursor:pointer;font-family:'Roboto',sans-serif">&#9999; Move Pins</button>`;
   leg.innerHTML = h;
 }
 
@@ -1439,11 +1445,69 @@ function showPin(camName) {
       sights.innerHTML += `<button class="popup-more" onclick="filterGo('${camName}')">View all ${cs.length} sightings &rarr;</button>`;
     }
   }
+  // Actions footer
+  const actions = document.getElementById('popupActions');
+  actions.innerHTML = `
+    <button class="popup-act-btn" onclick="renameCamera('${camName}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      Rename
+    </button>
+    <button class="popup-act-btn" onclick="enableDragForCamera('${camName}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
+      Move Pin
+    </button>
+    <button class="popup-act-btn danger" onclick="confirmDeleteCamera('${camName}')">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+      Delete
+    </button>`;
   popup.classList.add('show');
 }
 
 
 function filterGo(c) { curFilter = c; showView('log'); }
+
+async function renameCamera(oldName) {
+  const newName = prompt('Rename camera "' + oldName + '" to:', oldName);
+  if(!newName || newName.trim() === oldName) return;
+  const trimmed = newName.trim();
+  // Update in Supabase cameras table
+  await sb.from('cameras').update({ name: trimmed }).eq('name', oldName);
+  // Update all sightings with this camera name
+  await sb.from('sightings').update({ camera_name: trimmed }).eq('camera_name', oldName);
+  // Update local sightings array
+  sightings.forEach(s => { if(s.camera_name === oldName) s.camera_name = trimmed; });
+  // Update local camLocations
+  if(camLocations[oldName]) { camLocations[trimmed] = camLocations[oldName]; delete camLocations[oldName]; }
+  closePopup();
+  await loadCamLocations();
+  refreshMapPins();
+  alert('Camera renamed to "' + trimmed + '"');
+}
+
+function enableDragForCamera(camName) {
+  closePopup();
+  // Turn on edit mode so pins become draggable
+  if(!editMode) toggleEditMode();
+  // Flash a message
+  const msg = document.createElement('div');
+  msg.textContent = 'Drag the ' + camName + ' pin to reposition it';
+  msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(74,127,193,0.9);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;z-index:200;pointer-events:none;font-family:Roboto,sans-serif';
+  document.body.appendChild(msg);
+  setTimeout(() => msg.remove(), 3000);
+}
+
+async function confirmDeleteCamera(camName) {
+  const cs = sightings.filter(s => s.camera_name === camName).length;
+  const msg = cs > 0
+    ? 'Delete camera "' + camName + '"? It has ' + cs + ' sightings. The sightings will be kept but unlinked from this camera.'
+    : 'Delete camera "' + camName + '"? This cannot be undone.';
+  if(!confirm(msg)) return;
+  await sb.from('cameras').delete().eq('name', camName);
+  delete camLocations[camName];
+  closePopup();
+  await loadCamLocations();
+  refreshMapPins();
+}
 
 
 function toggleBuckIntel(btn) {
@@ -1554,7 +1618,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const color = isTop ? '#c8a951' : '#666666';
     const weight = isTop ? 'bold' : 'normal';
     labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10"
-      font-family="Georgia,serif" fill="${color}" font-weight="${weight}">${w}</text>`;
+      font-family="'Roboto',sans-serif" fill="${color}" font-weight="${weight}">${w}</text>`;
 
     // Count label inside wedge for non-zero
     const cnt = windCounts[w] || 0;
@@ -1565,7 +1629,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
       const ny = cy + Math.sin(angle) * r2 + 4;
       const txtColor = isTop ? '#0a0a0a' : '#ffffff';
       labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="9"
-        font-family="Georgia,serif" fill="${txtColor}" font-weight="bold">${cnt}</text>`;
+        font-family="'Roboto',sans-serif" fill="${txtColor}" font-weight="bold">${cnt}</text>`;
     }
   });
 
@@ -1573,11 +1637,11 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
   const legendY = size * 2 + 4;
   const legend = `
     <rect x="20" y="${legendY}" width="10" height="10" rx="2" fill="#c8a951"/>
-    <text x="34" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Most active</text>
+    <text x="34" y="${legendY+9}" font-size="9" font-family="'Roboto',sans-serif" fill="#a0a0a0">Most active</text>
     <rect x="110" y="${legendY}" width="10" height="10" rx="2" fill="#888888"/>
-    <text x="124" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Active</text>
+    <text x="124" y="${legendY+9}" font-size="9" font-family="'Roboto',sans-serif" fill="#a0a0a0">Active</text>
     <rect x="175" y="${legendY}" width="10" height="10" rx="2" fill="#444444"/>
-    <text x="189" y="${legendY+9}" font-size="9" font-family="Georgia,serif" fill="#a0a0a0">Low</text>
+    <text x="189" y="${legendY+9}" font-size="9" font-family="'Roboto',sans-serif" fill="#a0a0a0">Low</text>
   `;
 
   return `<div style="display:flex;justify-content:center">
@@ -1626,7 +1690,7 @@ function build24HrTimeline(sightings, mini) {
     // Count on top of bar if > 0
     if(cnt > 0 && barH > 10) {
       bars += `<text x="${x + barW/2}" y="${58 - barH}" text-anchor="middle"
-        font-size="8" fill="${color}" font-family="Georgia,serif">${cnt}</text>`;
+        font-size="8" fill="${color}" font-family="'Roboto',sans-serif">${cnt}</text>`;
     }
   });
 
@@ -1635,7 +1699,7 @@ function build24HrTimeline(sightings, mini) {
     const x = h * barW + barW/2;
     const label = h === 0 ? '12a' : h < 12 ? `${h}a` : h === 12 ? '12p' : `${h-12}p`;
     ticks += `<text x="${x}" y="74" text-anchor="middle" font-size="8"
-      fill="#505050" font-family="Georgia,serif">${label}</text>`;
+      fill="#505050" font-family="'Roboto',sans-serif">${label}</text>`;
   });
 
   // Period labels
@@ -1690,19 +1754,19 @@ function buildMiniTimeline(hourly, maxH) {
     const pct = cnt / (maxH||1);
     const barH = Math.max(pct * 40, cnt > 0 ? 2 : 0);
     const x = h * barW;
-    bars += `<rect x="${x}%" y="${40-barH}px" width="${barW - 0.3}" height="${barH}px"
+    bars += `<rect x="${x}" y="${40-barH}" width="${barW - 0.5}" height="${barH}"
       fill="${periodColor(h)}" fill-opacity="${0.4 + pct*0.6}" rx="1"/>`;
   });
   const peakHour = hourly.indexOf(maxH||0);
   const pl = peakHour < 12 ? `${peakHour||12}am` : `${peakHour-12||12}pm`;
   return `<div>
-    <svg width="100%" height="44" style="display:block;overflow:visible">
+    <svg width="100%" height="44" viewBox="0 0 240 44" preserveAspectRatio="none" style="display:block;overflow:visible">
       ${bars}
       <line x1="0" y1="41" x2="100%" y2="41" stroke="#222" stroke-width="0.5"/>
-      <text x="0%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">12a</text>
-      <text x="25%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">6a</text>
-      <text x="50%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">12p</text>
-      <text x="75%" y="50" font-size="7" fill="#505050" font-family="Georgia,serif">6p</text>
+      <text x="0%" y="50" font-size="7" fill="#505050" font-family="'Roboto',sans-serif">12a</text>
+      <text x="25%" y="50" font-size="7" fill="#505050" font-family="'Roboto',sans-serif">6a</text>
+      <text x="50%" y="50" font-size="7" fill="#505050" font-family="'Roboto',sans-serif">12p</text>
+      <text x="75%" y="50" font-size="7" fill="#505050" font-family="'Roboto',sans-serif">6p</text>
     </svg>
     ${maxH > 0 ? `<div style="font-size:9px;color:var(--text3);margin-top:2px">Peak: <span style="color:var(--blue)">${pl}</span></div>` : ''}
   </div>`;
@@ -2032,7 +2096,7 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
               stroke-linecap="round"
               transform="rotate(-90 22 22)"/>
             <text x="22" y="26" text-anchor="middle" font-size="11" font-weight="bold"
-              fill="${isTop?'var(--blue)':'var(--text2)'}" font-family="Georgia,serif">${cnt}</text>
+              fill="${isTop?'var(--blue)':'var(--text2)'}" font-family="'Roboto',sans-serif">${cnt}</text>
           </svg>
         </div>
         <div style="min-width:0">
@@ -2581,7 +2645,7 @@ function renderDash() {
 
   // --- Named buck cards -
   if(nb.length > 0) {
-    html += `<div class="stitle" style="margin-bottom:10px">&#128000; Named Bucks</div>`;
+    html += `<div class="stitle" style="margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>Named Bucks</div>`;
     nb.forEach(bname => {
       const bs = sightings.filter(s => s.buck_name === bname);
       const color = '#4a7fc1';
@@ -2640,7 +2704,7 @@ function renderDash() {
         <button class="bi-hdr" onclick="toggleBuckIntel(this)">
           ${recentImg
             ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="15" rx="5" ry="4"/><line x1="12" y1="11" x2="12" y2="8"/><circle cx="12" cy="7" r="2"/><path d="M10 5 L8 2 M8 2 L6 3"/><path d="M14 5 L16 2 M16 2 L18 3"/></svg></div>`}
+            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
           <div style="flex:1;min-width:0">
             <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
             <div style="font-size:11px;color:var(--text2)">${bs.length} sightings &middot; ${cameras.join(', ')}</div>
@@ -2699,7 +2763,7 @@ function renderDash() {
           </div>
 
           ${bs.length >= 3 ? `<div class="insight" style="margin-bottom:10px">
-            <div class="insight-title">&#129504; Pattern Analysis</div>
+            <div class="insight-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pattern Analysis</div>
             <div class="insight-text">
               ${bTopWinds.length ? `Most active on <strong style="color:var(--blue)">${bTopWinds[0]}${bTopWinds[1]?' / '+bTopWinds[1]:''} wind</strong>. ` : ''}
               ${bTopTime.length ? `Peak: <strong style="color:var(--blue)">${bTopTime[0][0]}</strong>. ` : ''}
@@ -2716,7 +2780,7 @@ function renderDash() {
   }
 
   // --- Property Intelligence -
-  html += `<div class="stitle" style="margin:16px 0 10px">&#127759; Property Intelligence</div>`;
+  html += `<div class="stitle" style="margin:16px 0 10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Property Intelligence</div>`;
 
   // Wind rose - radial SVG chart
   html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; Deer Activity</div>
@@ -2731,7 +2795,7 @@ function renderDash() {
     ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
   </div>`;
   html += `<div class="insight insight-gold">
-    <div class="insight-title">&#127919; Key Insights &mdash; ${totalCount} Sightings</div>
+    <div class="insight-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Key Insights &mdash; ${totalCount} Sightings</div>
     <div class="insight-text">
       ${topWinds.length?`<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
       ${topTime?`<strong style="color:#c8a951">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
@@ -2744,18 +2808,18 @@ function renderDash() {
 
   // --- 7-day hunt forecast -
   html += `<div class="prop-stat">
-    <div class="cond-title" style="margin-bottom:8px">&#128197; 7-Day Hunt Forecast</div>
+    <div class="cond-title" style="margin-bottom:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>7-Day Hunt Forecast</div>
     <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
   </div>`;
 
   // --- Weather & movement correlation -
   html += `<div class="prop-stat">
-    <div class="cond-title" style="margin-bottom:10px">&#127782; Weather Impact on Movement</div>
+    <div class="cond-title" style="margin-bottom:10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8" y2="21"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="16" y1="16" x2="16" y2="21"/></svg>Weather Impact on Movement</div>
     ${buildWeatherCorrelation(sightings)}
   </div>`;
 
   // Season intel
-  html += `<div class="card intel"><div class="stitle">&#127919; Season Intel</div>
+  html += `<div class="card intel"><div class="stitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Season Intel</div>
     <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
   </div>`;
 
@@ -2781,8 +2845,8 @@ function startMap() {
 setTimeout(startMap, 300);
 </script>
 
-<!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:Georgia,serif">Loading map...</div>
-  <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #4a7fc1;border-radius:8px;background:transparent;color:#4a7fc1;font-size:12px;cursor:pointer;font-family:Georgia,serif">Retry Map</button>
+<!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:'Roboto',sans-serif">Loading map...</div>
+  <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #4a7fc1;border-radius:8px;background:transparent;color:#4a7fc1;font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif">Retry Map</button>
 </div>
 </body>
 </html>
