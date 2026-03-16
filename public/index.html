@@ -305,7 +305,7 @@ textarea{resize:none}
 </div>
 
 <!-- Map filter bar -->
-<div class="year-bar" id="mybar" style="position:fixed;top:72px;left:0;right:0;z-index:51;padding:4px 14px;pointer-events:auto;background:rgba(10,10,10,0.7)"></div>
+<div class="year-bar" id="mybar" style="position:fixed;top:72px;left:0;right:0;z-index:51;padding:4px 14px;pointer-events:auto"></div>
 <div class="map-filter-bar" id="mapFilters" style="top:108px">
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleBuckDropdown()">
@@ -501,12 +501,12 @@ textarea{resize:none}
 </div>
 
 <!-- EDIT MODAL -->
-<div class="modal-overlay" id="editModal" onclick="closeEditModal(event)">
+<div class="modal-overlay" id="editModal" onclick="closeModal(event)">
   <div class="modal" onclick="event.stopPropagation()">
     <div class="modal-handle"></div>
     <div class="modal-hdr">
       <div class="modal-title">Edit Sighting</div>
-      <button class="modal-x" onclick="document.getElementById('editModal').classList.remove('on')">&#215;</button>
+      <button class="modal-x" onclick="document.getElementById('editModal').style.display='none'">&#215;</button>
     </div>
     <div class="field-grp"><span class="field-lbl">Buck Name</span><input type="text" id="eBuckName" placeholder="Name this buck..." list="bucknamelist"/></div>
     <div class="field-grp"><span class="field-lbl">Deer Type</span>
@@ -594,27 +594,7 @@ function activateTab(name) {
   }
 }
 
-function closeEditModal(e) {
-  if(e.target === document.getElementById('editModal'))
-    document.getElementById('editModal').classList.remove('on');
-}
-
-function openEdit(id) {
-  const s = sightings.find(x => x.id === id); if(!s) return;
-  editId = id; editImgChanged = false; editImgFile = null;
-  document.getElementById('eBuckName').value = s.buck_name||'';
-  document.getElementById('eDeerType').value = s.deer_type||'Unknown';
-  document.getElementById('eCamera').value = s.camera_name||'Other';
-  document.getElementById('eDate').value = s.date||'';
-  document.getElementById('eTime').value = (s.time||'').slice(0,5);
-  document.getElementById('eBehavior').value = s.behavior||'';
-  document.getElementById('eNotes').value = s.notes||'';
-  const pw = document.getElementById('ePhotoWrap');
-  pw.innerHTML = s.image_url
-    ? `<img src="${s.image_url}" style="width:100%;height:130px;object-fit:cover;border-radius:10px"/>`
-    : `<div style="font-size:11px;color:var(--text3);font-style:italic">No photo attached</div>`;
-  document.getElementById('editModal').classList.add('on');
-}
+// openEdit defined below
 
 function showDet(id) {
   const s = sightings.find(x => x.id === id); if(!s) return;
@@ -1857,8 +1837,10 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     <text x="189" y="${legendY+9}" font-size="9" font-family="'Roboto',sans-serif" fill="#a0a0a0">Low</text>
   `;
 
+  const svgW = size * 2;
+  const svgH = size * 2 + 24;
   return `<div style="display:flex;justify-content:center">
-    <svg width="220" height="240" viewBox="0 0 220 240" style="overflow:visible">
+    <svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;max-width:${svgW}px">
       ${rings}${slices}${labels}${legend}
     </svg>
   </div>`;
@@ -2786,28 +2768,33 @@ function renderLog() {
   if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4a6a3a;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
   sl.innerHTML = fil.map(s => {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
-    return `<div class="sc${s.deer_type&&s.deer_type.includes("Mature")?" m":""}">
+    const isMature = s.deer_type && s.deer_type.includes("Mature");
+    const isBuck = s.deer_type && s.deer_type.includes("Buck");
+    const accentColor = bc || (isMature ? '#c8a951' : isBuck ? 'var(--blue)' : 'var(--border)');
+    return `<div class="sc${isMature?" m":""}" style="border-left:3px solid ${accentColor};margin-bottom:8px">
       ${s.image_url ? `<img class="sc-img" src="${s.image_url}" alt="" onclick="showDet(${s.id})"/>` : ""}
       <div class="sc-body" onclick="showDet(${s.id})">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-size:14px;font-weight:600;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
-            ${s.buck_name ? `<div style="font-size:12px;margin-top:3px;color:${bc}">&#9679; ${s.buck_name}</div>` : ""}
-            <div style="font-size:12px;color:#7a9e6a;margin-top:2px">${s.camera_name}</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="min-width:0">
+            <div style="font-size:13px;font-weight:600;color:${isMature?"#c8a951":"var(--text)"}">${s.deer_type}</div>
+            ${s.buck_name ? `<div style="font-size:12px;margin-top:2px;color:${bc};font-weight:500">&#9679; ${s.buck_name}</div>` : ""}
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:4px">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+              ${s.camera_name}
+            </div>
           </div>
           <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:12px;color:#a0b890">${fmtD(s.date)}</div>
-            <div style="font-size:12px;color:#7a9e6a">${fmtT(s.time)}</div>
+            <div style="font-size:12px;color:var(--text2);font-weight:500">${fmtD(s.date)}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmtT(s.time)}</div>
           </div>
         </div>
-        <div class="tags">
+        <div class="tags" style="margin-top:7px">
           ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
           ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
           ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}F</span>` : ""}
-          ${s.humidity ? `<span class="tag">&#128167; ${s.humidity}%</span>` : ""}
           ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
         </div>
-        ${s.notes ? `<div class="snotes">${s.notes}</div>` : ""}
+        ${s.notes ? `<div class="snotes" style="margin-top:6px">${s.notes}</div>` : ""}
       </div>
       <div class="sc-foot">
         <button class="edit-btn" onclick="openEdit(${s.id})">&#9998; Edit</button>
@@ -3522,13 +3509,17 @@ function renderDash() {
   html += `<div class="stitle" style="margin:16px 0 10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Property Intelligence</div>`;
 
   // Wind rose - radial SVG chart
-  html += `<div class="prop-stat"><div class="cond-title">Wind Direction &mdash; Deer Activity</div>
-    ${buildWindRoseSVG(windCounts, maxWind, topWinds)}
-  </div>`;
-
-  // Time of day
-    html += `<div class="prop-stat"><div class="cond-title">Activity by Time of Day</div>
-    ${build24HrTimeline(ys)}
+  html += `<div class="prop-stat" style="padding:0;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
+      <div style="padding:14px;border-right:1px solid var(--border)">
+        <div class="cond-title">Wind Direction</div>
+        ${buildWindRoseSVG(windCounts, maxWind, topWinds, 120)}
+      </div>
+      <div style="padding:14px">
+        <div class="cond-title">Activity by Time of Day</div>
+        ${build24HrTimeline(ys)}
+      </div>
+    </div>
   </div>`;
     html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
     ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
