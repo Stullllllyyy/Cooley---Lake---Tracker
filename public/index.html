@@ -305,8 +305,8 @@ textarea{resize:none}
 </div>
 
 <!-- Map filter bar -->
-<div class="map-filter-bar" id="mapFilters">
-  <div class="year-bar" id="mybar" style="width:100%;padding:4px 0 0;pointer-events:auto;margin-bottom:4px"></div>
+<div class="year-bar" id="mybar" style="position:fixed;top:72px;left:0;right:0;z-index:51;padding:4px 14px;pointer-events:auto;background:rgba(10,10,10,0.7)"></div>
+<div class="map-filter-bar" id="mapFilters" style="top:108px">
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleBuckDropdown()">
       <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer</span>
@@ -3209,9 +3209,10 @@ function renderDash() {
   const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
   const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
 
-  const totalCount = sightings.length;
-  const buckCount = sightings.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
-  const matureList = sightings.filter(s => s.deer_type && s.deer_type.includes("Mature"));
+  const ys = yearFiltered(sightings);
+  const totalCount = ys.length;
+  const buckCount = ys.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
+  const matureList = ys.filter(s => s.deer_type && s.deer_type.includes("Mature"));
   const matureCount = matureList.length;
   const nb = getNamedBucks();
 
@@ -3234,14 +3235,14 @@ function renderDash() {
   // Wind counts
   const windCounts = {};
   WINDS.forEach(w => windCounts[w] = 0);
-  sightings.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
+  ys.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
   const maxWind = Math.max(...Object.values(windCounts), 1);
   const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
 
   // Time of day counts
   const timeCounts = {};
   Object.keys(TIME_BUCKETS).forEach(k => timeCounts[k] = 0);
-  sightings.forEach(s => {
+  ys.forEach(s => {
     if(!s.time) return;
     const h = parseInt(s.time);
     Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
@@ -3256,7 +3257,7 @@ function renderDash() {
   CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
   const camMatureCounts = {};
   CAMNAMES.slice(0,5).forEach(c => camMatureCounts[c] = 0);
-  sightings.forEach(s => {
+  ys.forEach(s => {
     if(camCounts[s.camera_name] !== undefined) {
       camCounts[s.camera_name]++;
       if(s.deer_type && s.deer_type.includes("Mature")) camMatureCounts[s.camera_name]++;
@@ -3271,8 +3272,8 @@ function renderDash() {
   const moonCounts = {};
   matureList.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
   const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
-  const highP = sightings.filter(s => s.pressure && s.pressure > 1020);
-  const lowP = sightings.filter(s => s.pressure && s.pressure <= 1020);
+  const highP = ys.filter(s => s.pressure && s.pressure > 1020);
+  const lowP = ys.filter(s => s.pressure && s.pressure <= 1020);
   const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
   const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
 
@@ -3280,7 +3281,7 @@ function renderDash() {
   if(nb.length > 0) {
     html += `<div class="stitle" style="margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>Named Bucks</div>`;
     nb.forEach(bname => {
-      const bs = sightings.filter(s => s.buck_name === bname);
+      const bs = ys.filter(s => s.buck_name === bname);
       const color = '#4a7fc1';
       const cameras = [...new Set(bs.map(s => s.camera_name))];
       const dates = bs.map(s => s.date).sort();
@@ -3527,7 +3528,7 @@ function renderDash() {
 
   // Time of day
     html += `<div class="prop-stat"><div class="cond-title">Activity by Time of Day</div>
-    ${build24HrTimeline(sightings)}
+    ${build24HrTimeline(ys)}
   </div>`;
     html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
     ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
@@ -3562,6 +3563,7 @@ function renderDash() {
   </div>`;
 
   document.getElementById("intelContent").innerHTML = html;
+  setTimeout(loadHuntForecast, 100);
 }
 
 
