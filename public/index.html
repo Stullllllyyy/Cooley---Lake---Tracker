@@ -464,7 +464,8 @@ textarea{resize:none}
     <div class="field-grp">
       <span class="field-lbl">Photo</span>
       <div id="ePhotoWrap" style="margin-bottom:8px"></div>
-      <button onclick="document.getEl
+      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">&#128247; Change photo</button>
+<input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
 
 
 <!-- Add camera modal -->
@@ -472,7 +473,9 @@ textarea{resize:none}
   <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
   <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
   <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="addCamCoords">Tap confirmed location</div>
-  <div class="field-grp"><span class="field
+  </div>
+</div>
+
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -995,6 +998,7 @@ async function saveCamLocation(name, lng, lat) {
 }
 
 function initMap() {
+  console.log('initMap called, container width:', document.getElementById('map')?.offsetWidth);
   if(mapInstance) { refreshMapPins(); mapInstance.resize(); return; }
   const container = document.getElementById('map');
   if(!container || container.offsetWidth === 0) {
@@ -1019,7 +1023,14 @@ function initMap() {
     if(!lineLayerAdded) return;
     addLineLayer();
   });
-  mapInstance.on('error', e => console.error('Map error:', e.error));
+  mapInstance.on('error', e => {
+    console.error('Mapbox error:', e.error);
+    const el = document.getElementById('mapLoadText');
+    if(el) { el.style.display='block'; el.style.color='#e87a4a'; el.textContent = 'Map error: ' + (e.error?.message || JSON.stringify(e.error)); }
+  });
+  mapInstance.on('styledata', () => console.log('Mapbox: style loaded'));
+  mapInstance.on('tilesloaded', () => console.log('Mapbox: tiles loaded'));
+  mapInstance.on('idle', () => { console.log('Mapbox: idle/ready'); const el = document.getElementById('mapLoadText'); if(el) el.style.display='none'; });
   [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
@@ -2756,6 +2767,7 @@ function startMap() {
     return;
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+  console.log('Mapbox token set, version:', mapboxgl.version);
   // Preload camera locations silently — map initializes when user taps the Map tab
   loadCamLocations();
 }
