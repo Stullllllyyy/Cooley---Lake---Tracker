@@ -995,7 +995,12 @@ async function saveCamLocation(name, lng, lat) {
 }
 
 function initMap() {
-  if(mapInstance) { refreshMapPins(); return; }
+  if(mapInstance) { refreshMapPins(); mapInstance.resize(); return; }
+  const container = document.getElementById('map');
+  if(!container || container.offsetWidth === 0) {
+    setTimeout(initMap, 100);
+    return;
+  }
   mapInstance = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
@@ -1452,9 +1457,14 @@ function showView(n) {
   if(n === "map") {
     buildMapFilters(); buildMapLegend();
     setTimeout(async () => {
-      if(!mapInstance) await loadCamLocations();
-      initMap();
-    }, 50);
+      if(!mapInstance) {
+        await loadCamLocations();
+        initMap();
+      } else {
+        mapInstance.resize();
+        refreshMapPins();
+      }
+    }, 80);
   }
   if(n === "log") renderLog();
   if(n === "add") initForm();
@@ -2197,7 +2207,7 @@ function updateConditionsOverlay() {
 }
 
 
-// &#9472;&#9472; Dot Map &#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;&#9472;
+// ── Dot Map ───────────────────────────────────────────────────────────────────
 let dotMapOn = false;
 let dotMarkers = [];
 
@@ -2746,8 +2756,7 @@ function startMap() {
     return;
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-  // Init map immediately, load cam locations in parallel
-  initMap();
+  // Preload camera locations silently — map initializes when user taps the Map tab
   loadCamLocations();
 }
 setTimeout(startMap, 300);
