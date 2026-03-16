@@ -250,8 +250,20 @@ textarea{resize:none}
 .sync-dot.on{background:var(--gold)}
 .bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
 
-.movement-legend{position:fixed;bottom:calc(var(--tab-h) + 10px);left:14px;z-index:50;background:rgba(10,10,10,0.88);border:1px solid var(--border2);border-radius:10px;padding:8px 12px;backdrop-filter:blur(10px);display:none}
-.movement-legend.show{display:block}
+.movement-legend{display:none}
+.map-legend-btn{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:51;width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
+.map-legend-btn.visible{display:flex}
+.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:51;background:rgba(10,10,10,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
+.map-legend-panel.visible{display:block}
+@keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.leg-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:8px}
+.leg-section-lbl:first-child{margin-top:0}
+.leg-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.leg-swatch{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.leg-line{width:22px;height:3px;border-radius:2px;flex-shrink:0}
+.leg-row-text .leg-name{font-size:11px;color:var(--text2)}
+.leg-row-text .leg-desc{font-size:10px;color:var(--text3)}
+.leg-divider{height:1px;background:rgba(255,255,255,0.07);margin:8px 0}
 .ml-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
 .ml-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:10px;color:var(--text2)}
 .ml-line{height:2px;width:22px;border-radius:1px;flex-shrink:0}
@@ -297,6 +309,21 @@ textarea{resize:none}
   </div>
 </div>
 <div id="mapLegend" style="display:none"></div>
+<button class="map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" stroke-linecap="round">
+    <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
+    <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
+    <line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/>
+    <line x1="4.9" y1="19.1" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="19.1" y2="4.9"/>
+  </svg>
+</button>
+<div class="map-legend-panel" id="mapLegendPanel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+    <span style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:600">Map Legend</span>
+    <button onclick="toggleLegendPanel()" style="background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;line-height:1">&times;</button>
+  </div>
+  <div id="legendContent"></div>
+</div>
 
 <!-- FABs -->
 <div class="map-fabs">
@@ -1127,14 +1154,56 @@ function addCamMarkers() {
     const el = document.createElement('div');
     el.className = 'cam-marker' + (curMapFilter !== 'all' && !hasBuck ? ' faded' : '');
 
+    // Time ring — only when a specific buck is selected
+    let ringHTML = '';
+    if(curMapFilter !== 'all' && hasBuck) {
+      const buckSights = cs.filter(s => s.buck_name === curMapFilter && s.time);
+      const total = buckSights.length || 1;
+      // Count per period
+      let night = 0, dawn = 0, midday = 0, dusk = 0;
+      buckSights.forEach(s => {
+        const h = parseInt(s.time);
+        if(h >= 5 && h < 10) dawn++;
+        else if(h >= 10 && h < 16) midday++;
+        else if(h >= 16 && h < 20) dusk++;
+        else night++;
+      });
+      // Build arc segments on a 52px circle (cx=26,cy=26,r=22)
+      const cx = 26, cy = 26, r = 22;
+      const circ = 2 * Math.PI * r;
+      const periods = [
+        { pct: night/total,  color: '#2a2a3a', stroke: '#444' },
+        { pct: dawn/total,   color: '#5a8fc8', stroke: '#5a8fc8' },
+        { pct: midday/total, color: '#e87a3a', stroke: '#e87a3a' },
+        { pct: dusk/total,   color: '#c8a951', stroke: '#c8a951' },
+      ];
+      // Draw arcs clockwise starting from top
+      let offset = circ / 4; // start at top
+      let arcs = '';
+      periods.forEach(p => {
+        if(p.pct <= 0) { return; }
+        const dash = p.pct * circ;
+        const gap = circ - dash;
+        const w = p.pct > 0.25 ? 5 : 4; // thicker for dominant period
+        arcs += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none"
+          stroke="${p.stroke}" stroke-width="${w}" stroke-opacity="0.9"
+          stroke-dasharray="${dash.toFixed(2)} ${gap.toFixed(2)}"
+          stroke-dashoffset="${offset.toFixed(2)}"
+          stroke-linecap="round"/>`;
+        offset -= dash; // move clockwise
+      });
+      ringHTML = `<svg width="52" height="52" viewBox="0 0 52 52" style="position:absolute;top:-8px;left:-8px;pointer-events:none;z-index:0">${arcs}</svg>`;
+    }
+
     // Teardrop SVG pin
     el.innerHTML = `
-      <div class="cam-pin">
-        <svg class="pin-bg" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <div class="cam-pin" style="position:relative">
+        ${ringHTML}
+        <svg class="pin-bg" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:1">
           <path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 26 14 26s14-16 14-26C32 8.268 25.732 2 18 2z"
             fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
         </svg>
-        <div class="cam-pin-content">
+        <div class="cam-pin-content" style="position:relative;z-index:1">
           <div class="cam-pin-ico">&#128247;</div>
           <div class="cam-pin-cnt">${cnt > 0 ? cnt : ''}</div>
         </div>
@@ -1370,15 +1439,66 @@ function closeBuckDropdown() {
 
 
 function buildMapLegend() {
-  const bucks = getNamedBucks();
-  const leg = document.getElementById('mapLegend');
-  if(!leg) return;
-  let h = `<div class="leg-item"><div class="leg-dot" style="background:#2a6a1a"></div>Camera</div>
-           <div class="leg-item"><div class="leg-dot" style="background:#c8a951"></div>Mature buck</div>`;
-  bucks.forEach(b => { h += `<div class="leg-item"><div class="leg-dot" style="background:${buckColor(b)}"></div>${b}</div>`; });
-  // Edit mode toggle
-  h += `<button onclick="toggleEditMode()" id="editModeBtn" style="margin-left:auto;padding:4px 10px;border:1px solid #2a3d1e;border-radius:8px;background:transparent;color:#7a9e6a;font-size:10px;cursor:pointer;font-family:'Roboto',sans-serif">&#9999; Move Pins</button>`;
-  leg.innerHTML = h;
+  const btn = document.getElementById('mapLegendBtn');
+  const content = document.getElementById('legendContent');
+  if(!content) return;
+
+  const buckSelected = curMapFilter && curMapFilter !== 'all';
+
+  // Show/hide legend button based on whether a buck is selected
+  if(btn) btn.classList.toggle('visible', buckSelected);
+  if(!buckSelected) {
+    const panel = document.getElementById('mapLegendPanel');
+    if(panel) panel.classList.remove('visible');
+    return;
+  }
+
+  // Build legend content
+  let h = '';
+
+  // Movement lines section
+  h += `<div class="leg-section-lbl">Movement lines</div>
+    <div class="leg-row">
+      <div class="leg-line" style="background:var(--blue)"></div>
+      <div class="leg-row-text"><div class="leg-name">Daytime travel</div><div class="leg-desc">Solid · 6am–8pm</div></div>
+    </div>
+    <div class="leg-row">
+      <div style="width:22px;height:0;border-top:3px dashed var(--blue);flex-shrink:0"></div>
+      <div class="leg-row-text"><div class="leg-name">Night movement</div><div class="leg-desc">Dashed · 8pm–6am</div></div>
+    </div>
+    <div class="leg-row">
+      <svg width="22" height="10" viewBox="0 0 22 10" style="flex-shrink:0"><line x1="2" y1="5" x2="17" y2="5" stroke="#4a7fc1" stroke-width="2"/><polyline points="13,2 17,5 13,8" fill="none" stroke="#4a7fc1" stroke-width="2" stroke-linejoin="round"/></svg>
+      <div class="leg-row-text"><div class="leg-name">Direction</div><div class="leg-desc">Arrow = chronological</div></div>
+    </div>`;
+
+  h += `<div class="leg-divider"></div>`;
+
+  // Time rings section
+  h += `<div class="leg-section-lbl">Pin time rings</div>
+    <div class="leg-row"><div class="leg-swatch" style="background:#2a2a3a;border:1px solid #444"></div><div class="leg-row-text"><div class="leg-name">Night <span style="color:var(--text3);font-size:10px">8pm–5am</span></div></div></div>
+    <div class="leg-row"><div class="leg-swatch" style="background:#5a8fc8"></div><div class="leg-row-text"><div class="leg-name">Dawn <span style="color:var(--text3);font-size:10px">5–8am · entering</span></div></div></div>
+    <div class="leg-row"><div class="leg-swatch" style="background:#e87a3a"></div><div class="leg-row-text"><div class="leg-name">Midday <span style="color:var(--text3);font-size:10px">10am–4pm · near bed</span></div></div></div>
+    <div class="leg-row"><div class="leg-swatch" style="background:#c8a951"></div><div class="leg-row-text"><div class="leg-name">Dusk <span style="color:var(--text3);font-size:10px">5–8pm · exit route</span></div></div></div>`;
+
+  h += `<div class="leg-divider"></div>`;
+
+  // Core area section
+  h += `<div class="leg-section-lbl">Core area</div>
+    <div class="leg-row">
+      <div style="width:18px;height:18px;border-radius:50%;background:rgba(74,127,193,0.12);border:1.5px solid rgba(74,127,193,0.45);flex-shrink:0"></div>
+      <div class="leg-row-text"><div class="leg-name">Probability zone</div><div class="leg-desc">Weighted sighting density</div></div>
+    </div>
+    <div class="leg-row">
+      <div style="width:10px;height:10px;border-radius:50%;background:var(--blue);border:2px solid #fff;flex-shrink:0;margin-left:4px"></div>
+      <div class="leg-row-text"><div class="leg-name">Core centroid</div><div class="leg-desc">Midday-weighted center</div></div>
+    </div>`;
+
+  content.innerHTML = h;
+}
+
+function toggleLegendPanel() {
+  const panel = document.getElementById('mapLegendPanel');
+  if(panel) panel.classList.toggle('visible');
 }
 
 function setMapFilter(name) {
@@ -1396,6 +1516,11 @@ function setMapFilter(name) {
     heatmapOn = false;
     hideHeatmap();
     hideCoreArea();
+    // Hide legend panel when returning to All Deer
+    const panel = document.getElementById('mapLegendPanel');
+    if(panel) panel.classList.remove('visible');
+    const btn = document.getElementById('mapLegendBtn');
+    if(btn) btn.classList.remove('visible');
   }
 }
 
@@ -1682,11 +1807,10 @@ function build24HrTimeline(sightings, mini) {
   // Color by time period
   const periodColor = h => {
     if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn - blue
-    if(h >= 7 && h < 10) return '#7aafe0';  // morning - lighter blue
-    if(h >= 10 && h < 13) return '#909090'; // midday - gray
-    if(h >= 13 && h < 16) return '#707070'; // afternoon - darker gray
-    if(h >= 16 && h < 20) return '#5a8fc8'; // dusk - blue
-    return '#303030';                         // night - near black
+    if(h >= 7 && h < 10) return '#5a8fc8';  // morning - blue
+    if(h >= 10 && h < 16) return '#e87a3a'; // midday - orange
+    if(h >= 16 && h < 20) return '#c8a951'; // dusk - gold
+    return '#2a2a3a';                         // night - near black
   };
 
   const barW = 10; // 240 viewBox / 24 hours
@@ -1719,13 +1843,11 @@ function build24HrTimeline(sightings, mini) {
 
   // Period labels
   const periods = [
-    {label:'Night', start:0, end:5, color:'#303030'},
-    {label:'Dawn', start:5, end:7, color:'#5a8fc8'},
-    {label:'Morning', start:7, end:10, color:'#7aafe0'},
-    {label:'Midday', start:10, end:13, color:'#909090'},
-    {label:'Afternoon', start:13, end:16, color:'#707070'},
-    {label:'Dusk', start:16, end:20, color:'#5a8fc8'},
-    {label:'Night', start:20, end:24, color:'#303030'},
+    {label:'Night', start:0, end:5, color:'#2a2a3a'},
+    {label:'Dawn', start:5, end:10, color:'#5a8fc8'},
+    {label:'Midday', start:10, end:16, color:'#e87a3a'},
+    {label:'Dusk', start:16, end:20, color:'#c8a951'},
+    {label:'Night', start:20, end:24, color:'#2a2a3a'},
   ];
 
   // Peak hour annotation
@@ -1758,11 +1880,10 @@ function build24HrTimeline(sightings, mini) {
 function buildMiniTimeline(hourly, maxH) {
   const barW = 10; // 240 / 24 hours = 10 units per hour in viewBox coords
   const periodColor = h => {
-    if(h >= 5 && h < 7)  return '#5a8fc8';
-    if(h >= 7 && h < 10) return '#7aafe0';
-    if(h >= 10 && h < 16) return '#888';
-    if(h >= 16 && h < 20) return '#5a8fc8';
-    return '#303030';
+    if(h >= 5 && h < 10) return '#5a8fc8';  // dawn/morning - blue
+    if(h >= 10 && h < 16) return '#e87a3a'; // midday - orange
+    if(h >= 16 && h < 20) return '#c8a951'; // dusk - gold
+    return '#2a2a3a';                         // night - near black
   };
   let bars = '';
   hourly.forEach((cnt, h) => {
