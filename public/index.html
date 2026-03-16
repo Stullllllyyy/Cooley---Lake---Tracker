@@ -524,6 +524,12 @@ function activateTab(name) {
   });
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('tab-'+name)?.classList.add('on');
+  if(name === 'map') {
+    setTimeout(() => {
+      if(!mapInstance) initMap();
+      else { mapInstance.resize(); refreshMapPins(); }
+    }, 80);
+  }
 }
 
 function closeEditModal(e) {
@@ -2768,8 +2774,9 @@ function startMap() {
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
   console.log('Mapbox token set, version:', mapboxgl.version);
-  // Preload camera locations silently — map initializes when user taps the Map tab
+  // Load cam locations then initialize map (map is default view)
   loadCamLocations();
+  setTimeout(initMap, 500);
 }
 setTimeout(startMap, 300);
 </script>
