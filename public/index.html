@@ -996,29 +996,9 @@ async function saveCamLocation(name, lng, lat) {
 
 function initMap() {
   if(mapInstance) { refreshMapPins(); return; }
-
-  const mapEl = document.getElementById('map');
-  const w = mapEl ? mapEl.offsetWidth : 'NO EL';
-  const h = mapEl ? mapEl.offsetHeight : 'NO EL';
-
-  // Show dimensions on screen for debugging
-  const dbg = document.createElement('div');
-  dbg.id = 'mapDbg';
-  dbg.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:50;background:rgba(0,0,0,0.9);color:#4a7fc1;padding:10px 16px;border-radius:8px;font-size:11px;font-family:monospace;border:1px solid #4a7fc1';
-  dbg.textContent = 'Map container: ' + w + 'x' + h + 'px';
-  document.body.appendChild(dbg);
-  setTimeout(() => { const d = document.getElementById('mapDbg'); if(d) d.remove(); }, 5000);
-
-  if(!mapEl || w === 0 || h === 0) {
-    dbg.textContent = 'ZERO SIZE: ' + w + 'x' + h + ' - retrying...';
-    dbg.style.color = '#e87a4a';
-    setTimeout(initMap, 300);
-    return;
-  }
-
   mapInstance = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/outdoors-v12',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: PROPERTY_CENTER,
     zoom: 15,
     fadeDuration: 0,
@@ -1029,21 +1009,13 @@ function initMap() {
     addCamMarkers();
     lineLayerAdded = true;
     mapInstance.resize();
-    mapInstance.setStyle('mapbox://styles/mapbox/satellite-streets-v12');
-    const d = document.getElementById('mapDbg');
-    if(d) { d.textContent = 'Map loaded! ' + w + 'x' + h; d.style.color = '#4a7fc1'; }
   });
   mapInstance.on('style.load', () => {
     if(!lineLayerAdded) return;
     addLineLayer();
   });
-  mapInstance.on('error', e => {
-    const msg = e.error ? (e.error.message || e.error.status || JSON.stringify(e.error)) : 'unknown';
-    const d = document.getElementById('mapDbg');
-    if(d) { d.textContent = 'Error: ' + msg; d.style.color = '#e87a4a'; }
-    console.error('Map error:', e.error);
-  });
-  [500, 1500, 3000].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
+  mapInstance.on('error', e => console.error('Map error:', e.error));
+  [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
 function addPropertyOutline() { /* removed */ }
