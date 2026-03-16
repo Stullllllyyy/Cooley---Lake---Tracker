@@ -1594,7 +1594,7 @@ function toggleEditMode() {
   addCamMarkers();
 }
 
-function showPin(camName) {
+async function showPin(camName) {
   const cs = yearFiltered(sightings).filter(s => s.camera_name === camName);
   const bucks = cs.filter(s => s.deer_type && s.deer_type.includes('Buck')).length;
   const mature = cs.filter(s => s.deer_type && s.deer_type.includes('Mature')).length;
