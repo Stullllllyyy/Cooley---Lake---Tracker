@@ -2891,8 +2891,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
     const notesSample = bs.filter(s => s.notes).map(s => s.notes).slice(0, 5).join("; ");
     const cameras = [...new Set(bs.map(s => s.camera_name))].join(", ");
     const matCount = bs.filter(s => s.deer_type.includes("Mature")).length;
-    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${notesSample ? `
-Field notes: ${notesSample}` : ""}`;
+    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${notesSample ? `\nField notes: ${notesSample}` : ""}`;
   }).join("\n\n");
 
   try {
@@ -3119,8 +3118,7 @@ async function runAiHint(base64DataUrl) {
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
       const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join("; ");
       return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(", ")}${notes ? ", notes: " + notes : ""}`;
-    }).join("
-");
+    }).join("\n");
 
     const base64 = base64DataUrl.split(",")[1];
     const mediaType = base64DataUrl.split(";")[0].split(":")[1];
