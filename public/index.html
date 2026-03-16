@@ -674,7 +674,7 @@ function updateMapWeather() {
 }
 
 // Compatibility shim - old showView calls still work
-function showView(n) {
+async function showView(n) {
   if(n === 'log') openSheet('log');
   else if(n === 'sightings') openSheet('sightings');
   else if(n === 'dash' || n === 'intel') openSheet('intel');
@@ -1172,7 +1172,7 @@ function addLineLayer() {
 }
 
 
-function addCamMarkers() {
+async function addCamMarkers() {
   Object.values(mapMarkers).forEach(m => m.remove());
   mapMarkers = {};
 
@@ -1737,7 +1737,7 @@ function goToBuck(name) {
 }
 
 // --- views -
-function showView(n) {
+async function showView(n) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
   document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
   const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet"};
@@ -2893,9 +2893,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
     const matCount = bs.filter(s => s.deer_type.includes("Mature")).length;
     return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${notesSample ? `
 Field notes: ${notesSample}` : ""}`;
-  }).join("
-
-");
+  }).join("\n\n");
 
   try {
     // Fetch the image as base64
