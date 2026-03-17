@@ -75,7 +75,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .popup-act-btn.danger{color:var(--red);border-color:rgba(224,85,85,0.25)}
 .popup-act-btn.danger:active{background:rgba(224,85,85,0.1)}
 
-/* tab bar */
+/* ── Z-INDEX HIERARCHY ──────────────────────────────────────────
+   50   map overlays (header, fabs, filter bar, legend)
+   51   year bar, bottom-left map controls
+   80   cam popup
+   120  buck dropdown
+   350  overlay (dim background behind sheets)
+   400  sheets (sightings, intel, log, detail)
+   500  modals + menus that must appear ABOVE sheets (edit, whoIs, pin-menu, add-cam)
+   600  action menus (scActionMenu) — topmost interactive layer
+   9999 tab bar (always on top)
+────────────────────────────────────────────────────────────── */
 .tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
 .tab-btn.on{color:var(--gold)}
@@ -228,7 +238,7 @@ textarea{resize:none}
 .d-cell-val{font-size:13px;color:var(--text)}
 
 /* edit modal */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:300;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:flex-end;justify-content:center}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:16px 18px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
 .modal-overlay.on{display:flex}
 .modal{background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:0 16px 32px;width:100%;max-height:88vh;overflow-y:auto}
@@ -259,13 +269,13 @@ textarea{resize:none}
 /* add camera cursor */
 .map-add-mode{cursor:crosshair !important}
 /* context menu */
-.pin-menu{position:fixed;z-index:300;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px}
+.pin-menu{position:fixed;z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px}
 .pin-menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);border-bottom:1px solid var(--border)}
 .pin-menu-item:last-child{border:none}
 .pin-menu-item:active{background:var(--surface2)}
 .pin-menu-item.danger{color:var(--red)}
 /* add cam modal */
-.add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
 .add-cam-modal.open{transform:translateY(0)}
 /* conditions overlay */
 .map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
