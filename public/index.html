@@ -2895,8 +2895,8 @@ function renderLog() {
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:2px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             ID?</button>` : ""}
         </div>
-        <button class="sc-menu-btn" onclick="event.stopPropagation();showSightMenu(${s.id},event)" title="Actions">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
+        <button class="sc-menu-btn" onclick="event.stopPropagation();showSightMenu(${s.id},this)" title="Actions">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
         </button>
       </div>
     </div>`;
@@ -2904,8 +2904,7 @@ function renderLog() {
 }
 function setFilt(f) { curFilter = f; renderLog(); }
 
-function showSightMenu(sightingId, e) {
-  e.stopPropagation();
+function showSightMenu(sightingId, btnEl) {
   // Remove any existing menu
   const existing = document.getElementById('scActionMenu');
   if(existing) { existing.remove(); return; }
@@ -2914,12 +2913,12 @@ function showSightMenu(sightingId, e) {
   const menu = document.createElement('div');
   menu.id = 'scActionMenu';
   menu.className = 'sc-action-menu';
-  // Find the button - walk up from event target
-  const btn = e.target.closest('.sc-menu-btn') || e.currentTarget;
-  const rect = btn ? btn.getBoundingClientRect() : {bottom: e.clientY, right: e.clientX};
+  // Use the button element directly for reliable positioning
+  const btn = (typeof btnEl === 'object' && btnEl.getBoundingClientRect) ? btnEl : null;
+  const rect = btn ? btn.getBoundingClientRect() : {bottom: 100, right: 100};
   const menuTop = Math.min(rect.bottom + 4, window.innerHeight - 120);
   const menuRight = window.innerWidth - rect.right - 4;
-  menu.style.cssText = `position:fixed;top:${menuTop}px;right:${menuRight}px;`;
+  menu.style.cssText = `position:fixed;top:${menuTop}px;right:${menuRight}px;z-index:600;`;
   // Build menu items
   const items = [
     {
