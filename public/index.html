@@ -2936,19 +2936,21 @@ function showSightMenu(sightingId, btnEl) {
     });
   }
   menu.innerHTML = items.map(item =>
-    `<div class="sc-action-item" onclick="document.getElementById('scActionMenu')?.remove();${item.action}">
+    `<div class="sc-action-item" onclick="event.stopPropagation();document.getElementById('scActionMenu')?.remove();setTimeout(()=>{${item.action}},10)">
       ${item.icon}
       <span>${item.label}</span>
     </div>`
   ).join('');
   document.body.appendChild(menu);
-  // Close on outside tap
+  // Close on outside tap — must check target is outside the menu
   setTimeout(() => {
-    document.addEventListener('click', function closeMenu() {
-      document.getElementById('scActionMenu')?.remove();
-      document.removeEventListener('click', closeMenu);
-    }, { once: true });
-  }, 10);
+    document.addEventListener('click', function closeMenu(e) {
+      if(!document.getElementById('scActionMenu')?.contains(e.target)) {
+        document.getElementById('scActionMenu')?.remove();
+        document.removeEventListener('click', closeMenu);
+      }
+    });
+  }, 50);
 }
 
 function viewBuckActivity(buckName) {
