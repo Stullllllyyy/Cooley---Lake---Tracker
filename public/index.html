@@ -164,6 +164,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tag{font-size:10px;padding:3px 9px;background:var(--border);border-radius:8px;color:var(--text2)}
 .sight-notes{font-size:11px;color:var(--text3);margin-top:7px;font-style:italic;line-height:1.5}
 .sight-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
+.sc-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .edit-btn{padding:5px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
 .edit-btn:active{background:rgba(140,115,85,0.1);color:var(--bronze);border-color:var(--bronze)}
 .sc-menu-btn{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;font-family:var(--font)}
@@ -2913,11 +2914,12 @@ function showSightMenu(sightingId, e) {
   const menu = document.createElement('div');
   menu.id = 'scActionMenu';
   menu.className = 'sc-action-menu';
-  // Position near the tap
-  const rect = e.target.closest('button').getBoundingClientRect();
-  const menuTop = rect.bottom + 4;
-  const menuRight = window.innerWidth - rect.right;
-  menu.style.cssText = `top:${menuTop}px;right:${menuRight}px`;
+  // Find the button - walk up from event target
+  const btn = e.target.closest('.sc-menu-btn') || e.currentTarget;
+  const rect = btn ? btn.getBoundingClientRect() : {bottom: e.clientY, right: e.clientX};
+  const menuTop = Math.min(rect.bottom + 4, window.innerHeight - 120);
+  const menuRight = window.innerWidth - rect.right - 4;
+  menu.style.cssText = `position:fixed;top:${menuTop}px;right:${menuRight}px;`;
   // Build menu items
   const items = [
     {
@@ -3071,22 +3073,46 @@ function renderProfiles(fil, sl) {
 }
 
 function openBuckProfile(bname) {
-  // Switch to feed view filtered to this buck
   const deerSel = document.getElementById('sfDeer');
   if(deerSel) deerSel.value = bname;
   setSightView('feed');
+  showSightBack(bname);
 }
 
 function openUnknownBucks() {
   const deerSel = document.getElementById('sfDeer');
   if(deerSel) deerSel.value = 'unnamed';
   setSightView('feed');
+  showSightBack('Unknown Bucks');
 }
 
 function openDoeGroup() {
   const deerSel = document.getElementById('sfDeer');
   if(deerSel) deerSel.value = 'does';
   setSightView('feed');
+  showSightBack('Does & Fawns');
+}
+
+function showSightBack(label) {
+  // Add back button to sheet header
+  const hdr = document.querySelector('#sheet-sightings .sheet-hdr');
+  if(!hdr) return;
+  let back = document.getElementById('sightBackBtn');
+  if(!back) {
+    back = document.createElement('button');
+    back.id = 'sightBackBtn';
+    back.style.cssText = 'background:none;border:none;color:var(--bronze);font-size:12px;cursor:pointer;display:flex;align-items:center;gap:4px;padding:0;font-family:var(--font);flex-shrink:0';
+    back.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>`;
+    back.onclick = () => {
+      const deerSel = document.getElementById('sfDeer');
+      if(deerSel) deerSel.value = 'all';
+      setSightView('profiles');
+      back.remove();
+    };
+    // Insert before the title
+    hdr.insertBefore(back, hdr.firstChild);
+  }
+  back.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>`;
 }
 
 // ── AI Buck Matching ──────────────────────────────────────────────────────────
