@@ -166,6 +166,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .sight-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
 .edit-btn{padding:5px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
 .edit-btn:active{background:rgba(140,115,85,0.1);color:var(--bronze);border-color:var(--bronze)}
+.sc-menu-btn{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;font-family:var(--font)}
+.sc-menu-btn:active{background:var(--surface2);color:var(--text)}
+.sc-action-menu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:170px}
+.sc-action-item{display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);transition:background 0.15s;border-bottom:1px solid var(--border)}
+.sc-action-item:last-child{border-bottom:none}
+.sc-action-item:active{background:var(--surface2)}
+.sc-action-item.danger{color:var(--red)}
 .sight-filters{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
 .sight-select{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:11px;padding:6px 8px;font-family:var(--font);cursor:pointer;min-width:0}
 .sight-select:focus{outline:none;border-color:var(--bronze)}
@@ -2873,23 +2880,97 @@ function renderLog() {
         </div>
         ${s.notes ? `<div class="snotes" style="margin-top:6px">${s.notes}</div>` : ""}
       </div>
-      <div class="sc-foot">
-        <button class="edit-btn" onclick="openEdit(${s.id})">&#9998; Edit</button>
-        ${s.image_url && !s.buck_name && s.deer_type && s.deer_type.includes("Buck")
-          ? `<button class="edit-btn" onclick="event.stopPropagation();whoIsThis(${s.id})" style="color:var(--blue);border-color:var(--blue)">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:3px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              Who is this?</button>`
-          : s.buck_name
-            ? `<span style="font-size:11px;color:${bc}">&#9679; ${s.buck_name}</span>`
-            : `<span style="font-size:11px;color:#4A4D4E;font-style:italic">Tap Edit to name buck</span>`}
-        ${s.travel_dir && s.travel_dir !== "Unknown" ? `<span style="font-size:10px;color:var(--text3);margin-left:auto">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          ${s.travel_dir}</span>` : ""}
+      <div class="sc-foot" style="justify-content:space-between">
+        <div style="display:flex;align-items:center;gap:8px">
+          ${s.buck_name
+            ? `<span style="font-size:11px;color:${bc};font-weight:500">&#9679; ${s.buck_name}</span>`
+            : isBuck
+              ? `<span style="font-size:11px;color:#4A4D4E;font-style:italic">Unknown buck</span>`
+              : `<span style="font-size:11px;color:#4A4D4E">${s.deer_type||''}</span>`}
+          ${s.travel_dir && s.travel_dir !== "Unknown" ? `<span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            ${s.travel_dir}</span>` : ""}
+          ${s.image_url && !s.buck_name && isBuck ? `<button class="edit-btn" onclick="event.stopPropagation();whoIsThis(${s.id})" style="color:var(--bronze);border-color:var(--bronze);padding:3px 8px;font-size:10px">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:2px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            ID?</button>` : ""}
+        </div>
+        <button class="sc-menu-btn" onclick="event.stopPropagation();showSightMenu(${s.id},event)" title="Actions">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/></svg>
+        </button>
       </div>
     </div>`;
   }).join("");
 }
 function setFilt(f) { curFilter = f; renderLog(); }
+
+function showSightMenu(sightingId, e) {
+  e.stopPropagation();
+  // Remove any existing menu
+  const existing = document.getElementById('scActionMenu');
+  if(existing) { existing.remove(); return; }
+  const s = sightings.find(x => x.id === sightingId);
+  if(!s) return;
+  const menu = document.createElement('div');
+  menu.id = 'scActionMenu';
+  menu.className = 'sc-action-menu';
+  // Position near the tap
+  const rect = e.target.closest('button').getBoundingClientRect();
+  const menuTop = rect.bottom + 4;
+  const menuRight = window.innerWidth - rect.right;
+  menu.style.cssText = `top:${menuTop}px;right:${menuRight}px`;
+  // Build menu items
+  const items = [
+    {
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>',
+      label: 'Edit sighting',
+      action: `openEdit(${sightingId})`
+    },
+  ];
+  // View Activity only for named bucks
+  if(s.buck_name) {
+    items.push({
+      icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg>',
+      label: `${s.buck_name} intel`,
+      action: `viewBuckActivity('${s.buck_name}')`
+    });
+  }
+  menu.innerHTML = items.map(item =>
+    `<div class="sc-action-item" onclick="document.getElementById('scActionMenu')?.remove();${item.action}">
+      ${item.icon}
+      <span>${item.label}</span>
+    </div>`
+  ).join('');
+  document.body.appendChild(menu);
+  // Close on outside tap
+  setTimeout(() => {
+    document.addEventListener('click', function closeMenu() {
+      document.getElementById('scActionMenu')?.remove();
+      document.removeEventListener('click', closeMenu);
+    }, { once: true });
+  }, 10);
+}
+
+function viewBuckActivity(buckName) {
+  closeSheet('sightings');
+  // Open Intel tab and scroll to buck
+  setTimeout(() => {
+    openSheet('intel');
+    setTimeout(() => {
+      // Find and expand the buck card
+      const cards = document.querySelectorAll('.bi-hdr');
+      cards.forEach(card => {
+        const nameEl = card.querySelector('div[style*="font-size:15px"]');
+        if(nameEl && nameEl.textContent.trim() === buckName) {
+          const body = card.nextElementSibling;
+          if(body && !body.classList.contains('open')) {
+            card.click();
+          }
+          card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    }, 400);
+  }, 300);
+}
 
 function renderProfiles(fil, sl) {
   const bucks = getNamedBucks().sort();
