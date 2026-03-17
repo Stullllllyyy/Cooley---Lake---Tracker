@@ -3,18 +3,19 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-<title>Cooley Lake</title>
+<title>Huginn — Know More. Hunt Smarter.</title>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet"/>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
-  --bg:#0a0a0a;--surface:#131313;--surface2:#1a1a1a;
-  --border:#222222;--border2:#2c2c2c;
-  --gold:#4a7fc1;--gold2:#6a9fd8;
-  --green:#4a7fc1;--text:#efefef;--text2:#909090;--text3:#505050;
-  --red:#d95f5f;--blue:#4a7fc1;--accent:#4a7fc1;
+  --bg:#121415;--surface:#1a1b1c;--surface2:#212324;
+  --border:#2a2c2e;--border2:#363839;
+  --gold:#8C7355;--gold2:#a08468;
+  --green:#8C7355;--text:#BCC6CC;--text2:#8a9499;--text3:#4A4D4E;
+  --red:#c0524a;--blue:#8C7355;--accent:#8C7355;
+  --sulfur:#E5B53B;--tungsten:#4A4D4E;--bronze:#8C7355;--silver:#BCC6CC;
   --font:'Roboto',sans-serif;--radius:12px;--tab-h:72px;
 }
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
@@ -24,14 +25,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-hdr{position:fixed;top:0;left:0;right:0;z-index:50;padding:50px 16px 16px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,transparent 100%);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between}
 .map-title-main{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
 .map-title-sub{font-size:9px;color:rgba(180,200,170,0.7);letter-spacing:2px;text-transform:uppercase;margin-top:1px}
-.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(8,13,8,0.85);border:1px solid rgba(200,169,81,0.25);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.3);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5)}
 .wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* map filter dropdown */
 .map-filter-bar{position:fixed;top:108px;left:0;right:0;z-index:50;display:flex;gap:8px;padding:0 14px;pointer-events:none;align-items:flex-start}
 .map-filter-wrap{position:relative;pointer-events:auto}
-.map-select-wrap{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;background:rgba(10,10,10,0.88);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap;user-select:none;transition:border-color 0.2s;min-width:140px;justify-content:space-between}
+.map-select-wrap{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;background:rgba(18,20,21,0.88);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap;user-select:none;transition:border-color 0.2s;min-width:140px;justify-content:space-between}
 .map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
 .map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
 .map-select-arrow.open{transform:rotate(180deg)}
@@ -43,21 +44,21 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .buck-drop-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .buck-drop-divider{height:1px;background:var(--border2);margin:4px 0}
 /* heatmap small fab */
-.map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
+.map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
 .map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
 
 .map-fabs{position:fixed;bottom:calc(var(--tab-h) + 16px);right:14px;z-index:50;display:flex;flex-direction:column;gap:8px}
-.map-fab{width:46px;height:46px;border-radius:13px;background:rgba(8,13,8,0.88);border:1px solid var(--border2);color:var(--text2);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s}
+.map-fab{width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s}
 .map-fab:active{transform:scale(0.9)}
 .map-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
-.layers-btn{background:rgba(8,13,8,0.88);border:1px solid var(--border2);border-radius:13px;padding:8px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;backdrop-filter:blur(10px)}
+.layers-btn{background:rgba(18,20,21,0.88);border:1px solid var(--border2);border-radius:13px;padding:8px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;backdrop-filter:blur(10px)}
 .layers-lbl{font-size:12px;font-weight:700;color:var(--text);display:block;line-height:1.3}
 .layers-sub{font-size:9px;color:var(--text3)}
 
 /* camera popup */
 .cam-popup{position:fixed;bottom:calc(var(--tab-h) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
 .cam-popup.show{transform:translateY(0)}
-.cam-popup.gold{border-color:rgba(200,169,81,0.4)}
+.cam-popup.gold{border-color:rgba(140,115,85,0.45)}
 .popup-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
 .popup-title{font-size:16px;font-weight:700;color:var(--gold)}
 .popup-close{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
@@ -120,7 +121,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .insight-text{font-size:12px;color:var(--text2);line-height:1.8}
 
 /* buck intel */
-.buck-intel{background:var(--surface2);border:1px solid rgba(200,169,81,0.25);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
+.buck-intel{background:var(--surface2);border:1px solid rgba(140,115,85,0.3);border-radius:var(--radius);overflow:hidden;margin-bottom:10px}
 .bi-hdr{display:flex;align-items:center;gap:12px;padding:14px;cursor:pointer;background:none;border:none;width:100%;text-align:left;font-family:var(--font)}
 .bi-body{display:none;padding:0 14px 14px}
 .bi-body.open{display:block}
@@ -146,10 +147,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .year-bar{display:flex;gap:6px;padding:8px 14px 0;overflow-x:auto;flex-shrink:0}
 .year-bar::-webkit-scrollbar{display:none}
 .ychip{padding:4px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font);white-space:nowrap;flex-shrink:0;transition:all 0.2s}
-.ychip.on{background:rgba(74,127,193,0.12);border-color:var(--blue);color:var(--blue);font-weight:600}
+.ychip.on{background:rgba(140,115,85,0.15);border-color:var(--bronze);color:var(--bronze);font-weight:600}
 .fchip.on{border-color:var(--blue);background:rgba(74,127,193,0.1);color:var(--blue)}
 .sight-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;overflow:hidden;cursor:pointer;transition:border-color 0.2s}
-.sight-card.mature{border-color:rgba(200,169,81,0.4)}
+.sight-card.mature{border-color:rgba(140,115,85,0.45)}
 .sight-card:active{opacity:0.85}
 .sight-img{width:100%;height:170px;object-fit:cover;display:block}
 .sight-body{padding:12px 14px}
@@ -193,7 +194,7 @@ textarea{resize:none}
 .wx-val{font-size:16px;font-weight:700;color:var(--blue)}
 .wx-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
 .wx-row2{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
-.wx-apply{width:100%;margin-top:8px;padding:9px;background:rgba(200,169,81,0.08);border:1px solid rgba(200,169,81,0.25);border-radius:8px;color:var(--gold);font-size:12px;cursor:pointer;font-family:var(--font)}
+.wx-apply{width:100%;margin-top:8px;padding:9px;background:rgba(140,115,85,0.1);border:1px solid rgba(140,115,85,0.3);border-radius:8px;color:var(--gold);font-size:12px;cursor:pointer;font-family:var(--font)}
 
 /* detail */
 .detail-img{width:100%;max-height:260px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px}
@@ -217,7 +218,7 @@ textarea{resize:none}
 
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
-.mapboxgl-ctrl-group{background:rgba(8,13,8,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
+.mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
 .mapboxgl-ctrl-group button{background:transparent !important;color:var(--text2) !important}
 .mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo{display:none !important}
 
@@ -230,7 +231,7 @@ textarea{resize:none}
 .cam-pin-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding-bottom:10px}
 .cam-pin-ico{font-size:11px;color:#fff;line-height:1}
 .cam-pin-cnt{font-size:10px;font-weight:700;color:#fff;line-height:1;margin-top:1px;font-family:var(--font)}
-.cam-lbl{font-size:9px;background:rgba(10,10,10,0.92);color:var(--text2);padding:2px 7px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.08);margin-top:2px;letter-spacing:0.3px}
+.cam-lbl{font-size:9px;background:rgba(18,20,21,0.92);color:var(--text2);padding:2px 7px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.08);margin-top:2px;letter-spacing:0.3px}
 /* add camera cursor */
 .map-add-mode{cursor:crosshair !important}
 /* context menu */
@@ -243,7 +244,7 @@ textarea{resize:none}
 .add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
 .add-cam-modal.open{transform:translateY(0)}
 /* conditions overlay */
-.map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(10,10,10,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
+.map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
 .map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
 .map-cond-sep{width:1px;height:12px;background:var(--border2)}
 
@@ -256,10 +257,10 @@ textarea{resize:none}
 .bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
 
 .movement-legend{display:none}
-.map-legend-btn{width:36px;height:36px;border-radius:10px;background:rgba(10,10,10,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
+.map-legend-btn{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
 .map-legend-btn.visible{display:flex}
 .map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);left:14px;z-index:51;background:rgba(10,10,10,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
+.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);left:14px;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
 .map-legend-panel.visible{display:block}
 @keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .leg-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:8px}
@@ -273,7 +274,7 @@ textarea{resize:none}
 .ml-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
 .ml-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:10px;color:var(--text2)}
 .ml-line{height:2px;width:22px;border-radius:1px;flex-shrink:0}
-.ml-line.dashed{background:repeating-linear-gradient(90deg,#5a8fc8 0,#5a8fc8 4px,transparent 4px,transparent 8px)}
+.ml-line.dashed{background:repeating-linear-gradient(90deg,#7a9275 0,#7a9275 4px,transparent 4px,transparent 8px)}
 
 
 /* stats strip */
@@ -292,8 +293,8 @@ textarea{resize:none}
 <!-- Map header -->
 <div class="map-hdr">
   <div>
-    <div class="map-title-main">Cooley Lake <span class="sync-dot" id="syncDot"></span></div>
-    <div class="map-title-sub">Deer Intelligence &nbsp;<span id="hcount" style="color:var(--text3);font-size:9px"></span></div>
+    <div class="map-title-main">HUGINN <span class="sync-dot" id="syncDot"></span></div>
+    <div class="map-title-sub">Know More. Hunt Smarter. &nbsp;<span id="hcount" style="color:var(--text3);font-size:9px"></span></div>
   </div>
   <div class="wx-pill" onclick="openSheet('intel')">
     <div>
@@ -910,7 +911,7 @@ function openEdit(id) {
   const pw = document.getElementById("ePhotoWrap");
   pw.innerHTML = s.image_url
     ? `<img src="${s.image_url}" style="width:100%;height:140px;object-fit:cover;border-radius:6px"/>`
-    : `<div style="font-size:11px;color:#4a6a3a;font-style:italic">No photo attached</div>`;
+    : `<div style="font-size:11px;color:#4A4D4E;font-style:italic">No photo attached</div>`;
   document.getElementById("editModal").style.display = "flex";
 }
 function closeModal(e) {
@@ -941,7 +942,7 @@ async function fetchWx(date, time) {
   const stat = document.getElementById("wxstat");
   load.style.display = "block"; wxd.style.display = "none";
   load.textContent = "Fetching conditions...";
-  stat.textContent = "fetching..."; stat.style.color = "#4a6a3a";
+  stat.textContent = "fetching..."; stat.style.color = "#4A4D4E";
   try {
     const h = parseInt(time.split(":")[0]);
     const inputDate = new Date(date + "T12:00:00");
@@ -1169,7 +1170,7 @@ async function addCamMarkers() {
       fill = hasBuck ? buckColor(curMapFilter) : '#1a1a1a';
       stroke = hasBuck ? buckColor(curMapFilter) : '#333';
     } else if(mature) {
-      fill = '#4a7fc1'; stroke = '#7aafe0';
+      fill = '#8C7355'; stroke = '#a08468';
     } else {
       fill = '#252525'; stroke = '#3a3a3a';
     }
@@ -1196,7 +1197,7 @@ async function addCamMarkers() {
       const circ = 2 * Math.PI * r;
       const periods = [
         { pct: night/total,  color: '#2a2a3a', stroke: '#444' },
-        { pct: dawn/total,   color: '#5a8fc8', stroke: '#5a8fc8' },
+        { pct: dawn/total,   color: '#7a9275', stroke: '#7a9275' },
         { pct: midday/total, color: '#e87a3a', stroke: '#e87a3a' },
         { pct: dusk/total,   color: '#c8a951', stroke: '#c8a951' },
       ];
@@ -1283,10 +1284,10 @@ function updateBuckLines() {
   const timeColor = t => {
     if(!t) return '#555';
     const h = parseInt(t);
-    if(h >= 5 && h < 7)  return '#5a8fc8';
-    if(h >= 7 && h < 10) return '#7aafe0';
+    if(h >= 5 && h < 7)  return '#7a9275';
+    if(h >= 7 && h < 10) return '#a08468';
     if(h >= 10 && h < 16) return '#888';
-    if(h >= 16 && h < 20) return '#5a8fc8';
+    if(h >= 16 && h < 20) return '#7a9275';
     return '#4a4a6a';
   };
   const isDaytime = t => { if(!t) return false; const h=parseInt(t); return h>=6&&h<20; };
@@ -1388,7 +1389,7 @@ function buildMapFilters() {
       ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
     <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#4a7fc1,#7aafe0)"></div>
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#8C7355,#a08468)"></div>
       <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Buck Lines</div><div style="font-size:10px;color:var(--text3)">Show all movement corridors</div></div>
       ${allBucksSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
@@ -1409,12 +1410,12 @@ function buildMapFilters() {
     }).join('')}
     <div class="buck-drop-divider"></div>
     <div class="buck-drop-item${dotMapOn?' selected':''}" onclick="toggleDotMapFromMenu()">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#4a7fc1)"></div>
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#8C7355)"></div>
       <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, color by month</div></div>
       <span style="font-size:11px;color:${dotMapOn?'var(--blue)':'var(--text3)'}">${dotMapOn?'ON':'OFF'}</span>
     </div>
     <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#4a7fc1,#a0c8ff)"></div>
+      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#8C7355,#a0c8ff)"></div>
       <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Activity density overlay</div></div>
       <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
     </div>
@@ -1491,7 +1492,7 @@ function buildMapLegend() {
       <div class="leg-row-text"><div class="leg-name">Night movement</div><div class="leg-desc">Dashed · 8pm–6am</div></div>
     </div>
     <div class="leg-row">
-      <svg width="22" height="10" viewBox="0 0 22 10" style="flex-shrink:0"><line x1="2" y1="5" x2="17" y2="5" stroke="#4a7fc1" stroke-width="2"/><polyline points="13,2 17,5 13,8" fill="none" stroke="#4a7fc1" stroke-width="2" stroke-linejoin="round"/></svg>
+      <svg width="22" height="10" viewBox="0 0 22 10" style="flex-shrink:0"><line x1="2" y1="5" x2="17" y2="5" stroke="#8C7355" stroke-width="2"/><polyline points="13,2 17,5 13,8" fill="none" stroke="#8C7355" stroke-width="2" stroke-linejoin="round"/></svg>
       <div class="leg-row-text"><div class="leg-name">Direction</div><div class="leg-desc">Arrow = chronological</div></div>
     </div>`;
 
@@ -1500,7 +1501,7 @@ function buildMapLegend() {
   // Time rings section
   h += `<div class="leg-section-lbl">Pin time rings</div>
     <div class="leg-row"><div class="leg-swatch" style="background:#2a2a3a;border:1px solid #444"></div><div class="leg-row-text"><div class="leg-name">Night <span style="color:var(--text3);font-size:10px">8pm–5am</span></div></div></div>
-    <div class="leg-row"><div class="leg-swatch" style="background:#5a8fc8"></div><div class="leg-row-text"><div class="leg-name">Dawn <span style="color:var(--text3);font-size:10px">5–8am · entering</span></div></div></div>
+    <div class="leg-row"><div class="leg-swatch" style="background:#7a9275"></div><div class="leg-row-text"><div class="leg-name">Dawn <span style="color:var(--text3);font-size:10px">5–8am · entering</span></div></div></div>
     <div class="leg-row"><div class="leg-swatch" style="background:#e87a3a"></div><div class="leg-row-text"><div class="leg-name">Midday <span style="color:var(--text3);font-size:10px">10am–4pm · near bed</span></div></div></div>
     <div class="leg-row"><div class="leg-swatch" style="background:#c8a951"></div><div class="leg-row-text"><div class="leg-name">Dusk <span style="color:var(--text3);font-size:10px">5–8pm · exit route</span></div></div></div>`;
 
@@ -1861,8 +1862,8 @@ function build24HrTimeline(sightings, mini) {
 
   // Color by time period
   const periodColor = h => {
-    if(h >= 5 && h < 7)  return '#5a8fc8';  // dawn - blue
-    if(h >= 7 && h < 10) return '#5a8fc8';  // morning - blue
+    if(h >= 5 && h < 7)  return '#7a9275';  // dawn - blue
+    if(h >= 7 && h < 10) return '#7a9275';  // morning - blue
     if(h >= 10 && h < 16) return '#e87a3a'; // midday - orange
     if(h >= 16 && h < 20) return '#c8a951'; // dusk - gold
     return '#2a2a3a';                         // night - near black
@@ -1899,7 +1900,7 @@ function build24HrTimeline(sightings, mini) {
   // Period labels
   const periods = [
     {label:'Night', start:0, end:5, color:'#2a2a3a'},
-    {label:'Dawn', start:5, end:10, color:'#5a8fc8'},
+    {label:'Dawn', start:5, end:10, color:'#7a9275'},
     {label:'Midday', start:10, end:16, color:'#e87a3a'},
     {label:'Dusk', start:16, end:20, color:'#c8a951'},
     {label:'Night', start:20, end:24, color:'#2a2a3a'},
@@ -1935,7 +1936,7 @@ function build24HrTimeline(sightings, mini) {
 function buildMiniTimeline(hourly, maxH) {
   const barW = 10; // 240 / 24 hours = 10 units per hour in viewBox coords
   const periodColor = h => {
-    if(h >= 5 && h < 10) return '#5a8fc8';  // dawn/morning - blue
+    if(h >= 5 && h < 10) return '#7a9275';  // dawn/morning - blue
     if(h >= 10 && h < 16) return '#e87a3a'; // midday - orange
     if(h >= 16 && h < 20) return '#c8a951'; // dusk - gold
     return '#2a2a3a';                         // night - near black
@@ -2169,7 +2170,7 @@ async function loadHuntForecast() {
         const wdir = dirs[Math.round(j.daily.winddirection_10m_dominant[i]/22.5)%16];
         const precip = j.daily.precipitation_sum[i];
         const {label:wLabel, icon:wIcon} = weatherDesc(j.daily.weathercode[i]);
-        const scoreColor = score >= 75 ? 'var(--blue)' : score >= 55 ? '#7aafe0' : score >= 40 ? '#888' : '#555';
+        const scoreColor = score >= 75 ? 'var(--blue)' : score >= 55 ? '#a08468' : score >= 40 ? '#888' : '#555';
         const scoreLabel = score >= 75 ? 'Hunt it' : score >= 55 ? 'Good' : score >= 40 ? 'Average' : 'Skip';
         return `<div style="background:var(--bg);border-radius:10px;padding:10px 12px;border:1px solid ${score >= 75 ? 'rgba(74,127,193,0.4)' : 'var(--border)'}">
           <div style="display:flex;align-items:center;gap:8px">
@@ -2476,7 +2477,7 @@ function toggleAddCamMode() {
     // Show hint
     const hint = document.createElement('div');
     hint.id = 'addCamHint';
-    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,10,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
+    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(18,20,21,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
     hint.innerHTML = '<div style="font-size:26px;margin-bottom:8px">&#128247;</div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
     document.body.appendChild(hint);
     setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 3000);
@@ -2634,7 +2635,7 @@ let dotMarkers = [];
 
 // Month color coding
 const monthColor = m => {
-  const colors = {9:'#e8a040',10:'#e8c840',11:'#d94040',12:'#4a7fc1'};
+  const colors = {9:'#e8a040',10:'#e8c840',11:'#d94040',12:'#8C7355'};
   return colors[m] || '#888';
 };
 const monthLabel = m => ['','','','','','','','','','Sep','Oct','Nov','Dec'][m] || '';
@@ -2700,7 +2701,7 @@ function showDotLegend() {
   if(!leg) {
     leg = document.createElement('div');
     leg.id = 'dotLegend';
-    leg.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 80px);left:14px;z-index:50;background:rgba(10,10,10,0.9);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;backdrop-filter:blur(10px)';
+    leg.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 80px);left:14px;z-index:50;background:rgba(18,20,21,0.9);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;backdrop-filter:blur(10px)';
     document.body.appendChild(leg);
   }
   leg.innerHTML = `
@@ -2758,14 +2759,14 @@ function renderLog() {
     ).join("")
     + (bucks.length ? bucks.map(b =>
         `<button class="chip${curFilter===b?" on":""}" onclick="setFilt('${b}')"
-          style="border-color:${buckColor(b)};${curFilter===b?"background:#1a2d14;color:"+buckColor(b):""}">&#9679; ${b}</button>`
+          style="border-color:${buckColor(b)};${curFilter===b?"background:#1e2022;color:"+buckColor(b):""}">&#9679; ${b}</button>`
       ).join("") : "");
   const baseSightings = yearFiltered(sightings);
   const fil = curFilter === "all" ? baseSightings
     : bucks.includes(curFilter) ? baseSightings.filter(s => s.buck_name === curFilter)
     : baseSightings.filter(s => s.camera_name === curFilter);
   const sl = document.getElementById("slist");
-  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4a6a3a;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
+  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
   sl.innerHTML = fil.map(s => {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
     const isMature = s.deer_type && s.deer_type.includes("Mature");
@@ -2804,7 +2805,7 @@ function renderLog() {
               Who is this?</button>`
           : s.buck_name
             ? `<span style="font-size:11px;color:${bc}">&#9679; ${s.buck_name}</span>`
-            : `<span style="font-size:11px;color:#4a6a3a;font-style:italic">Tap Edit to name buck</span>`}
+            : `<span style="font-size:11px;color:#4A4D4E;font-style:italic">Tap Edit to name buck</span>`}
         ${s.travel_dir && s.travel_dir !== "Unknown" ? `<span style="font-size:10px;color:var(--text3);margin-left:auto">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
           ${s.travel_dir}</span>` : ""}
@@ -2997,7 +2998,7 @@ function showDet(id) {
         <div style="font-size:18px;font-weight:700;color:${s.deer_type&&s.deer_type.includes("Mature")?"#c8a951":"#e8dcc8"}">${s.deer_type}</div>
         ${s.buck_name ? `<div style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</div>` : ""}
       </div>
-      <div style="font-size:13px;color:#7a9e6a;margin-bottom:14px">${s.camera_name}</div>
+      <div style="font-size:13px;color:#8a9499;margin-bottom:14px">${s.camera_name}</div>
       <div class="dgrid">
         <div class="dc"><div class="dl">Date</div><div class="dv">${fmtD(s.date)}</div></div>
         <div class="dc"><div class="dl">Time</div><div class="dv">${fmtT(s.time)}</div></div>
@@ -3006,8 +3007,8 @@ function showDet(id) {
       </div>
       ${wxHtml}
       ${s.notes ? `<div style="background:#0d1a0f;border-radius:6px;padding:10px;margin-top:10px">
-        <div style="font-size:10px;color:#4a6a3a;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div>
-        <div style="font-size:13px;color:#a0b890;line-height:1.6;font-style:italic">${s.notes}</div>
+        <div style="font-size:10px;color:#4A4D4E;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div>
+        <div style="font-size:13px;color:#BCC6CC;line-height:1.6;font-style:italic">${s.notes}</div>
       </div>` : ""}
       <button class="edit-btn" style="margin-top:12px;width:100%;padding:10px" onclick="openEdit(${s.id})">&#9998; Edit Sighting</button>
     </div>`;
@@ -3028,7 +3029,7 @@ function initForm() {
   document.getElementById("wxload").textContent = "Fetching conditions...";
   document.getElementById("wxdata").style.display = "none";
   document.getElementById("wxstat").textContent = "fetching...";
-  document.getElementById("wxstat").style.color = "#4a6a3a";
+  document.getElementById("wxstat").style.color = "#4A4D4E";
   document.getElementById("uprev").style.display = "none";
   document.getElementById("uph").style.display = "block";
   refreshBucknameList(); updateMoon(); autoWx();
@@ -3211,7 +3212,7 @@ function renderDash() {
   </div>`;
 
   if(!totalCount) {
-    html += `<div class="card"><p style="color:#4a6a3a;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    html += `<div class="card"><p style="color:#4A4D4E;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
     document.getElementById("intelContent").innerHTML = html;
     document.getElementById("hcount").textContent = "0 logged";
     return;
@@ -3269,7 +3270,7 @@ function renderDash() {
     html += `<div class="stitle" style="margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>Named Bucks</div>`;
     nb.forEach(bname => {
       const bs = ys.filter(s => s.buck_name === bname);
-      const color = '#4a7fc1';
+      const color = '#8C7355';
       const cameras = [...new Set(bs.map(s => s.camera_name))];
       const dates = bs.map(s => s.date).sort();
       const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
@@ -3352,17 +3353,17 @@ function renderDash() {
             <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
             <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgTemp !== null ? bAvgTemp+'' : '--'}</div>
+                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgTemp !== null ? bAvgTemp+'' : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
                 ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}F-${bMaxTemp}F</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgPress !== null ? bAvgPress : '--'}</div>
+                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgPress !== null ? bAvgPress : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
                 ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
               </div>
               <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#7aafe0">${bAvgWind !== null ? bAvgWind : '--'}</div>
+                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgWind !== null ? bAvgWind : '--'}</div>
                 <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Wind mph</div>
                 ${bAvgHumid !== null ? `<div style="font-size:9px;color:var(--text3)">${bAvgHumid}% humid</div>` : ''}
               </div>
@@ -3370,7 +3371,7 @@ function renderDash() {
             <!-- Weather event tags -->
             ${(weatherEvents.postFront > 0 || weatherEvents.calm > 0 || weatherEvents.rain > 0) ? `
             <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              ${weatherEvents.postFront > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a2535;border:1px solid #2a4060;border-radius:8px;color:#7aafe0">&#8679; High pressure: ${weatherEvents.postFront}x</span>` : ''}
+              ${weatherEvents.postFront > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a2535;border:1px solid #2a4060;border-radius:8px;color:#a08468">&#8679; High pressure: ${weatherEvents.postFront}x</span>` : ''}
               ${weatherEvents.calm > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:var(--text2)">Calm wind: ${weatherEvents.calm}x</span>` : ''}
               ${weatherEvents.rain > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#151a20;border:1px solid #2a3540;border-radius:8px;color:#6090b0">Rain event: ${weatherEvents.rain}x</span>` : ''}
             </div>` : ''}
@@ -3527,12 +3528,12 @@ function renderDash() {
   html += `<div class="insight insight-gold">
     <div class="insight-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Key Insights &mdash; ${totalCount} Sightings</div>
     <div class="insight-text">
-      ${topWinds.length?`<strong style="color:#c8a951">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
-      ${topTime?`<strong style="color:#c8a951">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
-      ${avgMatureTemp?`<strong style="color:#c8a951">Mature buck temp:</strong> avg ${avgMatureTemp}F at sighting.<br/>`:""}
-      ${topMoon?`<strong style="color:#c8a951">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
-      ${highP.length&&lowP.length?`<strong style="color:#c8a951">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
-      ${topCam?`<strong style="color:#c8a951">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
+      ${topWinds.length?`<strong style="color:#E5B53B">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
+      ${topTime?`<strong style="color:#E5B53B">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
+      ${avgMatureTemp?`<strong style="color:#E5B53B">Mature buck temp:</strong> avg ${avgMatureTemp}F at sighting.<br/>`:""}
+      ${topMoon?`<strong style="color:#E5B53B">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
+      ${highP.length&&lowP.length?`<strong style="color:#E5B53B">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
+      ${topCam?`<strong style="color:#E5B53B">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
     </div>
   </div>`;
 
@@ -3550,7 +3551,7 @@ function renderDash() {
 
   // Season intel
   html += `<div class="card intel"><div class="stitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Season Intel</div>
-    <p style="font-size:12px;color:#a0b890;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#c8a951">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#c8a951">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
+    <p style="font-size:12px;color:#BCC6CC;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#E5B53B">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#E5B53B">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
   </div>`;
 
   document.getElementById("intelContent").innerHTML = html;
@@ -3577,7 +3578,7 @@ setTimeout(startMap, 300);
 </script>
 
 <!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:'Roboto',sans-serif">Loading map...</div>
-  <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #4a7fc1;border-radius:8px;background:transparent;color:#4a7fc1;font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif">Retry Map</button>
+  <button id="mapRetryBtn" onclick="retryMap()" style="display:none;padding:8px 20px;border:1px solid #8C7355;border-radius:8px;background:transparent;color:#8C7355;font-size:12px;cursor:pointer;font-family:'Roboto',sans-serif">Retry Map</button>
 </div>
 </body>
 </html>
