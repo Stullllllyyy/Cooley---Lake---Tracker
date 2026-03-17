@@ -330,12 +330,12 @@ textarea{resize:none}
     <div class="map-title-main">HUGINN <span class="sync-dot" id="syncDot"></span></div>
     <div class="map-title-sub">Know More. Hunt Smarter. &nbsp;<span id="hcount" style="color:var(--text3);font-size:9px"></span></div>
   </div>
-  <div class="wx-pill" onclick="openSheet('intel')">
+  <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
     <div>
       <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
       <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
     </div>
-    <div style="font-size:22px" id="mapWeatherIcon">&#127956;</div>
+    <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
   </div>
 </div>
 
@@ -344,7 +344,7 @@ textarea{resize:none}
   <!-- Year dropdown -->
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleYearDropdown()" id="yearSelectWrap">
-      <span id="yearLabel">&#128197; All Years</span>
+      <span id="yearLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> All Years</span>
       <span class="map-select-arrow" id="yearArrow">&#8964;</span>
     </div>
     <div class="buck-dropdown" id="yearDropdown" style="display:none;top:155px;left:14px;min-width:140px"></div>
@@ -370,8 +370,7 @@ textarea{resize:none}
 
 <!-- FABs -->
 <div class="map-fabs">
-  <div class="map-fab" id="editModeBtn" onclick="toggleEditMode()" title="Move pins">&#9998;&#xFE0E;</div>
-  <div class="map-fab" id="addCamBtn" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px">&#128247;&#43;</div>
+  <div class="map-fab" id="addCamBtn" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+</div>
   <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:22px;color:var(--blue)">&#43;</div>
   <div class="map-fab" onclick="toggleMapStyle()" title="Toggle map style" style="font-size:13px;font-weight:700;flex-direction:column;gap:1px">
     <span style="font-size:16px;line-height:1">&#9783;&#xFE0E;</span>
@@ -442,7 +441,7 @@ textarea{resize:none}
   </div>
   <div class="sheet-body">
     <div class="photo-box" onclick="document.getElementById('finput').click()">
-      <div id="uph"><div style="font-size:32px">&#128247;</div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
+      <div id="uph"><div style="margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
       <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
     </div>
     <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
@@ -466,7 +465,7 @@ textarea{resize:none}
     </div>
     <div id="wxpanel">
       <div class="wx-panel">
-        <div class="wx-panel-title">&#127780; Weather <span id="wxstat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
+        <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Weather <span id="wxstat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
         <div id="wxload" style="font-size:11px;color:var(--text3);font-style:italic;padding:4px 0 8px">Fetching conditions...</div>
         <div id="wxdata" style="display:none">
           <div class="wx-grid">
@@ -503,7 +502,7 @@ textarea{resize:none}
       <div id="aiHintReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
     </div>
     <div class="moon-row">
-      <div style="font-size:26px" id="micon">&#127761;</div>
+      <div id="micon" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
       <div><div style="font-size:13px;color:var(--text);font-weight:600" id="mlbl">Select a date</div><div style="font-size:10px;color:var(--text3)" id="msub">Moon phase auto-calculated</div></div>
     </div>
     <button class="log-btn dis" id="sbtn" onclick="submitSighting()">Log Sighting</button>
@@ -591,11 +590,20 @@ textarea{resize:none}
     <div class="field-grp">
       <span class="field-lbl">Photo</span>
       <div id="ePhotoWrap" style="margin-bottom:8px"></div>
-      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">&#128247; Change photo</button>
-<input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
-
-
-<!-- Add camera modal -->
+      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Change photo
+      </button>
+      <input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;padding-bottom:8px">
+      <button onclick="saveEdit()" style="flex:1;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:0.5px">Save Changes</button>
+      <button onclick="deleteSighting()" style="padding:13px 16px;border:1px solid rgba(192,82,74,0.4);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
 <div class="add-cam-modal" id="addCamModal">
   <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
   <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
@@ -667,7 +675,7 @@ function showDet(id) {
   const bc = s.buck_name ? buckColor(s.buck_name) : null;
   const wxHtml = s.wind_speed ? `
     <div class="wx-panel" style="margin-top:10px">
-      <div class="wx-panel-title">&#127780; Conditions at Sighting</div>
+      <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Conditions at Sighting</div>
       <div class="wx-grid">
         <div class="wx-cell"><div class="wx-val">${s.temp_f||'--'}</div><div class="wx-lbl">Temp F</div></div>
         <div class="wx-cell"><div class="wx-val">${s.wind_speed||'--'}</div><div class="wx-lbl">Wind mph</div></div>
@@ -1147,7 +1155,7 @@ function initMap() {
     zoom: 15,
     fadeDuration: 0,
   });
-  mapInstance.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+  mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
     addLineLayer();
     addCamMarkers();
@@ -1300,7 +1308,7 @@ async function addCamMarkers() {
             fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
         </svg>
         <div class="cam-pin-content" style="position:relative;z-index:1">
-          <div class="cam-pin-ico">&#128247;</div>
+          <div class="cam-pin-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>
           <div class="cam-pin-cnt">${cnt > 0 ? cnt : ''}</div>
         </div>
       </div>
@@ -1445,7 +1453,7 @@ function buildMapFilters() {
   const lbl = document.getElementById('filterLabel');
   if(lbl) {
     if(curMapFilter === 'all') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer';
-    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '&#128000; All Buck Lines';
+    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> All Buck Lines';
     else lbl.innerHTML = `&#9679; ${curMapFilter}`;
   }
   const dd = document.getElementById('buckDropdown');
@@ -1516,7 +1524,7 @@ function buildYearDropdown() {
   const lbl = document.getElementById('yearLabel');
   if(!dd) return;
   const years = getAvailableYears();
-  if(lbl) lbl.innerHTML = `&#128197; ${curYear === 'all' ? 'All Years' : curYear}`;
+  if(lbl) lbl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${curYear === 'all' ? 'All Years' : curYear}`;
   dd.innerHTML = [
     {y:'all', label:'All Years', sub:`${sightings.length} total sightings`},
     ...years.map(y => ({y, label:y, sub:`${sightings.filter(s=>s.date&&s.date.startsWith(y)).length} sightings`}))
@@ -2218,11 +2226,11 @@ function buildWeatherCorrelation(sightings) {
       <div style="font-size:10px;color:var(--text2);font-weight:600;margin-bottom:6px">Precipitation Events</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
-          <span style="font-size:14px">&#127783;</span>
+          <span style="font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="19" x2="8.01" y2="19"/><line x1="12" y1="21" x2="12.01" y2="21"/><line x1="16" y1="19" x2="16.01" y2="19"/></svg></span>
           <span><strong style="color:var(--text)">${rainSightings.length}</strong> sightings during rain/precip events</span>
         </div>
         <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2)">
-          <span style="font-size:14px">&#127774;</span>
+          <span style="font-size:14px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></span>
           <span><strong style="color:var(--blue)">${dryHighPressure.length}</strong> sightings post-front (dry + high pressure)</span>
         </div>
       </div>
@@ -2638,7 +2646,7 @@ function toggleAddCamMode() {
     const hint = document.createElement('div');
     hint.id = 'addCamHint';
     hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(18,20,21,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
-    hint.innerHTML = '<div style="font-size:26px;margin-bottom:8px">&#128247;</div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
+    hint.innerHTML = '<div style="margin-bottom:8px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
     document.body.appendChild(hint);
     setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 3000);
 
@@ -2657,7 +2665,7 @@ function toggleAddCamMode() {
       if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
       const modal = document.getElementById('addCamModal');
       if(modal) modal.classList.add('open');
-      if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;'; }
+      if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+'; }
       const hintEl = document.getElementById('addCamHint');
       if(hintEl) hintEl.remove();
     });
@@ -2668,7 +2676,7 @@ function toggleAddCamMode() {
       el.style.pointerEvents = el.dataset.oldPe || '';
     });
     document.getElementById('map').style.cursor = '';
-    if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;';btn.style.pointerEvents=''; }
+    if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+';btn.style.pointerEvents=''; }
     cancelAddCamera();
   }
 }
@@ -2698,7 +2706,7 @@ function cancelAddCamera() {
   if(modal) modal.classList.remove('open');
   document.getElementById('map').style.cursor = '';
   const btn = document.getElementById('addCamBtn');
-  if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='&#128247;&#43;'; }
+  if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+'; }
   const hint = document.getElementById('addCamHint');
   if(hint) hint.remove();
 }
@@ -2967,8 +2975,8 @@ function renderLog() {
         </div>
         <div class="tags" style="margin-top:7px">
           ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
-          ${s.wind_dir ? `<span class="tag">&#128168; ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
-          ${s.temp_f ? `<span class="tag">&#127777; ${s.temp_f}F</span>` : ""}
+          ${s.wind_dir ? `<span class="tag"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg> ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
+          ${s.temp_f ? `<span class="tag"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> ${s.temp_f}F</span>` : ""}
           ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
         </div>
         ${s.notes ? `<div class="snotes" style="margin-top:6px">${s.notes}</div>` : ""}
@@ -3247,7 +3255,7 @@ function showWhoIsThisModal(sightingId, imageUrl) {
   modal.style.display = "flex";
   document.getElementById("whoImg").src = imageUrl;
   document.getElementById("whoResult").innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">
-    <div style="font-size:20px;margin-bottom:8px">&#129302;</div>Analyzing photo...</div>`;
+    <div style="font-size:20px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Analyzing photo...</div>`;
   document.getElementById("whoActions").style.display = "none";
   modal.dataset.sightingId = sightingId;
   runFullAiMatch(sightingId, imageUrl);
@@ -3368,7 +3376,7 @@ function showDet(id) {
   const bc = s.buck_name ? buckColor(s.buck_name) : null;
   const wxHtml = s.wind_speed ? `
     <div class="wx" style="margin-top:10px">
-      <div class="wx-title">&#127780; Conditions at Sighting</div>
+      <div class="wx-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Conditions at Sighting</div>
       <div class="wx-grid">
         <div class="wx-cell"><div class="wx-val">${s.temp_f||"--"}</div><div class="wx-lbl">Temp F</div></div>
         <div class="wx-cell"><div class="wx-val">${s.wind_speed||"--"}</div><div class="wx-lbl">Wind mph</div></div>
@@ -3893,7 +3901,7 @@ function renderDash() {
             </div>`;
           })() : ''}
 
-          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)">&#128506; View movement map + core area</button>
+          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> View movement map + core area</button>
         </div>
       </div>`;
     });
