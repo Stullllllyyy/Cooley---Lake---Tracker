@@ -1268,11 +1268,11 @@ async function addCamMarkers() {
     const buckFiltered = curMapFilter !== 'all' ? cs.filter(s => s.buck_name === curMapFilter) : cs;
     const hasBuck = buckFiltered.length > 0;
 
-    // Colors
+    // Colors — faded pins keep normal color, just low opacity via CSS
     let fill, stroke;
     if(curMapFilter !== 'all') {
-      fill = hasBuck ? buckColor(curMapFilter) : '#1a1a1a';
-      stroke = hasBuck ? buckColor(curMapFilter) : '#333';
+      fill = hasBuck ? buckColor(curMapFilter) : '#8C7355';
+      stroke = hasBuck ? buckColor(curMapFilter) : '#a08468';
     } else if(mature) {
       fill = '#8C7355'; stroke = '#a08468';
     } else {
@@ -1362,7 +1362,7 @@ async function addCamMarkers() {
       showPinMenu(name, e.clientX, e.clientY);
     });
 
-    const marker = new mapboxgl.Marker({ element: el, draggable: editMode, anchor: 'bottom' })
+    const marker = new mapboxgl.Marker({ element: el, draggable: editMode, anchor: 'bottom', offset: [0, -18] })
       .setLngLat([pos.lng, pos.lat])
       .addTo(mapInstance);
 
