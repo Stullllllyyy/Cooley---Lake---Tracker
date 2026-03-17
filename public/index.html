@@ -294,7 +294,7 @@ textarea{resize:none}
 .map-legend-btn{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
 .map-legend-btn.visible{display:flex}
 .map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);left:14px;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
+.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);right:14px;left:auto;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
 .map-legend-panel.visible{display:block}
 @keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .leg-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:8px}
@@ -340,8 +340,16 @@ textarea{resize:none}
 </div>
 
 <!-- Map filter bar -->
-<div class="year-bar" id="mybar" style="position:fixed;top:72px;left:0;right:0;z-index:51;padding:4px 14px;pointer-events:auto"></div>
 <div class="map-filter-bar" id="mapFilters" style="top:108px">
+  <!-- Year dropdown -->
+  <div class="map-filter-wrap">
+    <div class="map-select-wrap" onclick="toggleYearDropdown()" id="yearSelectWrap">
+      <span id="yearLabel">&#128197; All Years</span>
+      <span class="map-select-arrow" id="yearArrow">&#8964;</span>
+    </div>
+    <div class="buck-dropdown" id="yearDropdown" style="display:none;top:155px;left:14px;min-width:140px"></div>
+  </div>
+  <!-- Deer/buck dropdown -->
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleBuckDropdown()">
       <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer</span>
@@ -365,25 +373,18 @@ textarea{resize:none}
   <div class="map-fab" id="editModeBtn" onclick="toggleEditMode()" title="Move pins">&#9998;&#xFE0E;</div>
   <div class="map-fab" id="addCamBtn" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px">&#128247;&#43;</div>
   <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:22px;color:var(--blue)">&#43;</div>
-</div>
-
-<!-- Layers -->
-<div class="map-bottom-left">
-  <button class="map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text2)" stroke-width="2" stroke-linecap="round">
+  <div class="map-fab" onclick="toggleMapStyle()" title="Toggle map style" style="font-size:13px;font-weight:700;flex-direction:column;gap:1px">
+    <span style="font-size:16px;line-height:1">&#9783;&#xFE0E;</span>
+    <span id="mapStyleLabel" style="font-size:8px;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase">SAT</span>
+  </div>
+  <div class="map-fab map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend" style="font-size:16px">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
       <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
       <line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/>
       <line x1="4.9" y1="19.1" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="19.1" y2="4.9"/>
     </svg>
-  </button>
-  <div class="layers-btn" onclick="toggleMapStyle()">
-  <span style="font-size:18px">&#9783;&#xFE0E;</span>
-  <div>
-    <span class="layers-lbl" id="mapStyleLabel">Satellite</span>
-    <span class="layers-sub">Map Style</span>
   </div>
-</div>
 </div>
 
 <!-- Camera popup -->
@@ -744,7 +745,7 @@ function toggleMapStyle() {
   mapStyleSat = !mapStyleSat;
   const style = mapStyleSat ? 'mapbox://styles/mapbox/satellite-streets-v12' : 'mapbox://styles/mapbox/outdoors-v12';
   mapInstance.setStyle(style);
-  document.getElementById('mapStyleLabel').textContent = mapStyleSat ? 'Satellite' : 'Outdoors';
+  document.getElementById('mapStyleLabel').textContent = mapStyleSat ? 'SAT' : 'OUT';
   lineLayerAdded = false;
   setTimeout(() => {
     addLineLayer();
@@ -778,6 +779,14 @@ let sightings = [], curFilter = "all", curMapFilter = "all", curYear = "all";
 let wxFetched = null, wxApplied = null;
 let formImgFile = null;
 let editId = null, editImgFile = null, editImgChanged = false;
+
+function showToast(msg, duration = 2500) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), duration);
+}
 
 // --- utils -
 const fmtT = t => {
@@ -1431,7 +1440,7 @@ function updateBuckLines() {
 
 
 function buildMapFilters() {
-  buildYearBar("mybar");
+  buildYearDropdown();
   const bucks = getNamedBucks();
   const lbl = document.getElementById('filterLabel');
   if(lbl) {
@@ -1502,11 +1511,68 @@ function toggleHeatmapFromMenu() {
 }
 
 
+function buildYearDropdown() {
+  const dd = document.getElementById('yearDropdown');
+  const lbl = document.getElementById('yearLabel');
+  if(!dd) return;
+  const years = getAvailableYears();
+  if(lbl) lbl.innerHTML = `&#128197; ${curYear === 'all' ? 'All Years' : curYear}`;
+  dd.innerHTML = [
+    {y:'all', label:'All Years', sub:`${sightings.length} total sightings`},
+    ...years.map(y => ({y, label:y, sub:`${sightings.filter(s=>s.date&&s.date.startsWith(y)).length} sightings`}))
+  ].map(({y, label, sub}) => {
+    const sel = curYear === y;
+    return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapYearFromDrop('${y}')">
+      <div style="flex:1">
+        <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${label}</div>
+        <div style="font-size:10px;color:var(--text3)">${sub}</div>
+      </div>
+      ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
+    </div>`;
+  }).join('');
+}
+
+function toggleYearDropdown() {
+  const dd = document.getElementById('yearDropdown');
+  const arrow = document.getElementById('yearArrow');
+  const wrap = document.getElementById('yearSelectWrap');
+  const isOpen = dd.style.display !== 'none';
+  // Close buck dropdown if open
+  const bdd = document.getElementById('buckDropdown');
+  if(bdd) { bdd.style.display = 'none'; bdd.style.pointerEvents = 'none'; }
+  const barrow = document.getElementById('filterArrow');
+  if(barrow) barrow.classList.remove('open');
+  dd.style.display = isOpen ? 'none' : 'block';
+  dd.style.pointerEvents = isOpen ? 'none' : 'auto';
+  if(arrow) arrow.classList.toggle('open', !isOpen);
+  if(wrap) wrap.classList.toggle('active', !isOpen);
+  if(!isOpen) {
+    setTimeout(() => document.addEventListener('click', closeYearDropdown, {once:true}), 50);
+  }
+}
+
+function closeYearDropdown() {
+  const dd = document.getElementById('yearDropdown');
+  const arrow = document.getElementById('yearArrow');
+  const wrap = document.getElementById('yearSelectWrap');
+  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
+  if(arrow) arrow.classList.remove('open');
+  if(wrap) wrap.classList.remove('active');
+}
+
+function setMapYearFromDrop(y) {
+  closeYearDropdown();
+  setMapYear(y);
+  buildYearDropdown();
+}
+
 function toggleBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
   const arrow = document.getElementById('filterArrow');
   const wrap = document.querySelector('.map-select-wrap');
   const isOpen = dd.style.display !== 'none';
+  // Close year dropdown if open
+  closeYearDropdown();
   dd.style.display = isOpen ? 'none' : 'block';
   dd.style.pointerEvents = isOpen ? 'none' : 'auto';
   if(arrow) arrow.classList.toggle('open', !isOpen);
@@ -1519,10 +1585,15 @@ function toggleBuckDropdown() {
 function closeBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
   const arrow = document.getElementById('filterArrow');
-  const wrap = document.querySelector('.map-select-wrap');
+  const wrap = document.querySelector('.map-filter-wrap .map-select-wrap:last-of-type');
   if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
   if(arrow) arrow.classList.remove('open');
   if(wrap) wrap.classList.remove('active');
+}
+
+function closeAllMapDropdowns() {
+  closeBuckDropdown();
+  closeYearDropdown();
 }
 
 
@@ -1692,8 +1763,11 @@ async function showPin(camName) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
       Delete
     </button>`;
-  // Facing direction selector below action buttons
+  // Facing direction selector — remove any existing one first to prevent duplicates
+  const existingFacing = document.getElementById('camFacingRow');
+  if(existingFacing) existingFacing.remove();
   const facingHtml = document.createElement('div');
+  facingHtml.id = 'camFacingRow';
   facingHtml.style.cssText = 'padding:8px 12px 4px;border-top:1px solid var(--border)';
   facingHtml.innerHTML = `<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Camera Facing Direction</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px">
@@ -1719,21 +1793,44 @@ async function setCameraFacing(camName, dir, btn) {
 }
 
 async function renameCamera(oldName) {
-  const newName = prompt('Rename camera "' + oldName + '" to:', oldName);
-  if(!newName || newName.trim() === oldName) return;
-  const trimmed = newName.trim();
-  // Update in Supabase cameras table
-  await sb.from('cameras').update({ name: trimmed }).eq('name', oldName);
-  // Update all sightings with this camera name
-  await sb.from('sightings').update({ camera_name: trimmed }).eq('camera_name', oldName);
-  // Update local sightings array
-  sightings.forEach(s => { if(s.camera_name === oldName) s.camera_name = trimmed; });
-  // Update local camLocations
-  if(camLocations[oldName]) { camLocations[trimmed] = camLocations[oldName]; delete camLocations[oldName]; }
-  closePopup();
-  await loadCamLocations();
-  refreshMapPins();
-  alert('Camera renamed to "' + trimmed + '"');
+  // Show inline rename modal instead of browser prompt
+  let modal = document.getElementById('renameCamModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'renameCamModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:600;display:flex;align-items:center;justify-content:center;padding:24px';
+    modal.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px;width:100%;max-width:340px;box-shadow:0 8px 40px rgba(0,0,0,0.8)">
+      <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Rename Camera</div>
+      <div id="renameCamSub" style="font-size:11px;color:var(--text3);margin-bottom:14px"></div>
+      <input id="renameCamInput" style="width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;margin-bottom:14px"/>
+      <div style="display:flex;gap:8px">
+        <button onclick="document.getElementById('renameCamModal').style.display='none'" style="flex:1;padding:10px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>
+        <button id="renameCamConfirm" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">Rename</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if(e.target === modal) modal.style.display = 'none'; });
+  }
+  document.getElementById('renameCamSub').textContent = `Currently: "${oldName}"`;
+  const input = document.getElementById('renameCamInput');
+  input.value = oldName;
+  modal.style.display = 'flex';
+  setTimeout(() => { input.focus(); input.select(); }, 100);
+  // Wire confirm button
+  const confirmBtn = document.getElementById('renameCamConfirm');
+  confirmBtn.onclick = async () => {
+    const trimmed = input.value.trim();
+    if(!trimmed || trimmed === oldName) { modal.style.display = 'none'; return; }
+    modal.style.display = 'none';
+    await sb.from('cameras').update({ name: trimmed }).eq('name', oldName);
+    await sb.from('sightings').update({ camera_name: trimmed }).eq('camera_name', oldName);
+    // Update local camLocations
+    if(camLocations[oldName]) { camLocations[trimmed] = camLocations[oldName]; delete camLocations[oldName]; }
+    closePopup();
+    await loadCamLocations();
+    refreshMapPins();
+    showToast(`Camera renamed to "${trimmed}"`);
+  };
 }
 
 function enableDragForCamera(camName) {
@@ -2525,7 +2622,7 @@ function toggleAddCamMode() {
 
   if(addCamMode) {
     // Disable pointer events on all map overlays so clicks reach the map
-    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
       el.dataset.oldPe = el.style.pointerEvents;
       el.style.pointerEvents = 'none';
     });
@@ -2550,7 +2647,7 @@ function toggleAddCamMode() {
       if(!addCamMode) return;
       pendingCamLngLat = e.lngLat;
       // Restore pointer events
-      document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+      document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
         el.style.pointerEvents = el.dataset.oldPe || '';
       });
       document.getElementById('map').style.cursor = '';
@@ -2567,7 +2664,7 @@ function toggleAddCamMode() {
 
   } else {
     // Restore everything
-    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.layers-btn,.cam-popup,.movement-legend').forEach(el => {
+    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
       el.style.pointerEvents = el.dataset.oldPe || '';
     });
     document.getElementById('map').style.cursor = '';
@@ -2631,22 +2728,7 @@ function closePinMenu() {
 async function renameCameraFromMenu() {
   if(!menuTargetCam) return;
   closePinMenu();
-  const newName = prompt(`Rename "${menuTargetCam}" to:`, menuTargetCam);
-  if(!newName || newName === menuTargetCam) return;
-  try {
-    await sb.from('cameras').update({name: newName}).eq('name', menuTargetCam);
-    // Update sightings
-    await sb.from('sightings').update({camera_name: newName}).eq('camera_name', menuTargetCam);
-  } catch(e) { console.error(e); }
-  // Update local state
-  camLocations[newName] = camLocations[menuTargetCam];
-  delete camLocations[menuTargetCam];
-  const idx = CAMNAMES.indexOf(menuTargetCam);
-  if(idx > -1) CAMNAMES[idx] = newName;
-  sightings.forEach(s => { if(s.camera_name === menuTargetCam) s.camera_name = newName; });
-  addCamMarkers();
-  buildMapFilters();
-  await loadSightings();
+  renameCamera(menuTargetCam);
 }
 
 async function deleteCameraFromMenu() {
