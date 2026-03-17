@@ -165,7 +165,23 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .sight-notes{font-size:11px;color:var(--text3);margin-top:7px;font-style:italic;line-height:1.5}
 .sight-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:center}
 .edit-btn{padding:5px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
-.edit-btn:active{background:rgba(200,169,81,0.1);color:var(--gold);border-color:var(--gold)}
+.edit-btn:active{background:rgba(140,115,85,0.1);color:var(--bronze);border-color:var(--bronze)}
+.sight-filters{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.sight-select{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:11px;padding:6px 8px;font-family:var(--font);cursor:pointer;min-width:0}
+.sight-select:focus{outline:none;border-color:var(--bronze)}
+.view-toggle{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:8px;overflow:hidden}
+.vtoggle{padding:5px 12px;border:none;background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.15s}
+.vtoggle.on{background:var(--bronze);color:#121415;font-weight:600}
+.profile-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
+.profile-card:active{background:var(--surface2)}
+.profile-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
+.profile-thumb-placeholder{width:56px;height:56px;border-radius:10px;flex-shrink:0;background:var(--surface2);display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.profile-name{font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px}
+.profile-sub{font-size:11px;color:var(--text3);margin-bottom:3px}
+.profile-last{font-size:11px;color:var(--text2)}
+.profile-count{font-size:16px;font-weight:700;color:var(--bronze);text-align:right;flex-shrink:0;min-width:32px}
+.profile-count-lbl{font-size:9px;color:var(--text3);text-align:right}
+.group-hdr{padding:10px 14px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 
 /* log form */
 input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s}
@@ -480,12 +496,41 @@ textarea{resize:none}
 <div class="sheet" id="sheet-sightings">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Sightings</div>
-    <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
+      Sightings
+    </div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div class="view-toggle">
+        <button id="toggleFeed" class="vtoggle on" onclick="setSightView('feed')">Feed</button>
+        <button id="toggleProfiles" class="vtoggle" onclick="setSightView('profiles')">Profiles</button>
+      </div>
+      <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
+    </div>
   </div>
-  <div class="sheet-body">
-    <div class="year-bar" id="ybar"></div>
-    <div class="filter-scroll" id="frow"></div>
+  <!-- Filter bar -->
+  <div class="sight-filters" id="sightFilters">
+    <select class="sight-select" id="sfYear" onchange="renderLog()">
+      <option value="all">All Years</option>
+    </select>
+    <select class="sight-select" id="sfMonth" onchange="renderLog()">
+      <option value="all">All Months</option>
+      <option value="01">January</option><option value="02">February</option>
+      <option value="03">March</option><option value="04">April</option>
+      <option value="05">May</option><option value="06">June</option>
+      <option value="07">July</option><option value="08">August</option>
+      <option value="09">September</option><option value="10">October</option>
+      <option value="11">November</option><option value="12">December</option>
+    </select>
+    <select class="sight-select" id="sfDeer" onchange="renderLog()">
+      <option value="all">All Deer</option>
+      <option value="does">Does &amp; Fawns</option>
+      <option value="bucks">All Bucks</option>
+      <option value="unnamed">Unknown Bucks</option>
+      <option disabled>── Named Bucks ──</option>
+    </select>
+  </div>
+  <div class="sheet-body" style="padding-top:0">
     <div id="slist"><div class="loading"><div class="spinner"></div><br/>Loading...</div></div>
   </div>
 </div>
@@ -2749,24 +2794,55 @@ function setYear(y) {
   }
 }
 
+let curSightView = 'feed';
+
+function setSightView(v) {
+  curSightView = v;
+  document.getElementById('toggleFeed').classList.toggle('on', v === 'feed');
+  document.getElementById('toggleProfiles').classList.toggle('on', v === 'profiles');
+  renderLog();
+}
+
+function getSightingsFiltered() {
+  let base = sightings.slice();
+  const yr = document.getElementById('sfYear')?.value || 'all';
+  const mo = document.getElementById('sfMonth')?.value || 'all';
+  const deer = document.getElementById('sfDeer')?.value || 'all';
+  if(yr !== 'all') base = base.filter(s => s.date && s.date.startsWith(yr));
+  if(mo !== 'all') base = base.filter(s => s.date && s.date.slice(5,7) === mo);
+  if(deer === 'does') base = base.filter(s => s.deer_type && (s.deer_type === 'Doe' || s.deer_type === 'Fawn'));
+  else if(deer === 'bucks') base = base.filter(s => s.deer_type && s.deer_type.includes('Buck'));
+  else if(deer === 'unnamed') base = base.filter(s => s.deer_type && s.deer_type.includes('Buck') && !s.buck_name);
+  else if(deer !== 'all') base = base.filter(s => s.buck_name === deer);
+  return base;
+}
+
+function buildSightFilters() {
+  const yrSel = document.getElementById('sfYear');
+  if(!yrSel) return;
+  const years = [...new Set(sightings.map(s => s.date?.slice(0,4)).filter(Boolean))].sort();
+  const curYrVal = yrSel.value;
+  yrSel.innerHTML = '<option value="all">All Years</option>' + years.map(y => `<option value="${y}"${curYrVal===y?' selected':''}>${y}</option>`).join('');
+  const deerSel = document.getElementById('sfDeer');
+  if(!deerSel) return;
+  const curDeerVal = deerSel.value;
+  const bucks = getNamedBucks().sort();
+  deerSel.innerHTML = `<option value="all">All Deer</option>
+    <option value="does">Does &amp; Fawns</option>
+    <option value="bucks">All Bucks</option>
+    <option value="unnamed">Unknown Bucks</option>
+    <option disabled>── Named Bucks ──</option>
+    ${bucks.map(b => `<option value="${b}"${curDeerVal===b?' selected':''}>${b}</option>`).join('')}`;
+  if(curDeerVal) deerSel.value = curDeerVal;
+}
+
 function renderLog() {
   if(!document.getElementById("slist")) return;
-  buildYearBar("ybar");
-  const bucks = getNamedBucks();
-  document.getElementById("frow").innerHTML =
-    ["all",...CAMNAMES.slice(0,5)].map(f =>
-      `<button class="chip${curFilter===f?" on":""}" onclick="setFilt('${f}')">${f==="all"?"All":f}</button>`
-    ).join("")
-    + (bucks.length ? bucks.map(b =>
-        `<button class="chip${curFilter===b?" on":""}" onclick="setFilt('${b}')"
-          style="border-color:${buckColor(b)};${curFilter===b?"background:#1e2022;color:"+buckColor(b):""}">&#9679; ${b}</button>`
-      ).join("") : "");
-  const baseSightings = yearFiltered(sightings);
-  const fil = curFilter === "all" ? baseSightings
-    : bucks.includes(curFilter) ? baseSightings.filter(s => s.buck_name === curFilter)
-    : baseSightings.filter(s => s.camera_name === curFilter);
+  buildSightFilters();
+  const fil = getSightingsFiltered();
   const sl = document.getElementById("slist");
-  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings logged yet</div>`; return; }
+  if(curSightView === 'profiles') { renderProfiles(fil, sl); return; }
+  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings found</div>`; return; }
   sl.innerHTML = fil.map(s => {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
     const isMature = s.deer_type && s.deer_type.includes("Mature");
@@ -2814,6 +2890,123 @@ function renderLog() {
   }).join("");
 }
 function setFilt(f) { curFilter = f; renderLog(); }
+
+function renderProfiles(fil, sl) {
+  const bucks = getNamedBucks().sort();
+  let html = '';
+
+  // Named buck cards
+  if(bucks.length) {
+    const deerFilter = document.getElementById('sfDeer')?.value || 'all';
+    const showBucks = ['all','bucks','unnamed'].includes(deerFilter) || bucks.includes(deerFilter);
+    if(showBucks) {
+      const filteredBucks = deerFilter !== 'all' && bucks.includes(deerFilter)
+        ? [deerFilter]
+        : bucks;
+      const buckSights = filteredBucks.filter(b => fil.some(s => s.buck_name === b));
+      if(buckSights.length) {
+        html += `<div class="group-hdr">Named Bucks</div>`;
+        buckSights.forEach(bname => {
+          const bs = fil.filter(s => s.buck_name === bname);
+          if(!bs.length) return;
+          const recent = bs.sort((a,b_) => b_.date?.localeCompare(a.date) || 0)[0];
+          const recentImg = bs.find(s => s.image_url)?.image_url;
+          const bc = buckColor(bname);
+          const lastCam = recent.camera_name || '--';
+          const lastDate = recent.date ? fmtD(recent.date) : '--';
+          const lastTime = recent.time ? fmtT(recent.time) : '';
+          html += `<div class="profile-card" onclick="openBuckProfile('${bname}')" style="border-left:3px solid ${bc}">
+            ${recentImg
+              ? `<img class="profile-thumb" src="${recentImg}" alt="${bname}"/>`
+              : `<div class="profile-thumb-placeholder"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${bc}" stroke-width="1.5" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
+            <div class="profile-info">
+              <div class="profile-name" style="color:${bc}">${bname}</div>
+              <div class="profile-sub">${recent.deer_type || 'Buck'}</div>
+              <div class="profile-last">Last seen: ${lastCam} &middot; ${lastDate}${lastTime ? ' ' + lastTime : ''}</div>
+            </div>
+            <div>
+              <div class="profile-count">${bs.length}</div>
+              <div class="profile-count-lbl">sightings</div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="margin-top:6px"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+          </div>`;
+        });
+      }
+    }
+  }
+
+  // Unknown bucks group
+  const deerFilter2 = document.getElementById('sfDeer')?.value || 'all';
+  const unknownBucks = fil.filter(s => s.deer_type && s.deer_type.includes('Buck') && !s.buck_name);
+  if(unknownBucks.length && ['all','bucks','unnamed'].includes(deerFilter2)) {
+    const recentUnk = unknownBucks.sort((a,b_) => b_.date?.localeCompare(a.date) || 0)[0];
+    const unkImg = unknownBucks.find(s => s.image_url)?.image_url;
+    html += `<div class="group-hdr">Unknown Bucks</div>`;
+    html += `<div class="profile-card" onclick="openUnknownBucks()">
+      ${unkImg
+        ? `<img class="profile-thumb" src="${unkImg}" alt="Unknown Buck"/>`
+        : `<div class="profile-thumb-placeholder"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
+      <div class="profile-info">
+        <div class="profile-name">Unknown Bucks</div>
+        <div class="profile-sub">Unidentified · ${[...new Set(unknownBucks.map(s=>s.camera_name))].length} cameras</div>
+        <div class="profile-last">Last seen: ${recentUnk.camera_name} &middot; ${fmtD(recentUnk.date)}</div>
+      </div>
+      <div>
+        <div class="profile-count">${unknownBucks.length}</div>
+        <div class="profile-count-lbl">sightings</div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="margin-top:6px"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  }
+
+  // Does & Fawns group
+  const doesFawns = fil.filter(s => s.deer_type === 'Doe' || s.deer_type === 'Fawn');
+  if(doesFawns.length && ['all','does'].includes(deerFilter2)) {
+    const recentDoe = doesFawns.sort((a,b_) => b_.date?.localeCompare(a.date) || 0)[0];
+    const doeImg = doesFawns.find(s => s.image_url)?.image_url;
+    // Daytime % (10am-4pm) - bedding indicator
+    const daytime = doesFawns.filter(s => { const h = parseInt(s.time||'0'); return h>=10&&h<16; }).length;
+    const daytimePct = doesFawns.length ? Math.round(daytime/doesFawns.length*100) : 0;
+    html += `<div class="group-hdr">Does &amp; Fawns</div>`;
+    html += `<div class="profile-card" onclick="openDoeGroup()">
+      ${doeImg
+        ? `<img class="profile-thumb" src="${doeImg}" alt="Doe"/>`
+        : `<div class="profile-thumb-placeholder"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" stroke-linecap="round"><ellipse cx="12" cy="14" rx="6" ry="5"/><path d="M9 9 L7 6 M15 9 L17 6"/></svg></div>`}
+      <div class="profile-info">
+        <div class="profile-name">Does &amp; Fawns</div>
+        <div class="profile-sub">${[...new Set(doesFawns.map(s=>s.camera_name))].length} cameras &middot; <span style="color:${daytimePct>40?'var(--sulfur)':'var(--text3)'};">${daytimePct}% daytime</span>${daytimePct>40?' &#9888;':''}</div>
+        <div class="profile-last">Last seen: ${recentDoe.camera_name} &middot; ${fmtD(recentDoe.date)}</div>
+      </div>
+      <div>
+        <div class="profile-count">${doesFawns.length}</div>
+        <div class="profile-count-lbl">sightings</div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="margin-top:6px"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>`;
+  }
+
+  if(!html) html = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings found</div>`;
+  sl.innerHTML = html;
+}
+
+function openBuckProfile(bname) {
+  // Switch to feed view filtered to this buck
+  const deerSel = document.getElementById('sfDeer');
+  if(deerSel) deerSel.value = bname;
+  setSightView('feed');
+}
+
+function openUnknownBucks() {
+  const deerSel = document.getElementById('sfDeer');
+  if(deerSel) deerSel.value = 'unnamed';
+  setSightView('feed');
+}
+
+function openDoeGroup() {
+  const deerSel = document.getElementById('sfDeer');
+  if(deerSel) deerSel.value = 'does';
+  setSightView('feed');
+}
 
 // ── AI Buck Matching ──────────────────────────────────────────────────────────
 
