@@ -4,8 +4,10 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>Huginn — Know More. Hunt Smarter.</title>
+<link rel="icon" type="image/svg+xml" href="HuginnFavicon.svg"/>
+<link rel="apple-touch-icon" href="HuginnFavicon.svg"/>
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&family=Cinzel:wght@700;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -327,8 +329,12 @@ textarea{resize:none}
 <!-- Map header -->
 <div class="map-hdr">
   <div>
-    <div class="map-title-main">HUGINN <span class="sync-dot" id="syncDot"></span></div>
-    <div class="map-title-sub">Know More. Hunt Smarter.</div>
+    <div style="display:flex;flex-direction:column;gap:2px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <img src="HuginnLogo.svg" style="height:44px;width:auto;filter:drop-shadow(0 1px 6px rgba(0,0,0,0.9))" alt="Huginn"/>
+        <span class="sync-dot" id="syncDot"></span>
+      </div>
+    </div>
   </div>
   <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
     <div>
