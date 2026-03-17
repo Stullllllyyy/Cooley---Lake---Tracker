@@ -328,7 +328,7 @@ textarea{resize:none}
 <div class="map-hdr">
   <div>
     <div class="map-title-main">HUGINN <span class="sync-dot" id="syncDot"></span></div>
-    <div class="map-title-sub">Know More. Hunt Smarter. &nbsp;<span id="hcount" style="color:rgba(220,210,190,0.6);font-size:9px"></span></div>
+    <div class="map-title-sub">Know More. Hunt Smarter.</div>
   </div>
   <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
     <div>
@@ -860,7 +860,6 @@ async function loadSightings() {
     return;
   }
   sightings = data || [];
-  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
   renderDash(); renderLog(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
 }
 
@@ -944,7 +943,6 @@ async function submitSighting() {
   document.getElementById("aiHintBox").style.display = "none";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
   btn.textContent = "Saved!";
-  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
   setTimeout(() => { curFilter = "all"; showView("log"); }, 1000);
   updatePins(); refreshBucknameList(); renderDash();
 }
@@ -982,7 +980,6 @@ async function deleteSighting() {
   syncDot(false);
   sightings = sightings.filter(x => x.id !== editId);
   document.getElementById("editModal").style.display = "none";
-  document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
   renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
 }
 
@@ -3620,7 +3617,6 @@ const channel = sb.channel('sightings-changes')
       const exists = sightings.find(s => s.id === payload.new.id);
       if(!exists) {
         sightings.unshift(payload.new);
-        document.getElementById('hcount') && (document.getElementById('hcount').textContent = sightings.length + ' logged');
         const activeDash = document.getElementById("sheet-intel")?.classList.contains("open") || false;
         if(activeDash) renderDash();
         buildMapFilters(); buildMapLegend(); refreshBucknameList();
@@ -3652,10 +3648,8 @@ function renderDash() {
   if(!totalCount) {
     html += `<div class="card"><p style="color:#4A4D4E;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
     document.getElementById("intelContent").innerHTML = html;
-    document.getElementById("hcount").textContent = "0 logged";
     return;
   }
-  document.getElementById("hcount").textContent = totalCount + " logged";
 
   // --- Pre-compute all aggregates -
   // Wind counts
