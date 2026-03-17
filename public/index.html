@@ -88,6 +88,16 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
    600  action menus (scActionMenu) — topmost interactive layer
    9999 tab bar (always on top)
 ────────────────────────────────────────────────────────────── */
+.fab-speed-dial{display:flex;flex-direction:column;align-items:flex-end;gap:8px;margin-bottom:8px;pointer-events:none;opacity:0;transform:translateY(10px);transition:opacity 0.2s,transform 0.2s}
+.fab-speed-dial.open{pointer-events:auto;opacity:1;transform:translateY(0)}
+.fab-option{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.fab-option-lbl{font-size:11px;font-weight:600;color:var(--text);background:rgba(18,20,21,0.92);border:1px solid var(--border2);padding:5px 10px;border-radius:20px;white-space:nowrap;backdrop-filter:blur(10px);letter-spacing:0.3px}
+.fab-option-btn{width:40px;height:40px;border-radius:12px;background:rgba(18,20,21,0.92);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);transition:all 0.15s;flex-shrink:0}
+.fab-option:active .fab-option-btn{background:rgba(140,115,85,0.2);border-color:var(--gold);color:var(--gold)}
+.map-fab-main{background:var(--gold) !important;border-color:var(--gold) !important;color:var(--bg) !important;transition:transform 0.25s,background 0.2s !important}
+.map-fab-main.open{transform:rotate(45deg) !important}
+.fab-dial-overlay{position:fixed;inset:0;z-index:49;display:none}
+.fab-dial-overlay.on{display:block}
 .tab-bar{position:fixed;bottom:0;left:0;right:0;height:var(--tab-h);z-index:9999;background:rgba(6,10,6,0.97);border-top:1px solid var(--border);display:grid;grid-template-columns:repeat(4,1fr);backdrop-filter:blur(20px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .tab-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:8px 0;background:none;border:none;cursor:pointer;color:var(--text3);font-family:var(--font);transition:color 0.2s;position:relative}
 .tab-btn.on{color:var(--gold)}
@@ -375,15 +385,51 @@ textarea{resize:none}
   <div id="legendContent"></div>
 </div>
 
-<!-- FABs -->
-<div class="map-fabs">
-  <div class="map-fab" id="addCamBtn" onclick="toggleAddCamMode()" title="Add camera" style="font-size:16px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+</div>
-  <div class="map-fab" onclick="openSheet('log')" title="Log sighting" style="font-size:22px;color:var(--blue)">&#43;</div>
-  <div class="map-fab" onclick="toggleMapStyle()" title="Toggle map style" style="font-size:13px;font-weight:700;flex-direction:column;gap:1px">
+<!-- FAB Speed Dial -->
+<div class="map-fabs" id="mapFabs">
+  <!-- Speed dial options — shown when open -->
+  <div class="fab-speed-dial" id="fabSpeedDial">
+    <div class="fab-option" onclick="closeFabDial();openSheet('log')">
+      <span class="fab-option-lbl">Log Sighting</span>
+      <div class="fab-option-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </div>
+    </div>
+    <div class="fab-option" onclick="closeFabDial();toggleAddCamMode()" id="addCamBtn">
+      <span class="fab-option-lbl">Add Camera</span>
+      <div class="fab-option-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+    </div>
+    <div class="fab-option" onclick="closeFabDial();showToast('Stand markers coming soon')">
+      <span class="fab-option-lbl">Add Stand</span>
+      <div class="fab-option-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M8 6l4-4 4 4"/><path d="M9 14h6"/><path d="M10 18h4"/></svg>
+      </div>
+    </div>
+    <div class="fab-option" onclick="closeFabDial();showToast('Scrape/rub markers coming soon')">
+      <span class="fab-option-lbl">Mark Scrape/Rub</span>
+      <div class="fab-option-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20 L10 14"/><path d="M8 20 L14 14"/><path d="M12 20 L18 14"/><path d="M6 4 Q12 8 18 4"/></svg>
+      </div>
+    </div>
+    <div class="fab-option" onclick="closeFabDial();showToast('Bedding area markers coming soon')">
+      <span class="fab-option-lbl">Mark Bedding</span>
+      <div class="fab-option-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="14" rx="8" ry="5"/><path d="M6 14 Q8 10 12 10 Q16 10 18 14"/></svg>
+      </div>
+    </div>
+  </div>
+  <!-- Main + FAB -->
+  <div class="map-fab map-fab-main" id="fabMain" onclick="toggleFabDial()" title="Actions">
+    <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>
+  <!-- Utility FABs -->
+  <div class="map-fab" onclick="toggleMapStyle()" title="Toggle map style" style="flex-direction:column;gap:1px">
     <span style="font-size:16px;line-height:1">&#9783;&#xFE0E;</span>
     <span id="mapStyleLabel" style="font-size:8px;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase">SAT</span>
   </div>
-  <div class="map-fab map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend" style="font-size:16px">
+  <div class="map-fab map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
       <line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/>
@@ -404,6 +450,30 @@ textarea{resize:none}
   <div id="popupActions" style="padding:10px 12px 12px;border-top:1px solid var(--border);display:flex;gap:8px"></div>
 </div>
 
+<!-- FAB dial tap-outside overlay -->
+<div class="fab-dial-overlay" id="fabDialOverlay" onclick="closeFabDial()"></div>
+
+<!-- AI CHAT SHEET -->
+<div class="overlay" id="overlay-chat" onclick="closeSheet('chat')"></div>
+<div class="sheet" id="sheet-chat">
+  <div class="sheet-handle"></div>
+  <div class="sheet-hdr">
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Hunt AI
+    </div>
+    <button class="sheet-x" onclick="closeSheet('chat')">&#215;</button>
+  </div>
+  <div class="sheet-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:48px 24px">
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
+    <div style="font-size:16px;font-weight:700;color:var(--text)">Hunt Planner AI</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:280px">Your personal hunting intelligence assistant. Analyzes your property data, buck patterns, and weather to give you personalized hunt recommendations.</div>
+    <div style="font-size:11px;color:var(--text3);padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);max-width:280px;line-height:1.6">
+      <strong style="color:var(--gold)">Coming soon</strong> — Hunt AI will know your property, your named bucks, your stand locations, and tomorrow's forecast. Ask it anything.
+    </div>
+  </div>
+</div>
+
 <!-- Tab bar -->
 <div class="tab-bar">
   <button class="tab-btn on" id="tab-map" onclick="activateTab('map')">
@@ -414,9 +484,9 @@ textarea{resize:none}
     <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg></span>
     <span class="tab-lbl">Intel</span>
   </button>
-  <button class="tab-btn" id="tab-log" onclick="openSheet('log')">
-    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg></span>
-    <span class="tab-lbl">Log</span>
+  <button class="tab-btn" id="tab-chat" onclick="openAiChat()">
+    <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg></span>
+    <span class="tab-lbl">Hunt AI</span>
   </button>
   <button class="tab-btn" id="tab-sightings" onclick="openSheet('sightings')">
     <span class="tab-ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></span>
@@ -631,9 +701,10 @@ textarea{resize:none}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // --- Sheet & Tab Management -
-const SHEETS = ['intel','log','sightings','detail'];
+const SHEETS = ['intel','log','sightings','detail','chat'];
 
 function openSheet(name) {
+  closeFabDial();
   // Close others first
   SHEETS.forEach(s => {
     if(s !== name) {
@@ -668,6 +739,7 @@ function closeSheet(name) {
 }
 
 function activateTab(name) {
+  closeFabDial();
   SHEETS.forEach(s => {
     document.getElementById('sheet-'+s)?.classList.remove('open');
     document.getElementById('overlay-'+s)?.classList.remove('on');
@@ -741,6 +813,54 @@ function updateMapWeather() {
   }).catch(()=>{});
 }
 
+// --- FAB Speed Dial ---
+let fabDialOpen = false;
+function toggleFabDial() {
+  fabDialOpen = !fabDialOpen;
+  const dial = document.getElementById('fabSpeedDial');
+  const btn = document.getElementById('fabMain');
+  const overlay = document.getElementById('fabDialOverlay');
+  dial.classList.toggle('open', fabDialOpen);
+  btn.classList.toggle('open', fabDialOpen);
+  if(overlay) overlay.classList.toggle('on', fabDialOpen);
+}
+function closeFabDial() {
+  fabDialOpen = false;
+  const dial = document.getElementById('fabSpeedDial');
+  const btn = document.getElementById('fabMain');
+  const overlay = document.getElementById('fabDialOverlay');
+  if(dial) dial.classList.remove('open');
+  if(btn) btn.classList.remove('open');
+  if(overlay) overlay.classList.remove('on');
+}
+
+// --- AI Chat ---
+function openAiChat() {
+  closeFabDial();
+  // Add chat to SHEETS and open it
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-chat')?.classList.add('on');
+  // Close other sheets
+  ['intel','log','sightings','detail'].forEach(s => {
+    document.getElementById('sheet-'+s)?.classList.remove('open');
+    document.getElementById('overlay-'+s)?.classList.remove('on');
+  });
+  document.getElementById('sheet-chat')?.classList.add('open');
+  document.getElementById('overlay-chat')?.classList.add('on');
+}
+
+// --- GPS Blue Dot ---
+function initGeolocate() {
+  if(!mapInstance) return;
+  const geolocate = new mapboxgl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: true,
+    showUserHeading: true,
+    showAccuracyCircle: true
+  });
+  mapInstance.addControl(geolocate, 'bottom-right');
+}
+
 // Compatibility shim - old showView calls still work
 async function showView(n) {
   if(n === 'log') openSheet('log');
@@ -793,6 +913,9 @@ function closePopup() {
 const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// ⚠️ Anthropic API key — required for AI buck matching features
+// Get your key at: https://console.anthropic.com
+const ANTHROPIC_KEY = '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';
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -981,7 +1104,7 @@ async function saveEdit() {
   syncDot(true);
   const {error} = await sb.from('sightings').update(updates).eq('id', editId);
   syncDot(false);
-  if(error) { alert('Save failed: ' + error.message); return; }
+  if(error) { showToast('Save failed: ' + error.message); return; }
   Object.assign(s, updates);
   document.getElementById("editModal").style.display = "none";
   renderLog(); renderDash(); updatePins(); buildMapFilters(); buildMapLegend();
@@ -1161,7 +1284,7 @@ async function saveCamLocation(name, lng, lat) {
 }
 
 function initMap() {
-  console.log('initMap called, container width:', document.getElementById('map')?.offsetWidth);
+  
   if(mapInstance) { refreshMapPins(); mapInstance.resize(); return; }
   const container = document.getElementById('map');
   if(!container || container.offsetWidth === 0) {
@@ -1181,6 +1304,7 @@ function initMap() {
     addCamMarkers();
     lineLayerAdded = true;
     mapInstance.resize();
+    initGeolocate();
   });
   mapInstance.on('style.load', () => {
     if(!lineLayerAdded) return;
@@ -1195,9 +1319,7 @@ function initMap() {
     const el = document.getElementById('mapLoadText');
     if(el) { el.style.display='block'; el.style.color='#e87a4a'; el.textContent = 'Map error: ' + (e.error?.message || JSON.stringify(e.error)); }
   });
-  mapInstance.on('styledata', () => console.log('Mapbox: style loaded'));
-  mapInstance.on('tilesloaded', () => console.log('Mapbox: tiles loaded'));
-  mapInstance.on('idle', () => { console.log('Mapbox: idle/ready'); const el = document.getElementById('mapLoadText'); if(el) el.style.display='none'; });
+  mapInstance.on('idle', () => { const el = document.getElementById('mapLoadText'); if(el) el.style.display='none'; });
   [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
@@ -2667,13 +2789,8 @@ function toggleAddCamMode() {
       el.style.pointerEvents = 'none';
     });
     document.getElementById('map').style.cursor = 'crosshair';
-    if(btn) {
-      btn.style.pointerEvents = 'auto';
-      btn.style.background = 'rgba(74,127,193,0.3)';
-      btn.style.borderColor = 'var(--blue)';
-      btn.style.color = 'var(--blue)';
-      btn.innerHTML = '&#10005;';
-    }
+    const fabMain = document.getElementById('fabMain');
+    if(fabMain) { fabMain.style.background='rgba(74,127,193,0.3)'; fabMain.style.borderColor='var(--blue)'; fabMain.style.color='var(--blue)'; }
     // Show hint
     const hint = document.createElement('div');
     hint.id = 'addCamHint';
@@ -2697,7 +2814,7 @@ function toggleAddCamMode() {
       if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
       const modal = document.getElementById('addCamModal');
       if(modal) modal.classList.add('open');
-      if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+'; }
+      if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';} }
       const hintEl = document.getElementById('addCamHint');
       if(hintEl) hintEl.remove();
     });
@@ -2708,7 +2825,7 @@ function toggleAddCamMode() {
       el.style.pointerEvents = el.dataset.oldPe || '';
     });
     document.getElementById('map').style.cursor = '';
-    if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+';btn.style.pointerEvents=''; }
+    if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';}btn.style.pointerEvents=''; }
     cancelAddCamera();
   }
 }
@@ -2738,7 +2855,7 @@ function cancelAddCamera() {
   if(modal) modal.classList.remove('open');
   document.getElementById('map').style.cursor = '';
   const btn = document.getElementById('addCamBtn');
-  if(btn) { btn.style.background='';btn.style.borderColor='';btn.style.color='';btn.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>+'; }
+  if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';} }
   const hint = document.getElementById('addCamHint');
   if(hint) hint.remove();
 }
@@ -3356,7 +3473,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 500,
@@ -3574,7 +3691,7 @@ async function runAiHint(base64DataUrl) {
 
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 300,
@@ -4027,7 +4144,6 @@ function startMap() {
     return;
   }
   mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-  console.log('Mapbox token set, version:', mapboxgl.version);
   // Load cam locations then initialize map (map is default view)
   loadCamLocations();
   setTimeout(initMap, 500);
