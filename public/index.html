@@ -241,7 +241,7 @@ textarea{resize:none}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:flex-end;justify-content:center}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:16px 18px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
 .modal-overlay.on{display:flex}
-.modal{background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:0 16px 32px;width:100%;max-height:88vh;overflow-y:auto}
+.modal{background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:0 16px 24px;width:100%;max-height:calc(88vh - var(--tab-h));overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal::-webkit-scrollbar{display:none}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0}
 .modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 0 12px}
@@ -425,7 +425,15 @@ textarea{resize:none}
     <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg> Intelligence</div>
     <button class="sheet-x" onclick="closeSheet('intel')">&#215;</button>
   </div>
-  <div class="year-bar" id="iybar"></div>
+  <!-- Intel filters -->
+  <div style="display:flex;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
+    <select id="intelYear" onchange="setIntelYear(this.value)" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:12px;padding:7px 10px;font-family:var(--font);cursor:pointer;outline:none">
+      <option value="all">All Years</option>
+    </select>
+    <select id="intelBuck" onchange="setIntelBuck(this.value)" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:12px;padding:7px 10px;font-family:var(--font);cursor:pointer;outline:none">
+      <option value="all">All Bucks</option>
+    </select>
+  </div>
   <div class="sheet-body" id="intelContent">
     <div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>
   </div>
@@ -784,6 +792,7 @@ const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a"
 const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 
 let sightings = [], curFilter = "all", curMapFilter = "all", curYear = "all";
+let intelYear = "all", intelBuck = "all";
 let wxFetched = null, wxApplied = null;
 let formImgFile = null;
 let editId = null, editImgFile = null, editImgChanged = false;
@@ -2889,6 +2898,37 @@ function buildYearBar(containerId) {
     + years.map(y => `<button class="ychip${curYear===y?" on":""}" onclick="setYear('${y}')">${y}</button>`).join("");
 }
 
+function setIntelYear(y) {
+  intelYear = y;
+  renderDash();
+}
+
+function setIntelBuck(b) {
+  intelBuck = b;
+  renderDash();
+}
+
+function buildIntelFilters() {
+  const yrSel = document.getElementById('intelYear');
+  const bkSel = document.getElementById('intelBuck');
+  if(!yrSel || !bkSel) return;
+  const years = getAvailableYears();
+  yrSel.innerHTML = '<option value="all">All Years</option>' +
+    years.map(y => `<option value="${y}"${intelYear===y?' selected':''}>${y}</option>`).join('');
+  yrSel.value = intelYear;
+  const bucks = getNamedBucks().sort();
+  bkSel.innerHTML = '<option value="all">All Bucks</option>' +
+    bucks.map(b => `<option value="${b}"${intelBuck===b?' selected':''}>${b}</option>`).join('');
+  bkSel.value = intelBuck;
+}
+
+function intelFiltered(arr) {
+  let base = arr;
+  if(intelYear !== 'all') base = base.filter(s => s.date && s.date.startsWith(intelYear));
+  if(intelBuck !== 'all') base = base.filter(s => s.buck_name === intelBuck);
+  return base;
+}
+
 function setYear(y) {
   curYear = y;
   renderLog();
@@ -3054,20 +3094,17 @@ function showSightMenu(sightingId, btnEl) {
 }
 
 function viewBuckActivity(buckName) {
+  intelBuck = buckName;
   closeSheet('sightings');
-  // Open Intel tab and scroll to buck
   setTimeout(() => {
     openSheet('intel');
     setTimeout(() => {
-      // Find and expand the buck card
       const cards = document.querySelectorAll('.bi-hdr');
       cards.forEach(card => {
         const nameEl = card.querySelector('div[style*="font-size:15px"]');
         if(nameEl && nameEl.textContent.trim() === buckName) {
           const body = card.nextElementSibling;
-          if(body && !body.classList.contains('open')) {
-            card.click();
-          }
+          if(body && !body.classList.contains('open')) card.click();
           card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
       });
@@ -3594,16 +3631,16 @@ const channel = sb.channel('sightings-changes')
 
 function renderDash() {
   if(!document.getElementById("intelContent")) return;
-  buildYearBar("iybar");
+  buildIntelFilters();
   const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
   const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
 
-  const ys = yearFiltered(sightings);
+  const ys = intelFiltered(sightings);
   const totalCount = ys.length;
   const buckCount = ys.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
   const matureList = ys.filter(s => s.deer_type && s.deer_type.includes("Mature"));
   const matureCount = matureList.length;
-  const nb = getNamedBucks();
+  const nb = intelBuck !== 'all' ? [intelBuck] : getNamedBucks();
 
   // Stats strip
   let html = `<div class="sgrid">
