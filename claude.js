@@ -1,17 +1,25 @@
 // Vercel Serverless Function — Anthropic API Proxy
 // Keeps API key server-side, fixes CORS for browser calls
-// Deploy this to /api/claude.js in your Vercel project root
+// File location: /api/claude.js (root level, same level as /public)
 
-export default async function handler(req, res) {
-  // Only allow POST
+module.exports = async function handler(req, res) {
+  // Handle CORS preflight
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // CORS headers — allow your Vercel domain
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  const apiKey = process.env.ANTHROPIC_KEY;
+  if (!apiKey) {
+    return res.status(500).json({ error: 'API key not configured' });
+  }
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -19,7 +27,7 @@ export default async function handler(req, res) {
       headers: {
         'Content-Type': 'application/json',
         'anthropic-version': '2023-06-01',
-        'x-api-key': process.env.ANTHROPIC_KEY, // Set in Vercel environment variables
+        'x-api-key': apiKey,
       },
       body: JSON.stringify(req.body),
     });
@@ -28,6 +36,6 @@ export default async function handler(req, res) {
     return res.status(response.status).json(data);
   } catch (error) {
     console.error('Proxy error:', error);
-    return res.status(500).json({ error: 'Proxy request failed' });
+    return res.status(500).json({ error: 'Proxy request failed', details: error.message });
   }
-}
+};
