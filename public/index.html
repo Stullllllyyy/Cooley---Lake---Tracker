@@ -393,7 +393,7 @@ textarea{resize:none}
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleStyleDropdown()" id="styleSelectWrap">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
-      <span id="mapStyleLabel">SAT</span>
+      <span id="mapStyleLabelBar">SAT</span>
       <span class="map-select-arrow" id="styleArrow">&#8964;</span>
     </div>
     <div class="buck-dropdown" id="styleDropdown" style="display:none;top:155px;min-width:160px">
@@ -459,11 +459,7 @@ textarea{resize:none}
   <div class="map-fab map-fab-main" id="fabMain" onclick="toggleFabDial()" title="Actions">
     <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </div>
-  <!-- Utility FABs -->
-  <div class="map-fab" onclick="toggleMapStyle()" title="Toggle map style" style="flex-direction:column;gap:1px">
-    <span style="font-size:16px;line-height:1">&#9783;&#xFE0E;</span>
-    <span id="mapStyleLabel" style="font-size:8px;color:var(--text3);letter-spacing:0.5px;text-transform:uppercase">SAT</span>
-  </div>
+  <!-- Legend FAB -->
   <div class="map-fab map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
       <circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/>
@@ -724,10 +720,33 @@ textarea{resize:none}
     </div>
   </div>
 </div>
-<div class="add-cam-modal" id="addCamModal">
-  <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
-  <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px">Add Camera</div>
-  <div style="font-size:11px;color:var(--text3);margin-bottom:14px" id="addCamCoords">Tap confirmed location</div>
+<div class="modal-overlay" id="addCamModal" onclick="if(event.target===this)cancelAddCamera()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:none">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Add Camera
+      </div>
+      <button class="modal-x" onclick="cancelAddCamera()">&#215;</button>
+    </div>
+    <div style="padding:4px 0 8px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;padding:8px 10px;background:var(--bg);border-radius:8px;display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="addCamCoords" style="color:var(--text2)">Tap a location on the map first</span>
+      </div>
+      <div class="field-grp">
+        <span class="field-lbl">Camera Name</span>
+        <input type="text" id="addCamName" placeholder="e.g. North Ridge, Creek Cam..." autocomplete="off"/>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="cancelAddCamera()" style="flex:1;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>
+        <button onclick="confirmAddCamera()" style="flex:2;padding:12px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
+          Add Camera
+        </button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -930,7 +949,7 @@ function toggleMapStyle() {
   mapStyleIdx = (mapStyleIdx + 1) % MAP_STYLES.length;
   const style = MAP_STYLES[mapStyleIdx];
   mapInstance.setStyle(style.url);
-  document.getElementById('mapStyleLabel').textContent = style.label;
+  document.getElementById('mapStyleLabelBar').textContent = style.label;
   lineLayerAdded = false;
   setTimeout(() => {
     addLineLayer();
@@ -1841,7 +1860,7 @@ function setMapStyleFromDrop(idx) {
   mapStyleIdx = idx;
   const style = MAP_STYLES[mapStyleIdx];
   mapInstance.setStyle(style.url);
-  document.getElementById('mapStyleLabel').textContent = style.label;
+  document.getElementById('mapStyleLabelBar').textContent = style.label;
   lineLayerAdded = false;
   setTimeout(() => { addLineLayer(); lineLayerAdded = true; updateBuckLines(); }, 800);
 }
@@ -1861,13 +1880,13 @@ function toggleBuckDropdown() {
   const arrow = document.getElementById('filterArrow');
   const wrap = document.querySelector('.map-select-wrap');
   const isOpen = dd.style.display !== 'none';
-  // Close year dropdown if open
-  closeYearDropdown();
-  dd.style.display = isOpen ? 'none' : 'block';
-  dd.style.pointerEvents = isOpen ? 'none' : 'auto';
-  if(arrow) arrow.classList.toggle('open', !isOpen);
-  if(wrap) wrap.classList.toggle('active', !isOpen);
+  closeAllMapDropdowns();
   if(!isOpen) {
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+    if(arrow) arrow.classList.add('open');
+    if(wrap) wrap.classList.add('active');
+    buildMovementDropdown(getNamedBucks(), '');
     setTimeout(() => document.addEventListener('click', closeBuckDropdown, {once:true}), 50);
   }
 }
@@ -1875,15 +1894,10 @@ function toggleBuckDropdown() {
 function closeBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
   const arrow = document.getElementById('filterArrow');
-  const wrap = document.querySelector('.map-filter-wrap .map-select-wrap:last-of-type');
+  const wrap = document.querySelector('.map-filter-wrap .map-select-wrap');
   if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
   if(arrow) arrow.classList.remove('open');
   if(wrap) wrap.classList.remove('active');
-}
-
-function closeAllMapDropdowns() {
-  closeBuckDropdown();
-  closeYearDropdown();
 }
 
 
@@ -2158,7 +2172,8 @@ function toggleBuckIntel(btn) {
 
 function goToBuck(name) {
   curMapFilter = name;
-  showView("map");
+  closeSheet('intel');
+  activateTab('map');
   setTimeout(() => {
     buildMapFilters(); buildMapLegend(); refreshMapPins(); updateBuckLines();
     heatmapOn = true;
@@ -2945,11 +2960,11 @@ function toggleAddCamMode() {
       });
       document.getElementById('map').style.cursor = '';
       const coordEl = document.getElementById('addCamCoords');
-      if(coordEl) coordEl.textContent = e.lngLat.lat.toFixed(5) + ', ' + e.lngLat.lng.toFixed(5);
+      if(coordEl) coordEl.textContent = '📍 ' + e.lngLat.lat.toFixed(5) + ', ' + e.lngLat.lng.toFixed(5);
       const nameEl = document.getElementById('addCamName');
       if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
       const modal = document.getElementById('addCamModal');
-      if(modal) modal.classList.add('open');
+      if(modal) modal.style.display = 'flex';
       if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';} }
       const hintEl = document.getElementById('addCamHint');
       if(hintEl) hintEl.remove();
@@ -2982,16 +2997,16 @@ async function confirmAddCamera() {
   cancelAddCamera();
   addCamMarkers();
   buildMapFilters();
-}
+  showToast(`Camera "${name}" added`);
 
 function cancelAddCamera() {
   addCamMode = false;
   pendingCamLngLat = null;
   const modal = document.getElementById('addCamModal');
-  if(modal) modal.classList.remove('open');
+  if(modal) modal.style.display = 'none';
   document.getElementById('map').style.cursor = '';
-  const btn = document.getElementById('addCamBtn');
-  if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';} }
+  const fm = document.getElementById('fabMain');
+  if(fm) { fm.style.background=''; fm.style.borderColor=''; fm.style.color=''; }
   const hint = document.getElementById('addCamHint');
   if(hint) hint.remove();
 }
