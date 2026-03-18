@@ -215,6 +215,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 
 /* log form */
 input,select,textarea{width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border-color 0.2s}
+input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.6);cursor:pointer;opacity:0.7}
+input[type="date"]::-webkit-calendar-picker-indicator:hover{opacity:1}
+input[type="time"]::-webkit-calendar-picker-indicator{filter:invert(0.6);cursor:pointer;opacity:0.7}
 input:focus,select:focus,textarea:focus{border-color:var(--gold)}
 input::placeholder,textarea::placeholder{color:var(--text3)}
 textarea{resize:none}
@@ -358,21 +361,53 @@ textarea{resize:none}
 
 <!-- Map filter bar -->
 <div class="map-filter-bar" id="mapFilters" style="top:108px">
-  <!-- Year dropdown -->
+  <!-- Date filter (Year + Month) -->
   <div class="map-filter-wrap">
-    <div class="map-select-wrap" onclick="toggleYearDropdown()" id="yearSelectWrap">
-      <span id="yearLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> All Years</span>
-      <span class="map-select-arrow" id="yearArrow">&#8964;</span>
+    <div class="map-select-wrap" onclick="toggleDateDropdown()" id="dateSelectWrap">
+      <span id="dateLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> All Dates</span>
+      <span class="map-select-arrow" id="dateArrow">&#8964;</span>
     </div>
-    <div class="buck-dropdown" id="yearDropdown" style="display:none;top:155px;left:14px;min-width:140px"></div>
+    <div class="buck-dropdown" id="dateDropdown" style="display:none;top:155px;left:14px;min-width:200px">
+      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Year</div>
+        <div id="dateYearOptions"></div>
+        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px">Month</div>
+        <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px">
+          ${['All','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) =>
+            `<div onclick="setMapMonth('${i===0?'all':String(i).padStart(2,'0')}')" id="mchip-${i===0?'all':String(i).padStart(2,'0')}"
+              style="padding:3px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:10px;cursor:pointer">${m}</div>`
+          ).join('')}
+        </div>
+      </div>
+    </div>
   </div>
-  <!-- Deer/buck dropdown -->
+  <!-- Movement Lines dropdown -->
   <div class="map-filter-wrap">
     <div class="map-select-wrap" onclick="toggleBuckDropdown()">
-      <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer</span>
+      <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> Movement</span>
       <span class="map-select-arrow" id="filterArrow">&#8964;</span>
     </div>
     <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
+  </div>
+  <!-- Map style dropdown -->
+  <div class="map-filter-wrap">
+    <div class="map-select-wrap" onclick="toggleStyleDropdown()" id="styleSelectWrap">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
+      <span id="mapStyleLabel">SAT</span>
+      <span class="map-select-arrow" id="styleArrow">&#8964;</span>
+    </div>
+    <div class="buck-dropdown" id="styleDropdown" style="display:none;top:155px;min-width:160px">
+      ${[{id:'satellite-streets',label:'Satellite',sub:'Streets + labels'},
+         {id:'satellite',label:'Satellite+',sub:'No labels, clean view'},
+         {id:'outdoors',label:'Topo',sub:'Contours + terrain'},
+         {id:'dark',label:'Dark',sub:'Minimal dark'}].map((s,i) =>
+        `<div class="buck-drop-item" id="style-opt-${s.id}" onclick="setMapStyleFromDrop(${i})">
+          <div style="flex:1">
+            <div style="font-weight:400;color:var(--text)">${s.label}</div>
+            <div style="font-size:10px;color:var(--text3)">${s.sub}</div>
+          </div>
+        </div>`).join('')}
+    </div>
   </div>
 </div>
 <div id="mapLegend" style="display:none"></div>
@@ -1519,7 +1554,7 @@ function updateBuckLines() {
   const allFeatures = [];
   const arrowFeatures = [];
 
-  const bucksToShow = curMapFilter === 'all'
+  const bucksToShow = (curMapFilter === 'all' || curMapFilter === 'all-bucks')
     ? getNamedBucks()
     : curMapFilter === 'none' ? []
     : [curMapFilter];
@@ -1592,50 +1627,72 @@ function updateBuckLines() {
 
 
 function buildMapFilters() {
-  buildYearDropdown();
+  buildDateDropdown();
   const bucks = getNamedBucks();
   const lbl = document.getElementById('filterLabel');
   if(lbl) {
-    if(curMapFilter === 'all') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>All Deer';
-    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> All Buck Lines';
-    else lbl.innerHTML = `&#9679; ${curMapFilter}`;
+    if(curMapFilter === 'all') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> Movement';
+    else if(curMapFilter === 'all-bucks') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> All Lines';
+    else lbl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${buckColor(curMapFilter)};margin-right:5px;vertical-align:-1px"></span>${curMapFilter}`;
   }
+  buildMovementDropdown(bucks, '');
+  // Update style dropdown active state
+  updateStyleDropdownActive();
+  // Show/hide movement legend
+  const leg = document.getElementById('movementLegend');
+  if(leg) leg.classList.toggle('show', curMapFilter !== 'all');
+}
+
+function buildMovementDropdown(bucks, searchVal) {
   const dd = document.getElementById('buckDropdown');
   if(!dd) return;
-
   const allSel = curMapFilter === 'all';
   const allBucksSel = curMapFilter === 'all-bucks';
+  const filtered = searchVal ? bucks.filter(b => b.toLowerCase().includes(searchVal.toLowerCase())) : bucks;
 
   dd.innerHTML = `
+    <!-- Search -->
+    <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 10px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="buckSearch" type="text" placeholder="Search bucks..." value="${searchVal}"
+          style="background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font);width:100%"
+          onclick="event.stopPropagation()"
+          oninput="buildMovementDropdown(getNamedBucks(),this.value);document.getElementById('buckDropdown').style.display='block'"/>
+      </div>
+    </div>
+    <!-- No lines option -->
     <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('all')">
-      <div class="buck-drop-dot" style="background:#555"></div>
-      <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">All Deer</div><div style="font-size:10px;color:var(--text3)">${sightings.length} total sightings</div></div>
+      <div class="buck-drop-dot" style="background:#333;border:1px solid #555"></div>
+      <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">No Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show pins only</div></div>
       ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
+    <!-- All buck lines option -->
     <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
       <div class="buck-drop-dot" style="background:linear-gradient(135deg,#8C7355,#a08468)"></div>
-      <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Buck Lines</div><div style="font-size:10px;color:var(--text3)">Show all movement corridors</div></div>
+      <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show all buck corridors</div></div>
       ${allBucksSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
     <div class="buck-drop-divider"></div>
-    ${bucks.map(b => {
-      const color = buckColor(b);
-      const sel = curMapFilter === b;
-      const cnt = sightings.filter(s => s.buck_name === b).length;
-      const cams = [...new Set(sightings.filter(s=>s.buck_name===b).map(s=>s.camera_name))];
-      return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
-        <div class="buck-drop-dot" style="background:${color}"></div>
-        <div style="flex:1">
-          <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
-          <div style="font-size:10px;color:var(--text3)">${cnt} sightings &middot; ${cams.slice(0,2).join(', ')}${cams.length>2?'...':''}</div>
-        </div>
-        ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
-      </div>`;
-    }).join('')}
+    ${filtered.length === 0 ? '<div style="padding:10px 14px;font-size:12px;color:var(--text3);font-style:italic">No bucks found</div>' :
+      filtered.map(b => {
+        const color = buckColor(b);
+        const sel = curMapFilter === b;
+        const cnt = sightings.filter(s => s.buck_name === b).length;
+        const cams = [...new Set(sightings.filter(s=>s.buck_name===b).map(s=>s.camera_name))];
+        return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
+          <div class="buck-drop-dot" style="background:${color}"></div>
+          <div style="flex:1">
+            <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
+            <div style="font-size:10px;color:var(--text3)">${cnt} sightings &middot; ${cams.slice(0,2).join(', ')}${cams.length>2?'...':''}</div>
+          </div>
+          ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
+        </div>`;
+      }).join('')}
     <div class="buck-drop-divider"></div>
     <div class="buck-drop-item${dotMapOn?' selected':''}" onclick="toggleDotMapFromMenu()">
       <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#8C7355)"></div>
-      <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, color by month</div></div>
+      <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, by month</div></div>
       <span style="font-size:11px;color:${dotMapOn?'var(--blue)':'var(--text3)'}">${dotMapOn?'ON':'OFF'}</span>
     </div>
     <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
@@ -1644,10 +1701,6 @@ function buildMapFilters() {
       <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
     </div>
   `;
-
-  // Show/hide movement legend
-  const leg = document.getElementById('movementLegend');
-  if(leg) leg.classList.toggle('show', curMapFilter !== 'all');
 }
 
 function toggleHeatmapFromMenu() {
@@ -1663,60 +1716,145 @@ function toggleHeatmapFromMenu() {
 }
 
 
-function buildYearDropdown() {
-  const dd = document.getElementById('yearDropdown');
-  const lbl = document.getElementById('yearLabel');
-  if(!dd) return;
-  const years = getAvailableYears();
-  if(lbl) lbl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> ${curYear === 'all' ? 'All Years' : curYear}`;
-  dd.innerHTML = [
-    {y:'all', label:'All Years', sub:`${sightings.length} total sightings`},
-    ...years.map(y => ({y, label:y, sub:`${sightings.filter(s=>s.date&&s.date.startsWith(y)).length} sightings`}))
-  ].map(({y, label, sub}) => {
-    const sel = curYear === y;
-    return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapYearFromDrop('${y}')">
-      <div style="flex:1">
-        <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${label}</div>
-        <div style="font-size:10px;color:var(--text3)">${sub}</div>
-      </div>
-      ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
+// --- Date Filter (Year + Month) ---
+let curMapMonth = 'all';
+
+function buildDateDropdown() {
+  const lbl = document.getElementById('dateLabel');
+  const calSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const yearPart = curYear === 'all' ? 'All Years' : curYear;
+  const monthPart = curMapMonth === 'all' ? '' : ' · ' + months[parseInt(curMapMonth)-1];
+  if(lbl) lbl.innerHTML = `${calSvg}${yearPart}${monthPart}`;
+
+  // Build year options
+  const yearEl = document.getElementById('dateYearOptions');
+  if(yearEl) {
+    const years = getAvailableYears();
+    yearEl.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px">
+      ${['all',...years].map(y => {
+        const sel = curYear === y;
+        return `<div onclick="setMapYear2('${y}')" style="padding:3px 8px;border-radius:6px;border:1px solid ${sel?'var(--blue)':'var(--border2)'};background:${sel?'rgba(74,127,193,0.15)':'var(--bg)'};color:${sel?'var(--blue)':'var(--text3)'};font-size:10px;cursor:pointer">${y==='all'?'All':y}</div>`;
+      }).join('')}
     </div>`;
-  }).join('');
+  }
+  // Update month chips
+  const monthChips = ['all','01','02','03','04','05','06','07','08','09','10','11','12'];
+  monthChips.forEach(m => {
+    const el = document.getElementById('mchip-'+m);
+    if(!el) return;
+    const sel = curMapMonth === m;
+    el.style.borderColor = sel ? 'var(--blue)' : 'var(--border2)';
+    el.style.background = sel ? 'rgba(74,127,193,0.15)' : 'var(--bg)';
+    el.style.color = sel ? 'var(--blue)' : 'var(--text3)';
+  });
 }
 
-function toggleYearDropdown() {
-  const dd = document.getElementById('yearDropdown');
-  const arrow = document.getElementById('yearArrow');
-  const wrap = document.getElementById('yearSelectWrap');
+function toggleDateDropdown() {
+  const dd = document.getElementById('dateDropdown');
+  const arrow = document.getElementById('dateArrow');
+  const wrap = document.getElementById('dateSelectWrap');
   const isOpen = dd.style.display !== 'none';
-  // Close buck dropdown if open
-  const bdd = document.getElementById('buckDropdown');
-  if(bdd) { bdd.style.display = 'none'; bdd.style.pointerEvents = 'none'; }
-  const barrow = document.getElementById('filterArrow');
-  if(barrow) barrow.classList.remove('open');
-  dd.style.display = isOpen ? 'none' : 'block';
-  dd.style.pointerEvents = isOpen ? 'none' : 'auto';
-  if(arrow) arrow.classList.toggle('open', !isOpen);
-  if(wrap) wrap.classList.toggle('active', !isOpen);
+  closeAllMapDropdowns();
   if(!isOpen) {
-    setTimeout(() => document.addEventListener('click', closeYearDropdown, {once:true}), 50);
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+    if(arrow) arrow.classList.add('open');
+    if(wrap) wrap.classList.add('active');
+    buildDateDropdown();
+    setTimeout(() => document.addEventListener('click', closeDateDropdown, {once:true}), 50);
   }
 }
 
-function closeYearDropdown() {
-  const dd = document.getElementById('yearDropdown');
-  const arrow = document.getElementById('yearArrow');
-  const wrap = document.getElementById('yearSelectWrap');
+function closeDateDropdown() {
+  const dd = document.getElementById('dateDropdown');
+  const arrow = document.getElementById('dateArrow');
+  const wrap = document.getElementById('dateSelectWrap');
   if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
   if(arrow) arrow.classList.remove('open');
   if(wrap) wrap.classList.remove('active');
 }
 
-function setMapYearFromDrop(y) {
-  closeYearDropdown();
-  setMapYear(y);
-  buildYearDropdown();
+function setMapYear2(y) {
+  curYear = y;
+  buildDateDropdown();
+  refreshMapPins();
+  updateBuckLines();
+  if(curMapFilter !== 'all') { showHeatmap(curMapFilter); showCoreArea(curMapFilter); }
 }
+
+function setMapMonth(m) {
+  curMapMonth = m;
+  buildDateDropdown();
+  refreshMapPins();
+  updateBuckLines();
+}
+
+// Override yearFiltered to also apply month filter on map
+function yearFiltered(arr) {
+  let base = arr;
+  if(curYear !== 'all') base = base.filter(s => s.date && s.date.startsWith(curYear));
+  if(curMapMonth !== 'all') base = base.filter(s => s.date && s.date.slice(5,7) === curMapMonth);
+  return base;
+}
+
+// --- Map Style Dropdown ---
+function toggleStyleDropdown() {
+  const dd = document.getElementById('styleDropdown');
+  const arrow = document.getElementById('styleArrow');
+  const wrap = document.getElementById('styleSelectWrap');
+  const isOpen = dd.style.display !== 'none';
+  closeAllMapDropdowns();
+  if(!isOpen) {
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+    if(arrow) arrow.classList.add('open');
+    if(wrap) wrap.classList.add('active');
+    updateStyleDropdownActive();
+    setTimeout(() => document.addEventListener('click', closeStyleDropdown, {once:true}), 50);
+  }
+}
+
+function closeStyleDropdown() {
+  const dd = document.getElementById('styleDropdown');
+  const arrow = document.getElementById('styleArrow');
+  const wrap = document.getElementById('styleSelectWrap');
+  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
+  if(arrow) arrow.classList.remove('open');
+  if(wrap) wrap.classList.remove('active');
+}
+
+function updateStyleDropdownActive() {
+  MAP_STYLES.forEach((s, i) => {
+    const el = document.getElementById('style-opt-'+s.id);
+    if(!el) return;
+    const active = mapStyleIdx === i;
+    el.style.color = active ? 'var(--blue)' : '';
+    el.querySelector('div').style.color = active ? 'var(--blue)' : 'var(--text)';
+    el.style.background = active ? 'rgba(74,127,193,0.08)' : '';
+  });
+}
+
+function setMapStyleFromDrop(idx) {
+  closeStyleDropdown();
+  if(!mapInstance) return;
+  mapStyleIdx = idx;
+  const style = MAP_STYLES[mapStyleIdx];
+  mapInstance.setStyle(style.url);
+  document.getElementById('mapStyleLabel').textContent = style.label;
+  lineLayerAdded = false;
+  setTimeout(() => { addLineLayer(); lineLayerAdded = true; updateBuckLines(); }, 800);
+}
+
+function closeAllMapDropdowns() {
+  closeBuckDropdown();
+  closeDateDropdown();
+  closeStyleDropdown();
+}
+
+function buildYearDropdown() { buildDateDropdown(); } // backward compat shim
+
+function toggleYearDropdown() { toggleDateDropdown(); } // backward compat shim
 
 function toggleBuckDropdown() {
   const dd = document.getElementById('buckDropdown');
@@ -1830,8 +1968,8 @@ function setMapFilter(name) {
   buildMapLegend();
   refreshMapPins();
   updateBuckLines();
-  // Auto-show heat + core area when a specific buck is selected
-  if(name !== 'all') {
+  // Auto-show heat + core area only for a specific named buck
+  if(name !== 'all' && name !== 'all-bucks') {
     heatmapOn = true;
     showHeatmap(name);
     showCoreArea(name);
@@ -3643,10 +3781,16 @@ function updateMoon() {
   const d = document.getElementById("fd").value;
   if(!d) return;
   const m = moonPhase(d);
-  document.getElementById("micon").textContent = m.i;
+  const moonEmoji = {
+    'New Moon':'🌑', 'Waxing Crescent':'🌒', 'First Quarter':'🌓',
+    'Waxing Gibbous':'🌔', 'Full Moon':'🌕', 'Waning Gibbous':'🌖',
+    'Last Quarter':'🌗', 'Waning Crescent':'🌘'
+  };
+  const icon = document.getElementById("micon");
+  if(icon) icon.innerHTML = `<span style="font-size:22px;line-height:1">${moonEmoji[m.l] || '🌙'}</span>`;
   document.getElementById("mlbl").textContent = m.l;
   document.getElementById("msub").textContent = "Auto-calculated for " + fmtD(d);
-  document.getElementById("tlbl").textContent = "Time " + m.i;
+  document.getElementById("tlbl").textContent = "Time";
 }
 function handlePhoto(inp) {
   const f = inp.files[0]; if(!f) return;
