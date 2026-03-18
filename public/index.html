@@ -372,12 +372,7 @@ textarea{resize:none}
         <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Year</div>
         <div id="dateYearOptions"></div>
         <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px">Month</div>
-        <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px">
-          ${['All','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m,i) =>
-            `<div onclick="setMapMonth('${i===0?'all':String(i).padStart(2,'0')}')" id="mchip-${i===0?'all':String(i).padStart(2,'0')}"
-              style="padding:3px 8px;border-radius:6px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:10px;cursor:pointer">${m}</div>`
-          ).join('')}
-        </div>
+        <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px"></div>
       </div>
     </div>
   </div>
@@ -396,18 +391,7 @@ textarea{resize:none}
       <span id="mapStyleLabelBar">SAT</span>
       <span class="map-select-arrow" id="styleArrow">&#8964;</span>
     </div>
-    <div class="buck-dropdown" id="styleDropdown" style="display:none;top:155px;min-width:160px">
-      ${[{id:'satellite-streets',label:'Satellite',sub:'Streets + labels'},
-         {id:'satellite',label:'Satellite+',sub:'No labels, clean view'},
-         {id:'outdoors',label:'Topo',sub:'Contours + terrain'},
-         {id:'dark',label:'Dark',sub:'Minimal dark'}].map((s,i) =>
-        `<div class="buck-drop-item" id="style-opt-${s.id}" onclick="setMapStyleFromDrop(${i})">
-          <div style="flex:1">
-            <div style="font-weight:400;color:var(--text)">${s.label}</div>
-            <div style="font-size:10px;color:var(--text3)">${s.sub}</div>
-          </div>
-        </div>`).join('')}
-    </div>
+    <div class="buck-dropdown" id="styleDropdown" style="display:none;top:155px;min-width:160px"></div>
   </div>
 </div>
 <div id="mapLegend" style="display:none"></div>
@@ -1650,7 +1634,7 @@ function buildMapFilters() {
   const bucks = getNamedBucks();
   const lbl = document.getElementById('filterLabel');
   if(lbl) {
-    if(curMapFilter === 'all') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> Movement';
+    if(curMapFilter === 'all' || curMapFilter === 'none') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> Movement';
     else if(curMapFilter === 'all-bucks') lbl.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> All Lines';
     else lbl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${buckColor(curMapFilter)};margin-right:5px;vertical-align:-1px"></span>${curMapFilter}`;
   }
@@ -1659,13 +1643,13 @@ function buildMapFilters() {
   updateStyleDropdownActive();
   // Show/hide movement legend
   const leg = document.getElementById('movementLegend');
-  if(leg) leg.classList.toggle('show', curMapFilter !== 'all');
+  if(leg) leg.classList.toggle('show', curMapFilter !== 'all' && curMapFilter !== 'none');
 }
 
 function buildMovementDropdown(bucks, searchVal) {
   const dd = document.getElementById('buckDropdown');
   if(!dd) return;
-  const allSel = curMapFilter === 'all';
+  const allSel = curMapFilter === 'none';
   const allBucksSel = curMapFilter === 'all-bucks';
   const filtered = searchVal ? bucks.filter(b => b.toLowerCase().includes(searchVal.toLowerCase())) : bucks;
 
@@ -1681,7 +1665,7 @@ function buildMovementDropdown(bucks, searchVal) {
       </div>
     </div>
     <!-- No lines option -->
-    <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('all')">
+    <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('none')">
       <div class="buck-drop-dot" style="background:#333;border:1px solid #555"></div>
       <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">No Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show pins only</div></div>
       ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
@@ -1757,16 +1741,17 @@ function buildDateDropdown() {
       }).join('')}
     </div>`;
   }
-  // Update month chips
-  const monthChips = ['all','01','02','03','04','05','06','07','08','09','10','11','12'];
-  monthChips.forEach(m => {
-    const el = document.getElementById('mchip-'+m);
-    if(!el) return;
-    const sel = curMapMonth === m;
-    el.style.borderColor = sel ? 'var(--blue)' : 'var(--border2)';
-    el.style.background = sel ? 'rgba(74,127,193,0.15)' : 'var(--bg)';
-    el.style.color = sel ? 'var(--blue)' : 'var(--text3)';
-  });
+
+  // Build month chips
+  const monthEl = document.getElementById('dateMonthOptions');
+  if(monthEl) {
+    const monthNames = ['All','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    monthEl.innerHTML = monthNames.map((m, i) => {
+      const val = i === 0 ? 'all' : String(i).padStart(2, '0');
+      const sel = curMapMonth === val;
+      return `<div onclick="setMapMonth('${val}')" style="padding:3px 8px;border-radius:6px;border:1px solid ${sel?'var(--blue)':'var(--border2)'};background:${sel?'rgba(74,127,193,0.15)':'var(--bg)'};color:${sel?'var(--blue)':'var(--text3)'};font-size:10px;cursor:pointer">${m}</div>`;
+    }).join('');
+  }
 }
 
 function toggleDateDropdown() {
@@ -1825,11 +1810,21 @@ function toggleStyleDropdown() {
   const isOpen = dd.style.display !== 'none';
   closeAllMapDropdowns();
   if(!isOpen) {
+    // Build style options in JS
+    dd.innerHTML = MAP_STYLES.map((s, i) => {
+      const active = mapStyleIdx === i;
+      return `<div class="buck-drop-item" id="style-opt-${s.id}" onclick="setMapStyleFromDrop(${i})" style="${active?'background:rgba(74,127,193,0.08)':''}">
+        <div style="flex:1">
+          <div style="font-weight:${active?700:400};color:${active?'var(--blue)':'var(--text)'}">${s.label}</div>
+          <div style="font-size:10px;color:var(--text3)">${s.sub}</div>
+        </div>
+        ${active?'<span style="color:var(--blue)">&#10003;</span>':''}
+      </div>`;
+    }).join('');
     dd.style.display = 'block';
     dd.style.pointerEvents = 'auto';
     if(arrow) arrow.classList.add('open');
     if(wrap) wrap.classList.add('active');
-    updateStyleDropdownActive();
     setTimeout(() => document.addEventListener('click', closeStyleDropdown, {once:true}), 50);
   }
 }
@@ -1906,7 +1901,7 @@ function buildMapLegend() {
   const content = document.getElementById('legendContent');
   if(!content) return;
 
-  const buckSelected = curMapFilter && curMapFilter !== 'all';
+  const buckSelected = curMapFilter && curMapFilter !== 'all' && curMapFilter !== 'none';
 
   // Show/hide legend button based on whether a buck is selected
   if(btn) btn.classList.toggle('visible', buckSelected);
@@ -1983,7 +1978,7 @@ function setMapFilter(name) {
   refreshMapPins();
   updateBuckLines();
   // Auto-show heat + core area only for a specific named buck
-  if(name !== 'all' && name !== 'all-bucks') {
+  if(name !== 'all' && name !== 'all-bucks' && name !== 'none') {
     heatmapOn = true;
     showHeatmap(name);
     showCoreArea(name);
@@ -3627,7 +3622,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 500,
         messages: [{
           role: "user",
@@ -3646,7 +3641,13 @@ Respond in JSON only:
       })
     });
 
+    if(!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      throw new Error(`API ${response.status}: ${errData.error?.message || errData.error || response.statusText}`);
+    }
+
     const data = await response.json();
+    if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content?.[0]?.text || "";
     const cleaned = text.replace(/```json|```/g, "").trim();
     const res = JSON.parse(cleaned);
@@ -3680,7 +3681,7 @@ Respond in JSON only:
     }
   } catch(e) {
     console.error("Full AI match failed:", e);
-    result.innerHTML = `<div style="font-size:12px;color:var(--red);padding:12px">Analysis failed — check your connection and try again.</div>`;
+    result.innerHTML = `<div style="font-size:12px;color:var(--red);padding:12px">Analysis failed: ${e.message}<br/><span style="font-size:10px;color:var(--text3)">Check Vercel function logs for details.</span></div>`;
   }
 }
 
@@ -3854,7 +3855,7 @@ async function runAiHint(base64DataUrl) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-5",
         max_tokens: 300,
         messages: [{
           role: "user",
