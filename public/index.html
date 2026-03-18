@@ -287,7 +287,7 @@ textarea{resize:none}
 .pin-menu-item:active{background:var(--surface2)}
 .pin-menu-item.danger{color:var(--red)}
 /* add cam modal */
-.add-cam-modal{position:fixed;bottom:0;left:0;right:0;z-index:500;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.add-cam-modal{position:fixed;bottom:var(--tab-h);left:0;right:0;z-index:500;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(calc(100% + var(--tab-h)));transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
 .add-cam-modal.open{transform:translateY(0)}
 /* conditions overlay */
 .map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
@@ -564,7 +564,7 @@ textarea{resize:none}
             <div class="wx-cell"><div class="wx-val" id="wx-p">--</div><div class="wx-lbl">Precip in</div></div>
           </div>
           <div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl" style="margin-bottom:2px">Barometric Pressure</div><div style="font-size:13px;color:var(--text)"><span id="wx-bp">--</span> hPa &nbsp;<span id="wx-bpt" style="font-size:11px;color:var(--text2)"></span></div></div></div>
-          <button class="wx-apply" onclick="applyWx()">&#8593; Apply weather to sighting</button>
+          <div style="font-size:10px;color:var(--gold);text-align:center;padding:6px 0;font-style:italic">Weather auto-applied to sighting</div>
         </div>
       </div>
     </div>
@@ -915,7 +915,7 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ⚠️ Anthropic API key — required for AI buck matching features
 // Get your key at: https://console.anthropic.com
-const ANTHROPIC_KEY = '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';
+const ANTHROPIC_KEY = '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';
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -1080,7 +1080,7 @@ async function submitSighting() {
   document.getElementById("aiHintBox").style.display = "none";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
   btn.textContent = "Saved!";
-  setTimeout(() => { curFilter = "all"; showView("log"); }, 1000);
+  setTimeout(() => { curFilter = "all"; closeSheet('log'); }, 1200);
   updatePins(); refreshBucknameList(); renderDash();
 }
 
