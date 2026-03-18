@@ -913,9 +913,7 @@ function closePopup() {
 const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-// ⚠️ Anthropic API key — required for AI buck matching features
-// Get your key at: https://console.anthropic.com
-const ANTHROPIC_KEY = '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';
+// ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -3471,9 +3469,9 @@ async function runFullAiMatch(sightingId, imageUrl) {
     });
     const mediaType = blob.type || "image/jpeg";
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("/api/claude", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 500,
@@ -3610,6 +3608,9 @@ function initForm() {
   document.getElementById("wxstat").style.color = "#4A4D4E";
   document.getElementById("uprev").style.display = "none";
   document.getElementById("uph").style.display = "block";
+  // Reset submit button
+  const btn = document.getElementById("sbtn");
+  if(btn) { btn.textContent = "Log Sighting"; btn.classList.remove("rdy"); btn.classList.add("dis"); }
   refreshBucknameList(); updateMoon(); autoWx();
   mkChips("cch", CAMNAMES, "cam");
   mkChips("dch", DTYPES, "deer");
@@ -3689,9 +3690,9 @@ async function runAiHint(base64DataUrl) {
     const base64 = base64DataUrl.split(",")[1];
     const mediaType = base64DataUrl.split(";")[0].split(":")[1];
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const response = await fetch("/api/claude", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 300,
