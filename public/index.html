@@ -1011,11 +1011,6 @@ function toggleMapStyle() {
   mapInstance.setStyle(style.url);
   document.getElementById('mapStyleLabelBar').textContent = style.label;
   lineLayerAdded = false;
-  setTimeout(() => {
-    addLineLayer();
-    lineLayerAdded = true;
-    updateBuckLines();
-  }, 800);
 }
 
 // cam popup helpers
@@ -1459,16 +1454,14 @@ function initMap() {
   });
   mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
-    addLineLayer();
-    addCamMarkers();
-    lineLayerAdded = true;
     mapInstance.resize();
     initGeolocate();
   });
   mapInstance.on('style.load', () => {
-    if(!lineLayerAdded) return;
     addLineLayer();
+    lineLayerAdded = true;
     addCamMarkers();
+    updateBuckLines();
     // Restore heatmap and core area if a buck filter is active
     if(heatmapOn) showHeatmap();
     if(curMapFilter && curMapFilter !== 'all') showCoreArea(curMapFilter);
@@ -1997,7 +1990,6 @@ function setMapStyleFromDrop(idx) {
   mapInstance.setStyle(style.url);
   document.getElementById('mapStyleLabelBar').textContent = style.label;
   lineLayerAdded = false;
-  setTimeout(() => { addLineLayer(); lineLayerAdded = true; updateBuckLines(); }, 800);
 }
 
 function closeAllMapDropdowns() {
