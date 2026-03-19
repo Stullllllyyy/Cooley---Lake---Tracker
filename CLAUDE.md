@@ -72,7 +72,16 @@ Current Build Status — What's Working ✅
 * SAT+ map style pin visibility fixed
 * Bulk ID flow for Unknown Bucks resolution
 * All alert() replaced with showToast()
+* Camera pins always render correct color on initial load (fixed Mar 2026)
+* Camera pin tips align exactly with movement line endpoints (fixed Mar 2026)
+* Camera popup opens instantly on tap — no INP block (fixed Mar 2026)
 Known Bugs / In Progress 🐛
-Bug Notes Camera pins render black on initial load Color depends on sighting data but addCamMarkers() fires before loadSightings() completes. Timing issue. Camera pin visual drift from movement lines Zoom-dependent offset. Last stable commit: be885d1. Fix: zero out marker pixel offset, anchor teardrop SVG tip naturally at coordinate. No zoom-level math. Two failed attempts already — approach carefully. INP performance warning on cam-marker Touch event handlers blocking UI for 400-450ms. Need passive listeners. Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve.
+Bug Notes Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve. Marsh Buck confirmed still appearing in Unknown Bucks bucket.
+
+Camera Pin Architecture Notes (for future sessions)
+* anchor: 'bottom', offset: [0, 0] — do NOT add pixel offset compensation
+* .cam-lbl sits ABOVE .cam-pin in the DOM so element bottom = teardrop tip = coordinate
+* SVG path tip is at y=44 (bottom of 36×44 viewBox) — path: M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z
+* Do NOT attempt zoom-level math or coordinate compensation — two failed attempts (fada88e, cab1934)
 Session Handoff
 See TASKS.md for current priorities. See PLANNING.md for roadmap and product decisions.
