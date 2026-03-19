@@ -3417,8 +3417,18 @@ function renderLog() {
   const fil = getSightingsFiltered();
   const sl = document.getElementById("slist");
   if(curSightView === 'profiles') { renderProfiles(fil, sl); return; }
+  const isUnknownView = (document.getElementById('sfDeer')?.value || 'all') === 'unnamed';
+  const unknownWithPhotos = isUnknownView ? fil.filter(s => s.image_url) : [];
+  const bulkBanner = isUnknownView && unknownWithPhotos.length > 0
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;margin-bottom:8px;background:rgba(140,115,85,0.1);border:1px solid rgba(140,115,85,0.25);border-radius:12px">
+        <div>
+          <div style="font-size:12px;font-weight:600;color:var(--gold)">&#128269; Bulk ID</div>
+          <div style="font-size:10px;color:var(--text3);margin-top:2px">${unknownWithPhotos.length} sighting${unknownWithPhotos.length===1?'':'s'} with photos to identify</div>
+        </div>
+        <button onclick="startBulkResolve()" style="padding:7px 14px;border-radius:10px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Start</button>
+      </div>` : '';
   if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings found</div>`; return; }
-  sl.innerHTML = fil.map(s => {
+  sl.innerHTML = bulkBanner + fil.map(s => {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
     const isMature = s.deer_type && s.deer_type.includes("Mature");
     const isBuck = s.deer_type && s.deer_type.includes("Buck");
@@ -3649,6 +3659,195 @@ function openUnknownBucks() {
   if(deerSel) deerSel.value = 'unnamed';
   setSightView('feed');
   showSightBack('Unknown Bucks');
+}
+
+// ── Bulk Resolve Unknown Bucks ────────────────────────────────────────────────
+let bulkQueue = [];
+let bulkIdx = 0;
+let bulkMatchResult = null;
+
+function startBulkResolve() {
+  bulkQueue = sightings.filter(s => s.deer_type && s.deer_type.includes('Buck') && !s.buck_name && s.image_url);
+  if(bulkQueue.length === 0) { showToast('No unknown bucks with photos'); return; }
+  bulkIdx = 0;
+  bulkMatchResult = null;
+  showBulkResolveModal();
+}
+
+function showBulkResolveModal() {
+  let modal = document.getElementById('bulkResolveModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'bulkResolveModal';
+    modal.className = 'modal-overlay';
+    modal.style.cssText = 'z-index:500';
+    modal.onclick = function(e) { if(e.target === modal) closeBulkResolve(); };
+    modal.innerHTML = `<div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
+      <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
+      <div class="modal-hdr">
+        <div style="font-size:15px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Bulk ID
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span id="bulkProgress" style="font-size:11px;color:var(--text3)"></span>
+          <button class="modal-x" onclick="closeBulkResolve()">&#215;</button>
+        </div>
+      </div>
+      <img id="bulkImg" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-bottom:10px" alt=""/>
+      <div id="bulkInfo" style="font-size:11px;color:var(--text3);margin-bottom:10px"></div>
+      <div id="bulkAiResult" style="min-height:64px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.2);border-radius:10px;margin-bottom:12px;font-size:12px;color:var(--text)">
+        <div style="font-size:11px;color:var(--text3);margin-bottom:4px">AI Buck ID</div>
+        <span id="bulkAiText">Analyzing photo...</span>
+        <div id="bulkAiReason" style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic"></div>
+      </div>
+      <div id="bulkAcceptRow" style="display:none;margin-bottom:8px">
+        <button id="bulkAcceptBtn" onclick="bulkAcceptMatch()" style="width:100%;padding:11px;border:none;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Accept Match</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="bulkNameInput" type="text" placeholder="Enter buck name..." list="bucknamelist"
+          style="flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--border2);background:var(--bg);color:var(--text);font-size:13px;font-family:var(--font);outline:none"/>
+        <button onclick="bulkSaveName()" style="padding:9px 16px;border-radius:10px;border:1px solid var(--bronze);background:transparent;color:var(--bronze);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Save</button>
+      </div>
+      <button onclick="bulkSkip()" style="width:100%;padding:9px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font)">Skip</button>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+  modal.style.display = 'flex';
+
+  const s = bulkQueue[bulkIdx];
+  bulkMatchResult = null;
+  document.getElementById('bulkProgress').textContent = `${bulkIdx + 1} of ${bulkQueue.length}`;
+  document.getElementById('bulkImg').src = s.image_url;
+  document.getElementById('bulkInfo').textContent = `${s.camera_name || 'Unknown camera'} · ${fmtD(s.date)} · ${s.deer_type}`;
+  document.getElementById('bulkAiText').textContent = 'Analyzing photo...';
+  document.getElementById('bulkAiReason').textContent = '';
+  document.getElementById('bulkAcceptRow').style.display = 'none';
+  document.getElementById('bulkNameInput').value = '';
+
+  runBulkAi(s);
+}
+
+async function runBulkAi(s) {
+  const namedBucks = getNamedBucks();
+  if(namedBucks.length === 0) {
+    document.getElementById('bulkAiText').textContent = 'No named bucks yet — enter a name below.';
+    return;
+  }
+  try {
+    const buckProfiles = namedBucks.map(name => {
+      const bs = sightings.filter(x => x.buck_name === name && x.deer_type && x.deer_type.includes('Buck'));
+      const notes = bs.filter(x => x.notes).map(x => x.notes).slice(0, 3).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(x => x.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+    }).join('\n');
+
+    const imgResp = await fetch(s.image_url);
+    const imgBlob = await imgResp.blob();
+    const base64 = await new Promise(res => {
+      const reader = new FileReader();
+      reader.onloadend = () => res(reader.result);
+      reader.readAsDataURL(imgBlob);
+    });
+    const b64data = base64.split(',')[1];
+    const mediaType = base64.split(';')[0].split(':')[1];
+
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64data } },
+            { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks from this property:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text || '';
+    const cleaned = text.replace(/```json|```/g, '').trim();
+    const result = JSON.parse(cleaned);
+
+    const aiTextEl = document.getElementById('bulkAiText');
+    const aiReasonEl = document.getElementById('bulkAiReason');
+    const acceptRow = document.getElementById('bulkAcceptRow');
+    const acceptBtn = document.getElementById('bulkAcceptBtn');
+
+    if(!aiTextEl) return; // modal closed
+
+    if(result.match && result.confidence >= 50) {
+      bulkMatchResult = result.match;
+      aiTextEl.textContent = `${result.match} — ${result.confidence}% confidence`;
+      aiReasonEl.textContent = result.reasoning || '';
+      acceptBtn.textContent = `Accept: ${result.match}`;
+      acceptRow.style.display = 'block';
+      document.getElementById('bulkNameInput').value = result.match;
+    } else {
+      bulkMatchResult = null;
+      aiTextEl.textContent = 'No confident match found';
+      aiReasonEl.textContent = result.reasoning || 'Could not identify from known bucks.';
+      acceptRow.style.display = 'none';
+    }
+  } catch(e) {
+    console.error('Bulk AI failed:', e);
+    const aiTextEl = document.getElementById('bulkAiText');
+    if(aiTextEl) aiTextEl.textContent = 'AI unavailable — enter name manually.';
+  }
+}
+
+async function bulkAcceptMatch() {
+  if(!bulkMatchResult) return;
+  await bulkSaveNameValue(bulkMatchResult);
+}
+
+async function bulkSaveName() {
+  const name = document.getElementById('bulkNameInput')?.value.trim();
+  if(!name) { showToast('Enter a buck name'); return; }
+  await bulkSaveNameValue(name);
+}
+
+async function bulkSaveNameValue(name) {
+  const s = bulkQueue[bulkIdx];
+  if(!s) return;
+  const { error } = await sb.from('sightings').update({ buck_name: name }).eq('id', s.id);
+  if(error) { showToast('Save failed: ' + error.message); return; }
+  const local = sightings.find(x => x.id === s.id);
+  if(local) local.buck_name = name;
+  showToast(`Saved: ${name}`);
+  refreshBucknameList();
+  buildMapFilters();
+  buildMapLegend();
+  bulkIdx++;
+  if(bulkIdx >= bulkQueue.length) {
+    closeBulkResolve();
+    renderLog();
+    showToast('Bulk ID complete');
+    return;
+  }
+  showBulkResolveModal();
+}
+
+function bulkSkip() {
+  bulkIdx++;
+  if(bulkIdx >= bulkQueue.length) {
+    closeBulkResolve();
+    renderLog();
+    showToast('Bulk ID complete');
+    return;
+  }
+  showBulkResolveModal();
+}
+
+function closeBulkResolve() {
+  const modal = document.getElementById('bulkResolveModal');
+  if(modal) modal.style.display = 'none';
+  bulkQueue = [];
+  bulkIdx = 0;
+  bulkMatchResult = null;
 }
 
 function openDoeGroup() {
