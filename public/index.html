@@ -409,7 +409,7 @@ textarea{resize:none}
   <!-- Speed dial options — shown when open -->
   <div class="fab-speed-dial" id="fabSpeedDial">
     <div class="fab-option" onclick="closeFabDial();openSheet('log')">
-      <span class="fab-option-lbl">Log Sighting</span>
+      <span class="fab-option-lbl">Log Event</span>
       <div class="fab-option-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       </div>
@@ -536,33 +536,98 @@ textarea{resize:none}
 <div class="sheet" id="sheet-log">
   <div class="sheet-handle"></div>
   <div class="sheet-hdr">
-    <div class="sheet-title" style="display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg> Log Sighting</div>
+    <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Log Event
+    </div>
     <button class="sheet-x" onclick="closeSheet('log')">&#215;</button>
   </div>
-  <div class="sheet-body">
-    <div class="photo-box" onclick="document.getElementById('finput').click()">
-      <div id="uph"><div style="margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
-      <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
+
+  <!-- Mode Toggle -->
+  <div style="padding:10px 16px 0;flex-shrink:0">
+    <div style="display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:10px;overflow:hidden">
+      <button id="modeTabCam" onclick="setLogMode('camera')" style="flex:1;padding:9px 0;border:none;background:var(--gold);color:var(--bg);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Camera Sighting
+      </button>
+      <button id="modeTabObs" onclick="setLogMode('observation')" style="flex:1;padding:9px 0;border:none;background:transparent;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        Field Observation
+      </button>
     </div>
-    <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+  </div>
+
+  <div class="sheet-body">
+
+    <!-- ── CAMERA SIGHTING fields (shown in camera mode) ── -->
+    <div id="camFields">
+      <div class="photo-box" onclick="document.getElementById('finput').click()">
+        <div id="uph"><div style="margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
+        <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
+      </div>
+      <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
+    </div>
+
+    <!-- ── SHARED: Date / Time ── -->
     <div class="two-col">
       <div><span class="field-lbl">Date</span><input type="date" id="fd" onchange="updateMoon();autoWx()"/></div>
       <div><span class="field-lbl" id="tlbl">Time</span><input type="time" id="ft" onchange="autoWx()"/></div>
     </div>
-    <div class="field-grp"><span class="field-lbl">Camera Location *</span><div class="chip-row" id="cch"></div></div>
-    <div class="field-grp"><span class="field-lbl">Deer Type *</span><div class="chip-row" id="dch"></div></div>
-    <div class="field-grp"><span class="field-lbl">Behavior</span><div class="chip-row" id="bch"></div></div>
-    <div class="field-grp">
-      <span class="field-lbl">Buck Name <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
-      <input type="text" id="fbuckname" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off" list="bucknamelist"/>
-      <datalist id="bucknamelist"></datalist>
+
+    <!-- ── CAMERA fields ── -->
+    <div id="camOnlyFields">
+      <div class="field-grp"><span class="field-lbl">Camera Location *</span><div class="chip-row" id="cch"></div></div>
     </div>
+
+    <!-- ── OBSERVATION: Location picker ── -->
+    <div id="obsLocationFields" style="display:none">
+      <div class="field-grp">
+        <span class="field-lbl">Location</span>
+        <div style="display:flex;gap:6px">
+          <button id="locBtnGPS" onclick="setObsLocation('gps')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+            GPS Blue Dot
+          </button>
+          <button id="locBtnPin" onclick="setObsLocation('pin')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            Drop Pin
+          </button>
+        </div>
+        <div id="obsLocStatus" style="margin-top:7px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Choose GPS location or drop a pin on the map
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SHARED: Deer Type ── -->
+    <div class="field-grp"><span class="field-lbl">Deer Type *</span><div class="chip-row" id="dch"></div></div>
+
+    <!-- ── SHARED: Behavior ── -->
+    <div class="field-grp"><span class="field-lbl">Behavior</span><div class="chip-row" id="bch"></div></div>
+
+    <!-- ── SHARED: Buck Name (optional for both modes) ── -->
+    <div class="field-grp">
+      <span class="field-lbl">Buck Tag <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
+      <div style="position:relative">
+        <input type="text" id="fbuckname" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off"
+          oninput="filterBuckSuggestions(this.value)"
+          onfocus="showBuckSuggestions()"
+          onblur="setTimeout(hideBuckSuggestions,200)"/>
+        <datalist id="bucknamelist"></datalist>
+        <div id="buckSuggestDrop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px;box-shadow:0 4px 20px rgba(0,0,0,0.6)"></div>
+      </div>
+    </div>
+
+    <!-- ── SHARED: Wind / Temp ── -->
     <div class="two-col">
       <div><span class="field-lbl">Wind Dir</span>
         <select id="fwind"><option value="">--</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option><option>Calm</option></select>
       </div>
       <div><span class="field-lbl">Temp F</span><input type="number" id="ftemp" placeholder="--"/></div>
     </div>
+
+    <!-- ── SHARED: Weather panel ── -->
     <div id="wxpanel">
       <div class="wx-panel">
         <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Weather <span id="wxstat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
@@ -583,11 +648,19 @@ textarea{resize:none}
         </div>
       </div>
     </div>
-    <div class="field-grp">
-      <span class="field-lbl">Travel Direction</span>
-      <div class="chip-row" id="tch"></div>
+
+    <!-- ── CAMERA: Travel Direction ── -->
+    <div id="camTravelFields">
+      <div class="field-grp">
+        <span class="field-lbl">Travel Direction</span>
+        <div class="chip-row" id="tch"></div>
+      </div>
     </div>
-    <div class="field-grp"><span class="field-lbl">Notes</span><textarea id="fnotes" rows="3" placeholder="Antler details, travel direction, buck ID notes..."></textarea></div>
+
+    <!-- ── SHARED: Notes ── -->
+    <div class="field-grp"><span class="field-lbl" id="notesLbl">Notes</span><textarea id="fnotes" rows="3" placeholder="Antler details, travel direction, buck ID notes..."></textarea></div>
+
+    <!-- ── AI Hint box (camera mode only) ── -->
     <div id="aiHintBox" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
         <div>
@@ -601,11 +674,14 @@ textarea{resize:none}
       </div>
       <div id="aiHintReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
     </div>
+
+    <!-- ── SHARED: Moon row ── -->
     <div class="moon-row">
       <div id="micon" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
       <div><div style="font-size:13px;color:var(--text);font-weight:600" id="mlbl">Select a date</div><div style="font-size:10px;color:var(--text3)" id="msub">Moon phase auto-calculated</div></div>
     </div>
-    <button class="log-btn dis" id="sbtn" onclick="submitSighting()">Log Sighting</button>
+
+    <button class="log-btn dis" id="sbtn" onclick="submitSighting()">Log Camera Sighting</button>
   </div>
 </div>
 
@@ -1052,32 +1128,69 @@ async function uploadPhoto(file, sightingId) {
 }
 
 async function submitSighting() {
-  const c = document.querySelector(".chip[data-k='cam'].on");
-  const d = document.querySelector(".chip[data-k='deer'].on");
-  if(!c || !d) return;
   const btn = document.getElementById("sbtn");
+  const d = document.querySelector(".chip[data-k='deer'].on");
+  if(!d) return;
+
+  if(logMode === 'camera') {
+    const c = document.querySelector(".chip[data-k='cam'].on");
+    if(!c) return;
+  }
+
   btn.textContent = "Saving..."; btn.classList.remove("rdy"); btn.classList.add("dis");
   const beh = document.querySelector(".chip[data-k='beh'].on");
   const wx = wxApplied || {};
-  const newSighting = {
-    date: document.getElementById("fd").value,
-    time: document.getElementById("ft").value + ":00",
-    camera_name: c.dataset.v,
-    deer_type: d.dataset.v,
-    behavior: beh ? beh.dataset.v : null,
-    buck_name: document.getElementById("fbuckname").value.trim() || null,
-    wind_dir: document.getElementById("fwind").value || null,
-    temp_f: parseFloat(document.getElementById("ftemp").value) || null,
-    wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
-    wind_gust: wx.windGust ? parseFloat(wx.windGust) : null,
-    humidity: wx.humidity ? parseInt(wx.humidity) : null,
-    precip: wx.precip ? parseFloat(wx.precip) : null,
-    pressure: wx.pressure ? parseFloat(wx.pressure) : null,
-    notes: document.getElementById("fnotes").value || null,
-    travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
-    image_url: null,
-    moon_phase: document.getElementById("mlbl").textContent,
-  };
+
+  let newSighting;
+
+  if(logMode === 'camera') {
+    const c = document.querySelector(".chip[data-k='cam'].on");
+    newSighting = {
+      source: 'camera',
+      date: document.getElementById("fd").value,
+      time: document.getElementById("ft").value + ":00",
+      camera_name: c.dataset.v,
+      deer_type: d.dataset.v,
+      behavior: beh ? beh.dataset.v : null,
+      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      wind_dir: document.getElementById("fwind").value || null,
+      temp_f: parseFloat(document.getElementById("ftemp").value) || null,
+      wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
+      wind_gust: wx.windGust ? parseFloat(wx.windGust) : null,
+      humidity: wx.humidity ? parseInt(wx.humidity) : null,
+      precip: wx.precip ? parseFloat(wx.precip) : null,
+      pressure: wx.pressure ? parseFloat(wx.pressure) : null,
+      notes: document.getElementById("fnotes").value || null,
+      travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
+      image_url: null,
+      moon_phase: document.getElementById("mlbl").textContent,
+    };
+  } else {
+    // Field observation
+    newSighting = {
+      source: 'observation',
+      date: document.getElementById("fd").value,
+      time: document.getElementById("ft").value + ":00",
+      camera_name: null,
+      deer_type: d.dataset.v,
+      behavior: beh ? beh.dataset.v : null,
+      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      wind_dir: document.getElementById("fwind").value || null,
+      temp_f: parseFloat(document.getElementById("ftemp").value) || null,
+      wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
+      wind_gust: wx.windGust ? parseFloat(wx.windGust) : null,
+      humidity: wx.humidity ? parseInt(wx.humidity) : null,
+      precip: wx.precip ? parseFloat(wx.precip) : null,
+      pressure: wx.pressure ? parseFloat(wx.pressure) : null,
+      notes: document.getElementById("fnotes").value || null,
+      travel_dir: null,
+      image_url: null,
+      moon_phase: document.getElementById("mlbl").textContent,
+      obs_lat: obsLatLng ? obsLatLng.lat : null,
+      obs_lng: obsLatLng ? obsLatLng.lng : null,
+    };
+  }
+
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
   syncDot(false);
@@ -1085,11 +1198,12 @@ async function submitSighting() {
     console.error('Insert error:', error);
     btn.textContent = "Error: " + error.message.slice(0,35);
     btn.classList.add("rdy"); btn.classList.remove("dis");
-    setTimeout(() => { btn.textContent = "Log Sighting"; checkSub(); }, 3000);
+    const modeLabel = logMode === 'camera' ? 'Log Camera Sighting' : 'Log Field Observation';
+    setTimeout(() => { btn.textContent = modeLabel; checkSub(); }, 3000);
     return;
   }
-  // Upload photo separately
-  if(formImgFile) {
+  // Upload photo (camera mode only)
+  if(logMode === 'camera' && formImgFile) {
     try {
       syncDot(true);
       const url = await uploadPhoto(formImgFile, data.id);
@@ -1103,6 +1217,10 @@ async function submitSighting() {
       console.error('Photo upload failed (sighting saved):', photoErr);
     }
   }
+  // Remove obs pin if it was placed
+  if(obsPinDropMarker) { obsPinDropMarker.remove(); obsPinDropMarker = null; }
+  obsLatLng = null;
+
   sightings.unshift(data);
   // Reset form
   formImgFile = null; wxApplied = null;
@@ -1116,7 +1234,12 @@ async function submitSighting() {
   document.getElementById("aiHintBox").style.display = "none";
   document.querySelectorAll(".chip").forEach(c => c.classList.remove("on"));
   btn.textContent = "Saved!";
-  setTimeout(() => { curFilter = "all"; closeSheet('log'); }, 1200);
+  const savedMode = logMode;
+  setTimeout(() => {
+    curFilter = "all";
+    closeSheet('log');
+    showToast(savedMode === 'camera' ? 'Camera sighting logged!' : 'Field observation logged!');
+  }, 1200);
   updatePins(); refreshBucknameList(); renderDash();
 }
 
@@ -1649,28 +1772,45 @@ function buildMapFilters() {
 function buildMovementDropdown(bucks, searchVal) {
   const dd = document.getElementById('buckDropdown');
   if(!dd) return;
+
+  // Only build the full shell on first render (when dropdown is empty)
+  // After that, only update the buck list section — keeps search input intact
+  if(!dd.querySelector('#buckSearchInput')) {
+    dd.innerHTML = `
+      <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 10px">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="buckSearchInput" type="text" placeholder="Search bucks..."
+            style="background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font);width:100%"
+            onclick="event.stopPropagation()"
+            oninput="rebuildBuckList(getNamedBucks(),this.value)"/>
+        </div>
+      </div>
+      <div id="buckDropList"></div>`;
+  }
+
+  // Set search input value without moving focus
+  const searchInput = document.getElementById('buckSearchInput');
+  if(searchInput && document.activeElement !== searchInput) {
+    searchInput.value = searchVal || '';
+  }
+
+  rebuildBuckList(bucks, searchVal || (searchInput ? searchInput.value : ''));
+}
+
+function rebuildBuckList(bucks, searchVal) {
+  const listEl = document.getElementById('buckDropList');
+  if(!listEl) return;
   const allSel = curMapFilter === 'none';
   const allBucksSel = curMapFilter === 'all-bucks';
   const filtered = searchVal ? bucks.filter(b => b.toLowerCase().includes(searchVal.toLowerCase())) : bucks;
 
-  dd.innerHTML = `
-    <!-- Search -->
-    <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
-      <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 10px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <input id="buckSearch" type="text" placeholder="Search bucks..." value="${searchVal}"
-          style="background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font);width:100%"
-          onclick="event.stopPropagation()"
-          oninput="buildMovementDropdown(getNamedBucks(),this.value);document.getElementById('buckDropdown').style.display='block'"/>
-      </div>
-    </div>
-    <!-- No lines option -->
+  listEl.innerHTML = `
     <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('none')">
       <div class="buck-drop-dot" style="background:#333;border:1px solid #555"></div>
       <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">No Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show pins only</div></div>
       ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
     </div>
-    <!-- All buck lines option -->
     <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
       <div class="buck-drop-dot" style="background:linear-gradient(135deg,#8C7355,#a08468)"></div>
       <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show all buck corridors</div></div>
@@ -3780,6 +3920,123 @@ function showDet(id) {
 }
 
 // --- form -
+// --- Log Event mode state ---
+let logMode = 'camera'; // 'camera' | 'observation'
+let obsLocationMode = 'gps'; // 'gps' | 'pin'
+let obsLatLng = null; // {lat, lng} set when user drops pin or GPS resolves
+
+function setLogMode(mode) {
+  logMode = mode;
+  const tabCam = document.getElementById('modeTabCam');
+  const tabObs = document.getElementById('modeTabObs');
+  const camFields = document.getElementById('camFields');
+  const camOnlyFields = document.getElementById('camOnlyFields');
+  const obsLocationFields = document.getElementById('obsLocationFields');
+  const camTravelFields = document.getElementById('camTravelFields');
+  const notesPlaceholder = document.getElementById('fnotes');
+  const notesLbl = document.getElementById('notesLbl');
+  const btn = document.getElementById('sbtn');
+
+  if(mode === 'camera') {
+    // Tab styles
+    tabCam.style.background = 'var(--gold)'; tabCam.style.color = 'var(--bg)';
+    tabObs.style.background = 'transparent'; tabObs.style.color = 'var(--text3)';
+    // Field visibility
+    if(camFields) camFields.style.display = 'block';
+    if(camOnlyFields) camOnlyFields.style.display = 'block';
+    if(obsLocationFields) obsLocationFields.style.display = 'none';
+    if(camTravelFields) camTravelFields.style.display = 'block';
+    // Labels
+    if(notesPlaceholder) notesPlaceholder.placeholder = 'Antler details, travel direction, buck ID notes...';
+    if(notesLbl) notesLbl.textContent = 'Notes';
+    if(btn) btn.textContent = 'Log Camera Sighting';
+  } else {
+    // Tab styles
+    tabObs.style.background = 'var(--gold)'; tabObs.style.color = 'var(--bg)';
+    tabCam.style.background = 'transparent'; tabCam.style.color = 'var(--text3)';
+    // Field visibility
+    if(camFields) camFields.style.display = 'none';
+    if(camOnlyFields) camOnlyFields.style.display = 'none';
+    if(obsLocationFields) obsLocationFields.style.display = 'block';
+    if(camTravelFields) camTravelFields.style.display = 'none';
+    // Labels
+    if(notesPlaceholder) notesPlaceholder.placeholder = 'What did you see? Describe the deer, direction of travel, terrain, any sign nearby...';
+    if(notesLbl) notesLbl.textContent = 'Observation Notes';
+    if(btn) btn.textContent = 'Log Field Observation';
+    // Clear AI hint
+    document.getElementById('aiHintBox').style.display = 'none';
+  }
+  checkSub();
+}
+
+function setObsLocation(mode) {
+  obsLocationMode = mode;
+  const btnGPS = document.getElementById('locBtnGPS');
+  const btnPin = document.getElementById('locBtnPin');
+  const status = document.getElementById('obsLocStatus');
+
+  if(mode === 'gps') {
+    btnGPS.style.borderColor = 'var(--gold)'; btnGPS.style.background = 'rgba(140,115,85,0.15)'; btnGPS.style.color = 'var(--gold)';
+    btnPin.style.borderColor = 'var(--border2)'; btnPin.style.background = 'transparent'; btnPin.style.color = 'var(--text3)';
+    // Try to get GPS position
+    if(navigator.geolocation) {
+      status.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> Getting GPS location...';
+      navigator.geolocation.getCurrentPosition(
+        pos => {
+          obsLatLng = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          status.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7aaa6a" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> <span style="color:#7aaa6a">GPS locked: ' + obsLatLng.lat.toFixed(5) + ', ' + obsLatLng.lng.toFixed(5) + '</span>';
+          checkSub();
+        },
+        err => {
+          status.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> <span style="color:var(--red)">GPS unavailable — try Drop Pin</span>';
+          obsLatLng = null;
+        },
+        { enableHighAccuracy: true, timeout: 8000 }
+      );
+    } else {
+      status.innerHTML = '<span style="color:var(--red)">GPS not supported on this device</span>';
+      obsLatLng = null;
+    }
+  } else {
+    // Pin drop mode — close sheet, let user tap map
+    btnPin.style.borderColor = 'var(--gold)'; btnPin.style.background = 'rgba(140,115,85,0.15)'; btnPin.style.color = 'var(--gold)';
+    btnGPS.style.borderColor = 'var(--border2)'; btnGPS.style.background = 'transparent'; btnGPS.style.color = 'var(--text3)';
+    status.innerHTML = '<span style="color:var(--gold)">Tap map to drop observation pin...</span>';
+    obsLatLng = null;
+    // Minimize sheet and enter pin-drop mode
+    enterObsPinDropMode();
+  }
+}
+
+let obsPinDropActive = false;
+let obsPinDropMarker = null;
+
+function enterObsPinDropMode() {
+  obsPinDropActive = true;
+  closeSheet('log');
+  showToast('Tap anywhere on the map to set observation location', 4000);
+  // Listen for next map click
+  if(mapInstance) {
+    mapInstance.once('click', function(e) {
+      obsPinDropActive = false;
+      obsLatLng = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+      // Place a temporary marker
+      if(obsPinDropMarker) obsPinDropMarker.remove();
+      const el = document.createElement('div');
+      el.style.cssText = 'width:18px;height:18px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7)';
+      obsPinDropMarker = new mapboxgl.Marker({ element: el }).setLngLat([obsLatLng.lng, obsLatLng.lat]).addTo(mapInstance);
+      // Re-open sheet
+      openSheet('log');
+      // Update status
+      setTimeout(() => {
+        const status = document.getElementById('obsLocStatus');
+        if(status) status.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7aaa6a" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> <span style="color:#7aaa6a">Pin set: ' + obsLatLng.lat.toFixed(5) + ', ' + obsLatLng.lng.toFixed(5) + '</span>';
+        checkSub();
+      }, 300);
+    });
+  }
+}
+
 function initForm() {
   const now = new Date();
   document.getElementById("fd").value = now.toISOString().split("T")[0];
@@ -3789,6 +4046,7 @@ function initForm() {
   document.getElementById("ftemp").value = "";
   document.getElementById("fwind").value = "";
   wxFetched = null; wxApplied = null; formImgFile = null;
+  obsLatLng = null; obsLocationMode = 'gps';
   document.getElementById("wxload").style.display = "block";
   document.getElementById("wxload").textContent = "Fetching conditions...";
   document.getElementById("wxdata").style.display = "none";
@@ -3796,20 +4054,57 @@ function initForm() {
   document.getElementById("wxstat").style.color = "#4A4D4E";
   document.getElementById("uprev").style.display = "none";
   document.getElementById("uph").style.display = "block";
-  // Reset submit button
-  const btn = document.getElementById("sbtn");
-  if(btn) { btn.textContent = "Log Sighting"; btn.classList.remove("rdy"); btn.classList.add("dis"); }
+  document.getElementById("aiHintBox").style.display = "none";
+  // Reset obs location status
+  const obsLocStatus = document.getElementById('obsLocStatus');
+  if(obsLocStatus) obsLocStatus.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Choose GPS location or drop a pin on the map';
+  // Remove any lingering obs pin
+  if(obsPinDropMarker) { obsPinDropMarker.remove(); obsPinDropMarker = null; }
+  // Default to camera mode
+  logMode = 'camera';
+  setLogMode('camera');
   refreshBucknameList(); updateMoon(); autoWx();
   mkChips("cch", CAMNAMES, "cam");
   mkChips("dch", DTYPES, "deer");
   mkChips("bch", BEHS, "beh");
   mkChips("tch", TRAVEL_DIRS, "tdir");
-  document.getElementById("aiHintBox").style.display = "none";
   checkSub();
 }
+
 function refreshBucknameList() {
   const dl = document.getElementById("bucknamelist");
   if(dl) dl.innerHTML = getNamedBucks().map(b => `<option value="${b}">`).join("");
+}
+
+// Buck suggestion dropdown (fixes focus-loss bug — never rebuilds the input itself)
+function filterBuckSuggestions(val) {
+  const drop = document.getElementById('buckSuggestDrop');
+  if(!drop) return;
+  const bucks = getNamedBucks();
+  const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
+  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.map(b =>
+    `<div onclick="selectBuckSuggestion('${b.replace(/'/g,"\\'")}');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
+      onmousedown="event.preventDefault()">${b}</div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+
+function showBuckSuggestions() {
+  const val = document.getElementById('fbuckname').value;
+  if(!val) filterBuckSuggestions('');
+}
+
+function hideBuckSuggestions() {
+  const drop = document.getElementById('buckSuggestDrop');
+  if(drop) drop.style.display = 'none';
+}
+
+function selectBuckSuggestion(name) {
+  document.getElementById('fbuckname').value = name;
+  hideBuckSuggestions();
+  checkSub();
 }
 function mkChips(id, opts, key) {
   document.getElementById(id).innerHTML = opts.map(o =>
@@ -3821,11 +4116,19 @@ function pickChip(btn, key) {
   btn.classList.add("on"); checkSub();
 }
 function checkSub() {
-  const c = document.querySelector(".chip[data-k='cam'].on");
-  const d = document.querySelector(".chip[data-k='deer'].on");
   const btn = document.getElementById("sbtn");
-  if(c && d) { btn.classList.remove("dis"); btn.classList.add("rdy"); }
-  else { btn.classList.remove("rdy"); btn.classList.add("dis"); }
+  if(!btn) return;
+  if(logMode === 'camera') {
+    const c = document.querySelector(".chip[data-k='cam'].on");
+    const d = document.querySelector(".chip[data-k='deer'].on");
+    if(c && d) { btn.classList.remove("dis"); btn.classList.add("rdy"); }
+    else { btn.classList.remove("rdy"); btn.classList.add("dis"); }
+  } else {
+    // Observation mode: deer type required; location recommended but not blocking
+    const d = document.querySelector(".chip[data-k='deer'].on");
+    if(d) { btn.classList.remove("dis"); btn.classList.add("rdy"); }
+    else { btn.classList.remove("rdy"); btn.classList.add("dis"); }
+  }
 }
 function updateMoon() {
   const d = document.getElementById("fd").value;
