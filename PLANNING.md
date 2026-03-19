@@ -1,0 +1,35 @@
+Huginn Hunt Intelligence — Product Planning
+Vision
+A collaborative whitetail deer and big game hunting intelligence platform. Hunters log trail camera sightings and field observations across their properties — building a living map of wildlife patterns, named buck profiles, and AI-powered hunt recommendations over time. Built for any property, any game species, any hunter skill level.
+Brand: Huginn Advisory Group — "Know More. Hunt Smarter." Live URL: cooley-lake-tracker.vercel.app Property #1: Cooley Lake, Suring Wisconsin (~100 acres)
+Current MVP Status — What's Live ✅
+* Trail camera sighting logging with photo upload
+* Field observation logging (GPS or pin drop location)
+* Named buck tracking with AI photo identification
+* Movement lines on satellite map (per-buck corridors)
+* Heatmap and core area overlays
+* Buck intel profiles in Intelligence tab
+* Weather auto-fetch on sighting entry (historical + forecast)
+* Moon phase auto-calculation
+* Filter bar — date, movement lines, map style
+* Camera pin management (add, move, rename, delete)
+* Bulk Unknown Buck resolution flow
+* 4 map styles (SAT, SAT+, TOPO, DARK)
+* Hunt AI tab (placeholder — full build coming)
+🔴 Immediate — Next Build Session
+Feature/Fix Notes Camera pin visual drift fix Pins offset from movement line endpoints. Last stable commit: be885d1. Approach: zero out marker pixel offset, anchor teardrop tip naturally at coordinate. Do not attempt zoom-level math compensation. Unknown Bucks root cause fix Marsh Buck appearing in unknown bucket. Trace AI hint → accept → save flow. Find where buck_name is dropped.
+🟡 Near Term
+Feature Notes AI Training loop "Wrong Buck" correction flow. Saves ai_suggestion, ai_confidence, ai_confirmed, ai_correction_notes to ai_feedback Supabase table. Confirmed / Wrong Buck buttons replace Accept/Edit ID. Buck Profiles view Activate Profiles button in Sightings header. Full dossier: confirmed photos, antler description, camera intel, field observations, AI training notes, movement summary, concentration dates. Supabase Auth Email/password + magic link. Invite code gate (COOLEY2025). logged_by attribution on all sightings. Multi-property architecture property_id on all tables, admin flag, feature flags. MUST go in before Auth goes live. FAB marker system Add Stand / Scrape / Rub / Bedding fully wired. GPS placement. property_markers Supabase table.
+🟢 Medium Term
+Feature Notes Hunt Planner AI Chat System prompt assembler pulling sightings + field obs + weather + markers + buck profiles. Movement score curve (Poor/OK/Good/Great). Property-specific scoring. Historical harvest log Date, location, conditions, buck description. Feeds personal success pattern analysis and season planner. Season Planner / Vacation Day Optimizer AI top hunt days for upcoming season. "If you can only hunt 5 days this November, these are the 5 days." Personal rut calendar Property-specific rut phases with confidence intervals that tighten every season. Seed Your Property onboarding Batch photo upload. AI extracts deer data. Historical weather backfill. data_source: 'seeded'. Weather enhancements Pressure trend description, sunrise/sunset + daylight hours, dew point, hourly forecast scroll. Map Layers system Public land, WI DNR/parcel, waterways, contour selector, slope angle, timber cuts. Field navigation tools Distance ring, heading cone, compass bar (mobile only). GPS track logging Opt-in path recording, named tracks, intrusion history feeds AI. Map annotation / draw layer Polygon/line/circle. GeoJSON in Supabase. Feeds AI. PostGIS enablement Enable Supabase PostGIS extension when building FAB marker system. Migrate camera locations, observation points, and property markers to geometry columns. Unlocks server-side spatial queries for core area calculation, proximity filtering, and map draw layer. Offline / PWA mode Service Worker, local queue, auto-sync. Multi-species Elk GMU 231 Colorado, September 2026.
+💼 Product & Business
+Item Notes Business & legal Trademarks, ToS, privacy policy, LLC under Huginn Advisory Group Pricing & monetization Tier structure, AI chat value, B2C vs B2B (hunting clubs, outfitters) Beta launch plan Invite codes, first 10–20 non-you users, feedback loop Cooley Lake as Property #1 Dan and Andy as first real multi-user test Social media Instagram launch, content strategy, handle secured
+💡 Ideas Parking Lot
+Idea Notes Anonymous behavioral signal aggregation Weather/pressure/moon correlated with movement activity. Opt-in, no PII. Builds proprietary Huginn movement dataset over time. Regional intelligence layer Aggregate anonymous movement trends by region. Outfitter version Season Planner applied across multiple clients and properties. Helps outfitters schedule hunts for max client success. Proprietary movement prediction model Trained on real structured hunter observation data. Gets better with every opt-in user. SuperClaude framework Revisit after MVP stabilizes.
+Key Architectural Decisions
+Decision Choice Reason Date Frontend Vanilla HTML/JS/CSS single file Simplicity, fast iteration, no build step Mar 2026 Backend Supabase Auth + DB + Storage in one, generous free tier Mar 2026 Map Mapbox GL JS v3.3.0 Satellite imagery, vector layers, marker control Mar 2026 Deployment Vercel Simple GitHub integration, serverless functions Mar 2026 AI proxy Vercel serverless /api/claude.js Never expose Anthropic key client-side Mar 2026 Multi-property property_id on all tables from day one Scalability — don't retrofit later Planned Spatial data PostGIS via Supabase extension When FAB markers ship — geometry > float pairs Planned Auth Supabase Auth + invite codes After multi-property architecture is in place Planned
+Out of Scope (Current MVP)
+* Native mobile app — web-first and PWA first. Native iOS/Android or Electron desktop is a future phase once PWA is solid and there are paying users. Not never, just not now.
+* Public / social feed (private properties only for now)
+* E-commerce or gear recommendations
+* Any hardcoded single-property assumptions
