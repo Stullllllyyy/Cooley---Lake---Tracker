@@ -75,8 +75,11 @@ Current Build Status — What's Working ✅
 * Camera pins always render correct color on initial load (fixed Mar 2026)
 * Camera pin tips align exactly with movement line endpoints (fixed Mar 2026)
 * Camera popup opens instantly on tap — no INP block (fixed Mar 2026)
+* New camera pins drop as gold, not black (fixed Mar 20 2026)
+* Field observation pins appear on map after save (fixed Mar 20 2026)
+* Faded camera pins consistent at 0.9 opacity across all 4 map styles (fixed Mar 20 2026)
 Known Bugs / In Progress 🐛
-Bug Notes Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve. Marsh Buck confirmed still appearing in Unknown Bucks bucket.
+Bug Notes Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve. Marsh Buck confirmed still appearing in Unknown Bucks bucket. Field observation pins on map Pins now save with obs_lat/obs_lng and appear after save (post-save refreshMapPins fix Mar 20 2026) — needs production verification: confirm pins persist correctly after page reload.
 
 Camera Pin Architecture Notes (for future sessions)
 * anchor: 'bottom', offset: [0, 0] — do NOT add pixel offset compensation
