@@ -1540,12 +1540,14 @@ async function addCamMarkers() {
     const cs = yearFiltered(sightings).filter(s => s.camera_name === name);
     const cnt = cs.length;
     const mature = cs.some(s => s.deer_type && s.deer_type.includes('Mature'));
-    const buckFiltered = curMapFilter !== 'all' ? cs.filter(s => s.buck_name === curMapFilter) : cs;
+    // isBuckFilter is true only when a specific named buck is selected — NOT for 'all', 'all-bucks', or 'none'
+    const isBuckFilter = curMapFilter !== 'all' && curMapFilter !== 'all-bucks' && curMapFilter !== 'none';
+    const buckFiltered = isBuckFilter ? cs.filter(s => s.buck_name === curMapFilter) : cs;
     const hasBuck = buckFiltered.length > 0;
 
     // Colors — faded pins keep normal color, just low opacity via CSS
     let fill, stroke;
-    if(curMapFilter !== 'all') {
+    if(isBuckFilter) {
       fill = hasBuck ? buckColor(curMapFilter) : '#8C7355';
       stroke = hasBuck ? buckColor(curMapFilter) : '#a08468';
     } else if(mature) {
@@ -1555,11 +1557,12 @@ async function addCamMarkers() {
     }
 
     const el = document.createElement('div');
-    el.className = 'cam-marker' + (curMapFilter !== 'all' && !hasBuck ? ' faded' : '');
+    // Only fade pins when a specific named buck IS selected and this camera has no sightings of that buck
+    el.className = 'cam-marker' + (isBuckFilter && !hasBuck ? ' faded' : '');
 
-    // Time ring — only when a specific buck is selected
+    // Time ring — only when a specific named buck is selected
     let ringHTML = '';
-    if(curMapFilter !== 'all' && hasBuck) {
+    if(isBuckFilter && hasBuck) {
       const buckSights = cs.filter(s => s.buck_name === curMapFilter && s.time);
       const total = buckSights.length || 1;
       // Count per period
