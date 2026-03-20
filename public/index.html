@@ -4162,6 +4162,24 @@ function setLogMode(mode) {
     if(btn) btn.textContent = 'Log Field Observation';
     // Clear AI hint
     document.getElementById('aiHintBox').style.display = 'none';
+    // On desktop (no touch), GPS blue dot is unavailable — show disabled state and auto-select Drop Pin
+    const isMobile = navigator.maxTouchPoints > 0;
+    const btnGPS = document.getElementById('locBtnGPS');
+    if(!isMobile && btnGPS) {
+      btnGPS.disabled = true;
+      btnGPS.style.opacity = '0.4';
+      btnGPS.style.cursor = 'not-allowed';
+      btnGPS.style.pointerEvents = 'none';
+      btnGPS.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><circle cx="12" cy="17" r="1"/></svg> GPS — mobile only';
+      // Auto-select pin mode on desktop
+      setObsLocation('pin');
+    } else if(btnGPS) {
+      btnGPS.disabled = false;
+      btnGPS.style.opacity = '';
+      btnGPS.style.cursor = '';
+      btnGPS.style.pointerEvents = '';
+      btnGPS.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg> GPS Blue Dot';
+    }
   }
   checkSub();
 }
