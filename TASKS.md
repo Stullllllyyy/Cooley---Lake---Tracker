@@ -22,6 +22,7 @@ Near Term
 * [ ] Supabase Auth — email/password + magic link + invite code COOLEY2025
 * [ ] Multi-property architecture — property_id on all tables (do before Auth)
 * [ ] FAB marker system — Stand/Scrape/Rub/Bedding wired to GPS + property_markers table
+* [ ] Unified Pin Management System — Phase 1: single "Add Pin" FAB flow with type selector (Camera / Stand / Scrape / Rub / Bedding / Observation), preset colors per type, distinct icon per type, edit/move/delete. Phase 2: pin filtering, pin history, Auth attribution, Hunt AI context feed. Ref: Spartan / Moultrie / OnX waypoint systems.
 
 Medium Term
 * [ ] Hunt Planner AI Chat tab
