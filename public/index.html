@@ -2840,7 +2840,8 @@ function showHeatmap(buckName) {
   const filterName = buckName || curMapFilter;
   // Build GeoJSON points — when buck filter active, weight by that buck's sightings per camera
   let sourceSightings = sightings.filter(s => camLocations[s.camera_name]);
-  if(filterName && filterName !== 'all') {
+  const isBuckName = filterName && filterName !== 'all' && filterName !== 'all-bucks' && filterName !== 'none';
+  if(isBuckName) {
     sourceSightings = sourceSightings.filter(s => s.buck_name === filterName);
   }
   const features = sourceSightings.map(s => {
@@ -3263,9 +3264,10 @@ function showDotMap() {
   hideDotMap(); // clear existing
   if(!mapInstance) return;
 
-  const filtered = curMapFilter === 'all'
-    ? sightings
-    : sightings.filter(s => s.buck_name === curMapFilter);
+  const isBuckFilter = curMapFilter && curMapFilter !== 'all' && curMapFilter !== 'all-bucks' && curMapFilter !== 'none';
+  const filtered = isBuckFilter
+    ? sightings.filter(s => s.buck_name === curMapFilter)
+    : sightings;
 
   filtered.forEach(s => {
     const pos = camLocations[s.camera_name];
