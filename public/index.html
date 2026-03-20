@@ -4281,7 +4281,11 @@ function initForm() {
   logMode = 'camera';
   setLogMode('camera');
   refreshBucknameList(); updateMoon(); autoWx();
-  mkChips("cch", CAMNAMES, "cam");
+  // Build camera chips from camLocations (already fetched from Supabase) — fall back to CAMNAMES
+  const liveCamNames = Object.keys(camLocations).length
+    ? [...Object.keys(camLocations), 'Other']
+    : CAMNAMES;
+  mkChips("cch", liveCamNames, "cam");
   mkChips("dch", DTYPES, "deer");
   mkChips("bch", BEHS, "beh");
   mkChips("tch", TRAVEL_DIRS, "tdir");
