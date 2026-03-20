@@ -78,6 +78,7 @@ Current Build Status — What's Working ✅
 * New camera pins drop as gold, not black (fixed Mar 20 2026)
 * Field observation pins appear on map after save (fixed Mar 20 2026)
 * Faded camera pins consistent at 0.9 opacity across all 4 map styles (fixed Mar 20 2026)
+* Heatmap and dot map now work on All Lines / All Deer / No Lines filter states (fixed Mar 20 2026)
 Known Bugs / In Progress 🐛
 Bug Notes Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve. Marsh Buck confirmed still appearing in Unknown Bucks bucket. Field observation pins on map Pins now save with obs_lat/obs_lng and appear after save (post-save refreshMapPins fix Mar 20 2026) — needs production verification: confirm pins persist correctly after page reload.
 
