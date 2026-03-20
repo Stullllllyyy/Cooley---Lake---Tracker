@@ -4220,8 +4220,10 @@ function enterObsPinDropMode() {
       // Place a temporary marker
       if(obsPinDropMarker) obsPinDropMarker.remove();
       const el = document.createElement('div');
-      el.style.cssText = 'width:18px;height:18px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7)';
-      obsPinDropMarker = new mapboxgl.Marker({ element: el }).setLngLat([obsLatLng.lng, obsLatLng.lat]).addTo(mapInstance);
+      // Use hex literal — CSS vars (var(--gold)) don't resolve on off-DOM elements
+      el.style.cssText = 'width:28px;height:28px;border-radius:50%;background:#8C7355;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;flex-shrink:0';
+      el.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      obsPinDropMarker = new mapboxgl.Marker({ element: el, anchor: 'center' }).setLngLat([obsLatLng.lng, obsLatLng.lat]).addTo(mapInstance);
       // Re-open sheet
       openSheet('log');
       // Update status
