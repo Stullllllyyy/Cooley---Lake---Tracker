@@ -908,20 +908,9 @@ textarea{resize:none}
 </div>
 
 <!-- Tap-to-place: Mark Feature modal (Step 6)
-     REQUIRES: Run this SQL in Supabase before using:
-     CREATE TABLE property_markers (
-       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-       feature_type text NOT NULL,
-       name text,
-       lat float8 NOT NULL,
-       lng float8 NOT NULL,
-       date date,
-       notes text,
-       photo_url text,
-       active boolean DEFAULT true,
-       created_at timestamptz DEFAULT now()
-     );
-     lat/lng stored as float8 for full decimal precision — required for PostGIS proximity queries (Stand Intel).
+     Supabase table: property_markers
+     Actual deployed schema: id, type, name, notes, lat, lng, photo_url, created_at
+     NOTE: column is "type" (not "feature_type"), no "date" or "active" columns.
 -->
 <div class="modal-overlay ttp-modal-ov" id="ttpFeatureModal">
   <div class="ttp-form-card" onclick="event.stopPropagation()">
@@ -4622,21 +4611,19 @@ async function submitFeatureMarker() {
   const btn = document.getElementById('ttpFeatSaveBtn');
   btn.textContent = 'Saving...';
   const marker = {
-    feature_type: typeChip.textContent,
+    type: typeChip.textContent,
     name: document.getElementById('ttpFeatName').value.trim() || null,
     lat: featFormLngLat ? featFormLngLat.lat : null,
     lng: featFormLngLat ? featFormLngLat.lng : null,
-    date: document.getElementById('ttpFeatDate').value || null,
     notes: document.getElementById('ttpFeatNotes').value.trim() || null,
-    active: true,
   };
   syncDot(true);
   const {data, error} = await sb.from('property_markers').insert(marker).select().single();
   syncDot(false);
   if(error) {
-    console.error('submitFeatureMarker error:', error);
-    btn.textContent = 'Error — check Supabase table';
-    setTimeout(() => { btn.textContent = 'Save Marker'; featCheckSub(); }, 3500);
+    console.error('submitFeatureMarker Supabase error:', JSON.stringify(error));
+    showToast('Save failed: ' + (error.message || error.code || 'unknown error'), 4000);
+    btn.textContent = 'Save Marker'; featCheckSub();
     return;
   }
   // Upload photo if present
@@ -4660,13 +4647,13 @@ async function submitFeatureMarker() {
   // Add to local array and render on map
   propertyMarkers.push(data);
   addPropertyMarker(data);
-  const label = marker.name ? `${marker.feature_type}: ${marker.name}` : marker.feature_type;
+  const label = marker.name ? `${marker.type}: ${marker.name}` : marker.type;
   showToast(`${label} marked`);
 }
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*').eq('active', true);
+    const {data, error} = await sb.from('property_markers').select('*');
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -4682,11 +4669,11 @@ function renderPropertyMarkers() {
 function addPropertyMarker(m) {
   if(!mapInstance || !m.lat || !m.lng) return;
   // Visibility: Stand always shown; Scrape/Rub/Bedding respect filter pill state
-  const t = m.feature_type;
+  const t = m.type;
   if((t === 'Scrape' || t === 'Rub') && !scrapeMarkersVisible) return;
   if(t === 'Bedding' && !beddingMarkersVisible) return;
-  const color = FEAT_COLORS[m.feature_type] || '#8C7355';
-  const label = FEAT_LABELS[m.feature_type] || m.feature_type[0];
+  const color = FEAT_COLORS[t] || '#8C7355';
+  const label = FEAT_LABELS[t] || (t ? t[0] : '?');
   const el = document.createElement('div');
   el.style.cssText = `width:28px;height:28px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;font-weight:700;color:#fff;font-family:var(--font)`;
   el.textContent = label;
