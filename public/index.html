@@ -651,6 +651,104 @@ textarea{resize:none}
     </div>
   </div>
 </div>
+<!-- Tap-to-place: Field Observation modal (Step 5) -->
+<div class="modal-overlay ttp-modal-ov" id="ttpObsModal">
+  <div class="ttp-form-card" onclick="event.stopPropagation()">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span style="font-size:15px;font-weight:700;color:var(--text)">Field Observation</span>
+      </div>
+      <button onclick="cancelTtpObs()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;padding:0 2px">&#215;</button>
+    </div>
+    <!-- Coords + Move Pin -->
+    <div style="font-size:11px;color:var(--text3);margin-bottom:16px;padding:8px 10px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span id="ttpObsCoords" style="color:var(--text2);font-family:monospace;letter-spacing:0.4px">--</span>
+      </div>
+      <button onclick="obsMovePinClick()" style="background:none;border:none;color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);text-decoration:underline;padding:0">Move Pin</button>
+    </div>
+    <!-- Photo -->
+    <div class="photo-box" onclick="document.getElementById('ttpObsInput').click()" style="margin-bottom:12px">
+      <div id="ttpObsPhotoPrompt"><div style="margin-bottom:6px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:12px;color:var(--text3)">Tap to add photo (optional)</div></div>
+      <img id="ttpObsPhotoPreview" style="display:none;width:100%;max-height:160px;object-fit:cover;border-radius:10px"/>
+    </div>
+    <input type="file" id="ttpObsInput" accept="image/*" style="display:none" onchange="obsHandlePhoto(this)"/>
+    <!-- AI hint (buck-only) -->
+    <div id="ttpObsAiHint" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:2px">AI Buck ID</div>
+          <div style="font-size:12px;color:var(--text)" id="ttpObsAiText">Analyzing...</div>
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button onclick="obsAcceptAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
+          <button onclick="obsDismissAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
+        </div>
+      </div>
+      <div id="ttpObsAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
+    </div>
+    <!-- Date / Time -->
+    <div class="two-col">
+      <div><span class="field-lbl">Date</span><input type="date" id="ttpObsDate" onchange="obsUpdateMoon();obsAutoWx()"/></div>
+      <div><span class="field-lbl">Time</span><input type="time" id="ttpObsTime" onchange="obsAutoWx()"/></div>
+    </div>
+    <!-- Deer Type -->
+    <div class="field-grp"><span class="field-lbl">Deer Type *</span><div class="chip-row" id="ttpObsDeerRow"></div></div>
+    <!-- Behavior -->
+    <div class="field-grp"><span class="field-lbl">Behavior</span><div class="chip-row" id="ttpObsBehRow"></div></div>
+    <!-- Buck section — shown only when buck chip selected -->
+    <div id="ttpObsBuckSection" style="display:none">
+      <div class="field-grp">
+        <span class="field-lbl">Buck Tag <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
+        <div style="position:relative">
+          <input type="text" id="ttpObsBuckName" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off"
+            oninput="filterObsBuckSugg(this.value)"
+            onfocus="showObsBuckSugg()"
+            onblur="setTimeout(hideObsBuckSugg,200)"/>
+          <div id="ttpObsBuckDrop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:130;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px;box-shadow:0 4px 20px rgba(0,0,0,0.6)"></div>
+        </div>
+      </div>
+    </div>
+    <!-- Weather panel -->
+    <div class="wx-panel" style="margin-bottom:12px">
+      <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>Weather <span id="obsWxStat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
+      <div id="obsWxLoad" style="font-size:11px;color:var(--text3);font-style:italic;padding:4px 0 8px">Fetching conditions...</div>
+      <div id="obsWxData" style="display:none">
+        <div class="wx-grid">
+          <div class="wx-cell"><div class="wx-val" id="obsWxT">--</div><div class="wx-lbl">Temp F</div></div>
+          <div class="wx-cell"><div class="wx-val" id="obsWxW">--</div><div class="wx-lbl">Wind mph</div></div>
+          <div class="wx-cell"><div class="wx-val" id="obsWxG">--</div><div class="wx-lbl">Gust mph</div></div>
+        </div>
+        <div class="wx-row2">
+          <div class="wx-cell"><div class="wx-val" id="obsWxD">--</div><div class="wx-lbl">Wind Dir</div></div>
+          <div class="wx-cell"><div class="wx-val" id="obsWxH">--</div><div class="wx-lbl">Humidity</div></div>
+          <div class="wx-cell"><div class="wx-val" id="obsWxP">--</div><div class="wx-lbl">Precip in</div></div>
+        </div>
+        <div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl" style="margin-bottom:2px">Barometric Pressure</div><div style="font-size:13px;color:var(--text)"><span id="obsWxBp">--</span> hPa &nbsp;<span id="obsWxBpt" style="font-size:11px;color:var(--text2)"></span></div></div></div>
+        <div style="font-size:10px;color:var(--gold);text-align:center;padding:6px 0;font-style:italic">Weather auto-applied to sighting</div>
+      </div>
+    </div>
+    <!-- Wind / Temp manual override -->
+    <div class="two-col">
+      <div><span class="field-lbl">Wind Dir</span>
+        <select id="ttpObsWind"><option value="">--</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option><option>Calm</option></select>
+      </div>
+      <div><span class="field-lbl">Temp F</span><input type="number" id="ttpObsTemp" placeholder="--"/></div>
+    </div>
+    <!-- Notes -->
+    <div class="field-grp"><span class="field-lbl">Notes</span><textarea id="ttpObsNotes" rows="3" placeholder="What did you see? Antler details, direction of travel..."></textarea></div>
+    <!-- Moon row -->
+    <div class="moon-row">
+      <div id="ttpObsMoonIcon" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
+      <div><div style="font-size:13px;color:var(--text);font-weight:600" id="ttpObsMoonLbl">Select a date</div><div style="font-size:10px;color:var(--text3)">Moon phase auto-calculated</div></div>
+    </div>
+    <button class="log-btn dis" id="ttpObsSaveBtn" onclick="submitObsSighting()">Log Field Observation</button>
+  </div>
+</div>
+
 <!-- Tap-to-place: Add Camera modal (Step 4) -->
 <div class="modal-overlay ttp-modal-ov" id="ttpAddCamModal">
   <div class="ttp-form-card" onclick="event.stopPropagation()">
@@ -1208,10 +1306,9 @@ async function fetchWx(date, time) {
   stat.textContent = "fetching..."; stat.style.color = "#4A4D4E";
   try {
     const h = parseInt(time.split(":")[0]);
-    const inputDate = new Date(date + "T12:00:00");
-    const today = new Date(); today.setHours(0,0,0,0);
-    const diffDays = Math.floor((today - inputDate) / 86400000);
-    if(diffDays < 0) { load.textContent = "Future date -- no weather yet."; return; }
+    const todayStr = new Date().toISOString().split('T')[0];
+    if(date > todayStr) { load.textContent = "Future date -- no weather yet."; return; }
+    const diffDays = Math.floor((new Date(todayStr) - new Date(date)) / 86400000);
     let url, isArchive = (diffDays >= 5);
     if(isArchive) {
       url = "https://archive-api.open-meteo.com/v1/archive?latitude=" + CLAT
@@ -4042,6 +4139,7 @@ function showDet(id) {
 let tapToPlaceActive = false;
 let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
+let ttpAfterConfirm = null; // optional callback after confirmTapToPlace — bypasses event type modal
 
 // Overlay selectors disabled during tap-to-place so every tap reaches the Mapbox canvas
 const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend';
@@ -4105,7 +4203,11 @@ function confirmTapToPlace() {
     tapToPlacePreviewMarker.setDraggable(false);
   }
   document.getElementById('ttpLocModal').classList.remove('on');
-  showEventTypeModal();
+  if(ttpAfterConfirm) {
+    const cb = ttpAfterConfirm; ttpAfterConfirm = null; cb();
+  } else {
+    showEventTypeModal();
+  }
 }
 
 function cancelTapToPlace() {
@@ -4133,18 +4235,7 @@ function selectEventType(type) {
   if(type === 'camera') {
     openTtpAddCamModal();
   } else if(type === 'observation') {
-    // Save tapped coords before openSheet/initForm resets obsLatLng
-    const savedLoc = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
-    setLogMode('observation');
-    openSheet('log'); // initForm() runs inside here, sets obsLatLng = null
-    // Restore tapped location as pre-set obs pin
-    if(savedLoc) {
-      obsLatLng = savedLoc;
-      const s = document.getElementById('obsLocStatus');
-      if(s) s.innerHTML =
-        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7aaa6a" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' +
-        ' <span style="color:#7aaa6a">Pin set: ' + savedLoc.lat.toFixed(5) + ', ' + savedLoc.lng.toFixed(5) + '</span>';
-    }
+    openTtpObsModal();
   } else {
     // Feature markers — coming in Step 6
     showToast('Feature markers coming soon', 2500);
@@ -4198,6 +4289,360 @@ async function confirmTtpAddCam() {
   addCamMarkers();
   buildMapFilters();
   showToast(`Camera "${name}" added`);
+}
+
+// --- Field Observation modal state ---
+let obsFormImgFile = null;
+let obsFormLngLat = null;
+let obsFormWxFetched = null;
+let obsFormWxApplied = null;
+let obsAiHintSugg = null;
+let obsWxTimer = null;
+
+function openTtpObsModal() {
+  // Capture confirmed coords, restore pointer events + cursor (modal takes over now)
+  obsFormLngLat = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
+  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => { el.style.pointerEvents = el.dataset.ttpPe || ''; });
+  document.getElementById('map').style.cursor = '';
+  tapToPlaceActive = false;
+  // Reset form state
+  obsFormImgFile = null; obsFormWxFetched = null; obsFormWxApplied = null; obsAiHintSugg = null;
+  document.getElementById('ttpObsPhotoPreview').style.display = 'none';
+  document.getElementById('ttpObsPhotoPrompt').style.display = 'block';
+  document.getElementById('ttpObsInput').value = '';
+  document.getElementById('ttpObsAiHint').style.display = 'none';
+  document.getElementById('ttpObsNotes').value = '';
+  document.getElementById('ttpObsTemp').value = '';
+  document.getElementById('ttpObsWind').value = '';
+  document.getElementById('ttpObsBuckName').value = '';
+  document.getElementById('ttpObsBuckDrop').style.display = 'none';
+  document.getElementById('ttpObsBuckSection').style.display = 'none';
+  // Pre-fill date/time
+  const now = new Date();
+  document.getElementById('ttpObsDate').value = now.toISOString().split('T')[0];
+  document.getElementById('ttpObsTime').value = now.toTimeString().slice(0,5);
+  // Coords display
+  const ce = document.getElementById('ttpObsCoords');
+  if(ce && obsFormLngLat) ce.textContent = obsFormLngLat.lat.toFixed(5) + ', ' + obsFormLngLat.lng.toFixed(5);
+  // Wx display reset
+  document.getElementById('obsWxLoad').style.display = 'block';
+  document.getElementById('obsWxLoad').textContent = 'Fetching conditions...';
+  document.getElementById('obsWxData').style.display = 'none';
+  document.getElementById('obsWxStat').textContent = 'fetching...';
+  document.getElementById('obsWxStat').style.color = '#4A4D4E';
+  // Build chips
+  obsInitChips();
+  obsUpdateMoon();
+  obsCheckSub();
+  document.getElementById('ttpObsModal').classList.add('on');
+  // Trigger weather after modal is visible
+  setTimeout(() => obsAutoWx(), 50);
+}
+
+function obsInitChips() {
+  const dRow = document.getElementById('ttpObsDeerRow');
+  dRow.innerHTML = DTYPES.map(o =>
+    `<button class="chip" data-v="${o}" onclick="obsPickDeer(this)">${o}</button>`
+  ).join('');
+  const bRow = document.getElementById('ttpObsBehRow');
+  bRow.innerHTML = BEHS.map(o =>
+    `<button class="chip" data-v="${o}" onclick="obsPickBeh(this)">${o}</button>`
+  ).join('');
+}
+
+function obsPickDeer(btn) {
+  document.querySelectorAll('#ttpObsDeerRow .chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  const isBuck = btn.dataset.v && btn.dataset.v.includes('Buck');
+  document.getElementById('ttpObsBuckSection').style.display = isBuck ? 'block' : 'none';
+  // If switching away from buck, hide AI hint
+  if(!isBuck) document.getElementById('ttpObsAiHint').style.display = 'none';
+  // If switching to buck and a photo is already loaded, run AI hint
+  if(isBuck && obsFormImgFile) {
+    const prev = document.getElementById('ttpObsPhotoPreview');
+    if(prev.src) obsRunAiHint(prev.src);
+  }
+  obsCheckSub();
+}
+
+function obsPickBeh(btn) {
+  document.querySelectorAll('#ttpObsBehRow .chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+function obsCheckSub() {
+  const btn = document.getElementById('ttpObsSaveBtn');
+  if(!btn) return;
+  const d = document.querySelector('#ttpObsDeerRow .chip.on');
+  if(d) { btn.classList.remove('dis'); btn.classList.add('rdy'); }
+  else { btn.classList.remove('rdy'); btn.classList.add('dis'); }
+}
+
+function obsAutoWx() {
+  const d = document.getElementById('ttpObsDate').value;
+  const t = document.getElementById('ttpObsTime').value;
+  if(!d || !t) return;
+  clearTimeout(obsWxTimer);
+  obsWxTimer = setTimeout(() => obsFetchWx(d, t), 600);
+}
+
+async function obsFetchWx(date, time) {
+  const load = document.getElementById('obsWxLoad');
+  const wxd  = document.getElementById('obsWxData');
+  const stat = document.getElementById('obsWxStat');
+  load.style.display = 'block'; wxd.style.display = 'none';
+  load.textContent = 'Fetching conditions...';
+  stat.textContent = 'fetching...'; stat.style.color = '#4A4D4E';
+  try {
+    const h = parseInt(time.split(':')[0]);
+    // Weather fix: date string comparison avoids midnight/timezone errors
+    const todayStr = new Date().toISOString().split('T')[0];
+    if(date > todayStr) { load.textContent = 'Future date -- no weather yet.'; return; }
+    const diffDays = Math.floor((new Date(todayStr) - new Date(date)) / 86400000);
+    let url, isArchive = (diffDays >= 5);
+    if(isArchive) {
+      url = 'https://archive-api.open-meteo.com/v1/archive?latitude=' + CLAT
+          + '&longitude=' + CLNG + '&start_date=' + date + '&end_date=' + date
+          + '&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure'
+          + '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago';
+    } else {
+      url = 'https://api.open-meteo.com/v1/forecast?latitude=' + CLAT
+          + '&longitude=' + CLNG
+          + '&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure'
+          + '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&timezone=America%2FChicago'
+          + '&past_days=5&forecast_days=1';
+    }
+    const r = await fetch(url); const j = await r.json();
+    if(!j.hourly) throw new Error('no data');
+    let hi = h;
+    if(!isArchive) {
+      const target = date + 'T' + String(h).padStart(2,'0') + ':00';
+      hi = j.hourly.time.findIndex(t => t === target);
+      if(hi === -1) throw new Error('hour not found');
+    }
+    obsFormWxFetched = {
+      temp:     Math.round(j.hourly.temperature_2m[hi]),
+      windSpd:  Math.round(j.hourly.windspeed_10m[hi]),
+      windGst:  Math.round(j.hourly.windgusts_10m[hi]),
+      windDir:  deg2dir(j.hourly.winddirection_10m[hi]),
+      humid:    Math.round(j.hourly.relativehumidity_2m[hi]),
+      precip:   j.hourly.precipitation[hi].toFixed(2),
+      press:    Math.round(j.hourly.surface_pressure[hi]),
+    };
+    document.getElementById('obsWxT').textContent = obsFormWxFetched.temp + '\u00b0';
+    document.getElementById('obsWxW').textContent = obsFormWxFetched.windSpd;
+    document.getElementById('obsWxG').textContent = obsFormWxFetched.windGst;
+    document.getElementById('obsWxD').textContent = obsFormWxFetched.windDir;
+    document.getElementById('obsWxH').textContent = obsFormWxFetched.humid + '%';
+    document.getElementById('obsWxP').textContent = obsFormWxFetched.precip + '"';
+    document.getElementById('obsWxBp').textContent = obsFormWxFetched.press;
+    document.getElementById('obsWxBpt').textContent =
+      obsFormWxFetched.press > 1013 ? 'Rising' : obsFormWxFetched.press < 1005 ? 'Low' : 'Stable';
+    stat.textContent = isArchive ? '(historical)' : '(recent data)';
+    stat.style.color = '#7aaa6a';
+    load.style.display = 'none'; wxd.style.display = 'block';
+    // Auto-apply wind + temp
+    document.getElementById('ttpObsTemp').value = obsFormWxFetched.temp;
+    document.getElementById('ttpObsWind').value = obsFormWxFetched.windDir;
+    obsFormWxApplied = obsFormWxFetched;
+  } catch(e) {
+    load.textContent = 'Weather unavailable -- enter manually below.';
+    stat.textContent = 'unavailable'; stat.style.color = '#e87a4a';
+    console.error('obsFetchWx:', e);
+  }
+}
+
+function obsUpdateMoon() {
+  const d = document.getElementById('ttpObsDate').value;
+  if(!d) return;
+  const m = moonPhase(d);
+  const moonEmoji = {
+    'New Moon':'🌑','Waxing Crescent':'🌒','First Quarter':'🌓',
+    'Waxing Gibbous':'🌔','Full Moon':'🌕','Waning Gibbous':'🌖',
+    'Last Quarter':'🌗','Waning Crescent':'🌘'
+  };
+  document.getElementById('ttpObsMoonIcon').innerHTML =
+    `<span style="font-size:22px;line-height:1">${moonEmoji[m.l] || '🌙'}</span>`;
+  document.getElementById('ttpObsMoonLbl').textContent = m.l;
+}
+
+function obsHandlePhoto(inp) {
+  const f = inp.files[0]; if(!f) return;
+  obsFormImgFile = f;
+  const r = new FileReader();
+  r.onload = e => {
+    document.getElementById('ttpObsPhotoPrompt').style.display = 'none';
+    const p = document.getElementById('ttpObsPhotoPreview');
+    p.src = e.target.result; p.style.display = 'block';
+    // AI hint only for buck variants
+    const deerChip = document.querySelector('#ttpObsDeerRow .chip.on');
+    const isBuck = deerChip && deerChip.dataset.v && deerChip.dataset.v.includes('Buck');
+    if(isBuck) obsRunAiHint(e.target.result);
+  };
+  r.readAsDataURL(f);
+}
+
+async function obsRunAiHint(base64DataUrl) {
+  const namedBucks = getNamedBucks();
+  if(namedBucks.length === 0) return;
+  const hintBox = document.getElementById('ttpObsAiHint');
+  const hintText = document.getElementById('ttpObsAiText');
+  const hintReason = document.getElementById('ttpObsAiReason');
+  hintBox.style.display = 'block';
+  hintText.textContent = 'Analyzing photo...';
+  hintReason.textContent = '';
+  obsAiHintSugg = null;
+  try {
+    const buckProfiles = namedBucks.map(name => {
+      const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
+      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+    }).join('\n');
+    const base64 = base64DataUrl.split(',')[1];
+    const mediaType = base64DataUrl.split(';')[0].split(':')[1];
+    const response = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: [
+          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+          { type: 'text', text: `You are analyzing a photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
+        ]}]
+      })
+    });
+    const data = await response.json();
+    const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
+    const result = JSON.parse(cleaned);
+    if(result.match && result.confidence >= 50) {
+      obsAiHintSugg = result.match;
+      hintText.textContent = `${result.match} — ${result.confidence}% confidence`;
+      hintReason.textContent = result.reasoning;
+    } else {
+      hintText.textContent = 'No confident match found';
+      hintReason.textContent = result.reasoning || '';
+    }
+  } catch(e) {
+    hintText.textContent = 'AI analysis failed';
+    console.error('obsRunAiHint:', e);
+  }
+}
+
+function obsAcceptAiHint() {
+  if(obsAiHintSugg) document.getElementById('ttpObsBuckName').value = obsAiHintSugg;
+  document.getElementById('ttpObsAiHint').style.display = 'none';
+}
+function obsDismissAiHint() {
+  document.getElementById('ttpObsAiHint').style.display = 'none';
+  obsAiHintSugg = null;
+}
+
+function filterObsBuckSugg(val) {
+  const drop = document.getElementById('ttpObsBuckDrop');
+  if(!drop) return;
+  const bucks = getNamedBucks();
+  const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
+  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
+  drop.innerHTML = matches.map(b =>
+    `<div onclick="selectObsBuckSugg('${b.replace(/'/g,"\\'")}');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
+      onmousedown="event.preventDefault()">${b}</div>`
+  ).join('');
+  drop.style.display = 'block';
+}
+function showObsBuckSugg() {
+  const val = document.getElementById('ttpObsBuckName').value;
+  if(!val) filterObsBuckSugg('');
+}
+function hideObsBuckSugg() {
+  const drop = document.getElementById('ttpObsBuckDrop');
+  if(drop) drop.style.display = 'none';
+}
+function selectObsBuckSugg(name) {
+  document.getElementById('ttpObsBuckName').value = name;
+  hideObsBuckSugg();
+}
+
+function obsMovePinClick() {
+  document.getElementById('ttpObsModal').classList.remove('on');
+  // cancelTapToPlace() cleans up the preview marker and restores overlays/cursor
+  cancelTapToPlace();
+  // After new pin confirmed, update coords and reopen modal (preserving form state)
+  ttpAfterConfirm = () => {
+    const newLoc = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : obsFormLngLat;
+    cancelTapToPlace(); // clean up new preview marker + state
+    obsFormLngLat = newLoc;
+    const ce = document.getElementById('ttpObsCoords');
+    if(ce && obsFormLngLat) ce.textContent = obsFormLngLat.lat.toFixed(5) + ', ' + obsFormLngLat.lng.toFixed(5);
+    document.getElementById('ttpObsModal').classList.add('on');
+  };
+  enterTapToPlaceMode();
+}
+
+function cancelTtpObs() {
+  document.getElementById('ttpObsModal').classList.remove('on');
+  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
+  tapToPlaceLngLat = null;
+  obsFormLngLat = null;
+  obsFormImgFile = null;
+}
+
+async function submitObsSighting() {
+  const deer = document.querySelector('#ttpObsDeerRow .chip.on');
+  if(!deer) return;
+  const btn = document.getElementById('ttpObsSaveBtn');
+  btn.textContent = 'Saving...'; btn.classList.remove('rdy'); btn.classList.add('dis');
+  const beh = document.querySelector('#ttpObsBehRow .chip.on');
+  const wx = obsFormWxApplied || {};
+  const newSighting = {
+    source: 'observation',
+    date: document.getElementById('ttpObsDate').value,
+    time: document.getElementById('ttpObsTime').value + ':00',
+    camera_name: null,
+    deer_type: deer.dataset.v,
+    behavior: beh ? beh.dataset.v : null,
+    buck_name: document.getElementById('ttpObsBuckName').value.trim() || null,
+    wind_dir: document.getElementById('ttpObsWind').value || null,
+    temp_f: parseFloat(document.getElementById('ttpObsTemp').value) || null,
+    wind_speed: wx.windSpd != null ? wx.windSpd : null,
+    wind_gust:  wx.windGst != null ? wx.windGst  : null,
+    humidity:   wx.humid   != null ? wx.humid    : null,
+    precip:     wx.precip  != null ? parseFloat(wx.precip) : null,
+    pressure:   wx.press   != null ? wx.press    : null,
+    notes: document.getElementById('ttpObsNotes').value || null,
+    moon_phase: document.getElementById('ttpObsMoonLbl').textContent,
+    obs_lat: obsFormLngLat ? obsFormLngLat.lat : null,
+    obs_lng: obsFormLngLat ? obsFormLngLat.lng : null,
+    image_url: null,
+  };
+  syncDot(true);
+  const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
+  syncDot(false);
+  if(error) {
+    console.error('submitObsSighting error:', error);
+    btn.textContent = 'Error: ' + error.message.slice(0,30);
+    btn.classList.add('rdy'); btn.classList.remove('dis');
+    setTimeout(() => { btn.textContent = 'Log Field Observation'; obsCheckSub(); }, 3000);
+    return;
+  }
+  // Upload photo if present
+  if(obsFormImgFile) {
+    try {
+      syncDot(true);
+      const url = await uploadPhoto(obsFormImgFile, data.id);
+      syncDot(false);
+      if(url) { await sb.from('sightings').update({image_url: url}).eq('id', data.id); data.image_url = url; }
+    } catch(e) { syncDot(false); console.error('Obs photo upload failed:', e); }
+  }
+  // Clean up
+  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
+  tapToPlaceLngLat = null; obsFormLngLat = null; obsFormImgFile = null;
+  document.getElementById('ttpObsModal').classList.remove('on');
+  sightings.unshift(data);
+  btn.textContent = 'Log Field Observation'; obsCheckSub();
+  refreshMapPins(); refreshBucknameList(); renderDash();
+  showToast('Field observation logged!');
 }
 
 // --- Log Event mode state ---
