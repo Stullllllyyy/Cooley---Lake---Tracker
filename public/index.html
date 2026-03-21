@@ -4538,8 +4538,25 @@ async function confirmTtpAddCam() {
 
 // --- Mark Feature modal state ---
 const FEAT_TYPES = ['Stand','Scrape','Rub','Bedding'];
-const FEAT_COLORS = { Stand:'#8C7355', Scrape:'#E5B53B', Rub:'#c07b4c', Bedding:'#4a7a4e' };
-const FEAT_LABELS = { Stand:'S', Scrape:'Sc', Rub:'R', Bedding:'Bd' };
+const FEAT_COLORS  = { Stand:'#8C7355', Scrape:'#E5B53B', Rub:'#c07b4c', Bedding:'#4a7a4e' };
+const FEAT_STROKES = { Stand:'#a08468', Scrape:'#f0c75a', Rub:'#d4906a', Bedding:'#5d9462' };
+const FEAT_LABELS  = { Stand:'S', Scrape:'Sc', Rub:'R', Bedding:'Bd' };
+// Feather-style stroke SVG icons for each feature type (14×14, white stroke, 24×24 viewBox)
+const FEAT_ICONS = {
+  Stand:
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
+  Scrape:
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+    '<line x1="7" y1="4" x2="5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="17" y1="4" x2="19" y2="20"/></svg>',
+  Rub:
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
+    '<polyline points="6 12 12 4 18 12"/><line x1="12" y1="22" x2="12" y2="12"/>' +
+    '<line x1="9" y1="15" x2="15" y2="15"/><line x1="10" y1="19" x2="14" y2="19"/></svg>',
+  Bedding:
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
+    '<ellipse cx="12" cy="14" rx="9" ry="5"/><path d="M8 14Q12 10 16 14"/></svg>'
+};
 let featFormLngLat = null;
 let featFormImgFile = null;
 let propertyMarkers = [];
@@ -4668,17 +4685,28 @@ function renderPropertyMarkers() {
 
 function addPropertyMarker(m) {
   if(!mapInstance || !m.lat || !m.lng) return;
-  // Visibility: Stand always shown; Scrape/Rub/Bedding respect filter pill state
+  // Visibility: Stand always shown; Scrape/Rub respect scrapeMarkersVisible; Bedding respects beddingMarkersVisible
   const t = m.type;
   if((t === 'Scrape' || t === 'Rub') && !scrapeMarkersVisible) return;
   if(t === 'Bedding' && !beddingMarkersVisible) return;
-  const color = FEAT_COLORS[t] || '#8C7355';
-  const label = FEAT_LABELS[t] || (t ? t[0] : '?');
+  const fill   = FEAT_COLORS[t]  || '#8C7355';
+  const stroke = FEAT_STROKES[t] || '#a08468';
+  const icon   = FEAT_ICONS[t]   || '';
+  const lbl    = m.name || t;
   const el = document.createElement('div');
-  el.style.cssText = `width:28px;height:28px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;font-weight:700;color:#fff;font-family:var(--font)`;
-  el.textContent = label;
-  el.title = m.feature_type + (m.name ? ': ' + m.name : '');
-  const inst = new mapboxgl.Marker({ element: el, anchor: 'center' })
+  el.className = 'cam-marker';
+  // .cam-lbl ABOVE .cam-pin so element bottom = teardrop tip = coordinate (anchor:'bottom')
+  el.innerHTML =
+    '<div class="cam-lbl">' + lbl + '</div>' +
+    '<div class="cam-pin">' +
+      '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+      '</svg>' +
+      '<div class="cam-pin-content"><div class="cam-pin-ico">' + icon + '</div></div>' +
+    '</div>';
+  el.title = t + (m.name ? ': ' + m.name : '');
+  const inst = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, 0] })
     .setLngLat([m.lng, m.lat])
     .addTo(mapInstance);
   propertyMarkerInstances.push(inst);
