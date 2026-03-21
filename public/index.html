@@ -447,7 +447,7 @@ textarea{resize:none}
     <div class="ttp-type-opts">
       <div class="ttp-type-opt" id="ttpOptCam" onclick="selectEventType('camera')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Camera<br>Sighting</span>
+        <span>Add<br>Camera</span>
       </div>
       <div class="ttp-type-opt" id="ttpOptObs" onclick="selectEventType('observation')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -4103,8 +4103,7 @@ function showEventTypeModal() {
 function selectEventType(type) {
   document.getElementById('ttpTypeModal').classList.remove('on');
   if(type === 'camera') {
-    setLogMode('camera');
-    openSheet('log');
+    openTtpAddCamModal();
   } else if(type === 'observation') {
     // Save tapped coords before openSheet/initForm resets obsLatLng
     const savedLoc = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
@@ -4119,10 +4118,16 @@ function selectEventType(type) {
         ' <span style="color:#7aaa6a">Pin set: ' + savedLoc.lat.toFixed(5) + ', ' + savedLoc.lng.toFixed(5) + '</span>';
     }
   } else {
-    // Feature markers — coming in Step 3
+    // Feature markers — coming in Step 6
     showToast('Feature markers coming soon', 2500);
     cancelTapToPlace();
   }
+}
+
+function openTtpAddCamModal() {
+  // Step 4 — Add Camera modal (built in next step)
+  showToast('Add Camera coming soon', 2500);
+  cancelTapToPlace();
 }
 
 // --- Log Event mode state ---
