@@ -335,11 +335,19 @@ textarea{resize:none}
 
 /* ── Tap-to-place mode ───────────────────────────────────── */
 .tap-to-place #map,.tap-to-place .mapboxgl-canvas{cursor:crosshair !important}
-.ttp-cancel-pill{position:fixed;bottom:calc(var(--tab-h) + 16px + 62px);right:14px;z-index:51;display:none;align-items:center;gap:6px;background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:8px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:nowrap;user-select:none}
-.ttp-cancel-pill.show{display:flex}
-.ttp-confirm-btn{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:51;display:none;align-items:center;gap:7px;background:var(--gold);color:#fff;border:none;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.6);white-space:nowrap;user-select:none;letter-spacing:0.2px}
-.ttp-confirm-btn.show{display:flex}
-@keyframes ttpPulse{0%{box-shadow:0 0 0 0 rgba(229,181,59,0.55),0 2px 10px rgba(0,0,0,0.8)}70%{box-shadow:0 0 0 11px rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}100%{box-shadow:0 0 0 0 rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}}
+/* Override modal-overlay alignment: centered instead of bottom-sheet */
+.ttp-modal-ov{align-items:center !important;justify-content:center !important}
+/* Location confirm card */
+.ttp-loc-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:22px 20px 18px;width:min(320px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
+/* Event type card */
+.ttp-type-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 16px 16px;width:min(360px,calc(100vw - 32px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
+.ttp-type-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 12px}
+.ttp-type-opt{background:var(--surface2);border:2px solid var(--border2);border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:80px;cursor:pointer;font-size:11px;color:var(--text2);text-align:center;line-height:1.35;user-select:none;transition:border-color 0.15s,background 0.15s;font-family:var(--font)}
+.ttp-type-opt:active{transform:scale(0.96)}
+.ttp-type-opt.sel{border-color:var(--gold);background:rgba(140,115,85,0.12);color:var(--text)}
+/* Shared modal action buttons */
+.ttp-mbtn-cancel{flex:1;padding:11px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}
+.ttp-mbtn-confirm{flex:1;padding:11px;border:none;border-radius:10px;background:var(--gold);color:#fff;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 </style>
 </head>
@@ -413,15 +421,43 @@ textarea{resize:none}
   <div id="legendContent"></div>
 </div>
 
-<!-- Tap-to-place UI (cancel pill + confirm button) -->
-<div class="ttp-cancel-pill" id="ttpCancelPill" onclick="cancelTapToPlace()">
-  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  Cancel
+<!-- Tap-to-place: location confirm modal -->
+<div class="modal-overlay ttp-modal-ov" id="ttpLocModal">
+  <div class="ttp-loc-card" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span style="font-size:14px;font-weight:700;color:var(--text)">Location Set</span>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--text2);margin-bottom:6px;font-family:monospace;letter-spacing:0.5px" id="ttpLocCoords">--</div>
+    <div style="text-align:center;font-size:11px;color:var(--text3);margin-bottom:18px">Drag the pin to adjust position</div>
+    <div style="display:flex;gap:10px">
+      <button class="ttp-mbtn-cancel" onclick="cancelTapToPlace()">Cancel</button>
+      <button class="ttp-mbtn-confirm" onclick="confirmTapToPlace()">Confirm</button>
+    </div>
+  </div>
 </div>
-<button class="ttp-confirm-btn" id="ttpConfirmBtn" onclick="confirmTapToPlace()">
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-  Confirm Location
-</button>
+
+<!-- Tap-to-place: event type modal -->
+<div class="modal-overlay ttp-modal-ov" id="ttpTypeModal">
+  <div class="ttp-type-card" onclick="event.stopPropagation()">
+    <div style="font-size:14px;font-weight:700;color:var(--text);text-align:center;margin-bottom:4px">What are you logging?</div>
+    <div class="ttp-type-opts">
+      <div class="ttp-type-opt" id="ttpOptCam" onclick="selectEventType('camera')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        <span>Camera<br>Sighting</span>
+      </div>
+      <div class="ttp-type-opt" id="ttpOptObs" onclick="selectEventType('observation')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span>Field<br>Observation</span>
+      </div>
+      <div class="ttp-type-opt" id="ttpOptMark" onclick="selectEventType('feature')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+        <span>Mark<br>Feature</span>
+      </div>
+    </div>
+    <button class="ttp-mbtn-cancel" style="width:100%" onclick="cancelTapToPlace()">Cancel</button>
+  </div>
+</div>
 
 <!-- FAB Speed Dial -->
 <div class="map-fabs" id="mapFabs">
@@ -4178,38 +4214,34 @@ let tapToPlaceActive = false;
 let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
 
-// Overlay selectors that need pointer-events disabled so taps reach the map canvas
-// .map-fabs included so the FAB container (which shares z-index:50 with cancel pill)
-// doesn't swallow taps on the cancel pill
+// Overlay selectors disabled during tap-to-place so every tap reaches the Mapbox canvas
 const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend';
 
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
-  // Disable pointer events on overlays so every tap reaches the Mapbox canvas
   document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
     el.dataset.ttpPe = el.style.pointerEvents;
     el.style.pointerEvents = 'none';
   });
   document.getElementById('map').style.cursor = 'crosshair';
-  document.getElementById('ttpCancelPill').classList.add('show');
   showToast('Tap the map to place your event', 4000);
   if(mapInstance) {
     mapInstance.once('click', function(e) {
-      if(!tapToPlaceActive) return; // cancelled before tap
+      if(!tapToPlaceActive) return;
       onTapToPlaceClick(e);
     });
   }
 }
 
 function onTapToPlaceClick(e) {
-  // Restore pointer events and cursor — map is back to normal interactive state
+  // Restore map to normal interactive state after location chosen
   document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
     el.style.pointerEvents = el.dataset.ttpPe || '';
   });
   document.getElementById('map').style.cursor = '';
   tapToPlaceLngLat = { lat: e.lngLat.lat, lng: e.lngLat.lng };
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
-  // Teardrop preview pin — matches camera pin style, gold fill, pulsing glow
+  // Gold teardrop preview pin — same SVG path as camera pins, draggable
   const el = document.createElement('div');
   el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
   el.innerHTML =
@@ -4226,31 +4258,70 @@ function onTapToPlaceClick(e) {
   tapToPlacePreviewMarker.on('dragend', () => {
     const pos = tapToPlacePreviewMarker.getLngLat();
     tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    // Keep coords display in sync while dragging
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
   });
-  document.getElementById('ttpConfirmBtn').classList.add('show');
+  // Show location confirm modal with initial coordinates
+  document.getElementById('ttpLocCoords').textContent =
+    tapToPlaceLngLat.lat.toFixed(5) + ', ' + tapToPlaceLngLat.lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
 }
 
 function confirmTapToPlace() {
-  document.getElementById('ttpConfirmBtn').classList.remove('show');
-  document.getElementById('ttpCancelPill').classList.remove('show');
+  // Lock in final coords (may have been dragged) and make pin static
+  if(tapToPlacePreviewMarker) {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    tapToPlacePreviewMarker.setDraggable(false);
+  }
+  document.getElementById('ttpLocModal').classList.remove('on');
   showEventTypeModal();
 }
 
 function cancelTapToPlace() {
-  tapToPlaceActive = false; // also guards any pending once() listener
+  tapToPlaceActive = false; // guards any pending once() listener
   tapToPlaceLngLat = null;
   document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
     el.style.pointerEvents = el.dataset.ttpPe || '';
   });
   document.getElementById('map').style.cursor = '';
-  document.getElementById('ttpCancelPill').classList.remove('show');
-  document.getElementById('ttpConfirmBtn').classList.remove('show');
+  document.getElementById('ttpLocModal').classList.remove('on');
+  document.getElementById('ttpTypeModal').classList.remove('on');
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
 }
 
-// Step 2 stub — replaced when Step 2 is built
 function showEventTypeModal() {
-  showToast('Location confirmed ✓ — event type selector coming next', 3000);
+  // Reset any previous card selection
+  ['ttpOptCam','ttpOptObs','ttpOptMark'].forEach(id => {
+    document.getElementById(id)?.classList.remove('sel');
+  });
+  document.getElementById('ttpTypeModal').classList.add('on');
+}
+
+function selectEventType(type) {
+  document.getElementById('ttpTypeModal').classList.remove('on');
+  if(type === 'camera') {
+    setLogMode('camera');
+    openSheet('log');
+  } else if(type === 'observation') {
+    // Save tapped coords before openSheet/initForm resets obsLatLng
+    const savedLoc = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
+    setLogMode('observation');
+    openSheet('log'); // initForm() runs inside here, sets obsLatLng = null
+    // Restore tapped location as pre-set obs pin
+    if(savedLoc) {
+      obsLatLng = savedLoc;
+      const s = document.getElementById('obsLocStatus');
+      if(s) s.innerHTML =
+        '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#7aaa6a" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>' +
+        ' <span style="color:#7aaa6a">Pin set: ' + savedLoc.lat.toFixed(5) + ', ' + savedLoc.lng.toFixed(5) + '</span>';
+    }
+  } else {
+    // Feature markers — coming in Step 3
+    showToast('Feature markers coming soon', 2500);
+    cancelTapToPlace();
+  }
 }
 
 // --- Log Event mode state ---
