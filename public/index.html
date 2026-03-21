@@ -3955,6 +3955,7 @@ function showWhoIsThisModal(sightingId, imageUrl) {
   document.getElementById("whoResult").innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">
     <div style="font-size:20px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Analyzing photo...</div>`;
   document.getElementById("whoActions").style.display = "none";
+  const ewrap = document.getElementById("whoEditWrap"); if(ewrap) { ewrap.style.display = "none"; const ei = document.getElementById("whoEditInput"); if(ei) ei.value = ""; }
   modal.dataset.sightingId = sightingId;
   runFullAiMatch(sightingId, imageUrl);
 }
@@ -4073,11 +4074,12 @@ async function applyWhoEdit() {
   const sightingId = parseInt(modal.dataset.sightingId);
   const name = input?.value.trim();
   if(!name || !sightingId) return;
-  await sb.from('sightings').update({ buck_name: name }).eq('id', sightingId);
+  const {error} = await sb.from('sightings').update({ buck_name: name }).eq('id', sightingId);
+  if(error) { showToast('Save failed: ' + error.message); return; }
   const s = sightings.find(x => x.id === sightingId);
   if(s) s.buck_name = name;
   modal.style.display = 'none';
-  renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
+  renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
   showToast(`ID updated: ${name}`);
 }
 
@@ -4085,14 +4087,22 @@ async function applyWhoMatch() {
   const modal = document.getElementById("whoModal");
   const sightingId = parseInt(modal.dataset.sightingId);
   if(!whoMatchResult?.match || !sightingId) return;
+  const btn = document.getElementById("whoAcceptBtn");
+  if(btn) { btn.textContent = "Saving..."; btn.disabled = true; }
   // Update in Supabase
-  await sb.from("sightings").update({ buck_name: whoMatchResult.match }).eq("id", sightingId);
+  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match }).eq("id", sightingId);
+  if(error) {
+    showToast("Save failed: " + error.message);
+    if(btn) { btn.textContent = "Apply: " + whoMatchResult.match; btn.disabled = false; }
+    return;
+  }
   // Update local
   const s = sightings.find(x => x.id === sightingId);
   if(s) s.buck_name = whoMatchResult.match;
   modal.style.display = "none";
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend();
-  refreshBucknameList();
+  refreshBucknameList(); refreshMapPins();
+  showToast("Buck identified: " + whoMatchResult.match);
 }
 
 // --- detail -
