@@ -334,7 +334,6 @@ textarea{resize:none}
 .stitle{font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
 
 /* ── Tap-to-place mode ───────────────────────────────────── */
-.tap-to-place #map,.tap-to-place .mapboxgl-canvas{cursor:crosshair !important}
 /* Override modal-overlay alignment: centered instead of bottom-sheet */
 .ttp-modal-ov{align-items:center !important;justify-content:center !important}
 /* Location confirm modal — transparent so map stays visible behind card */
@@ -364,6 +363,13 @@ textarea{resize:none}
 .tcam-cam-add{padding:10px 14px;font-size:12px;color:var(--gold);font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;border-top:1px solid var(--border)}
 .tcam-add-new-wrap{padding:10px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .tcam-add-new-note{font-size:10px;color:var(--text3);line-height:1.5}
+/* Markers filter pill */
+.marker-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--font)}
+.marker-toggle-row:last-child{border-bottom:none}
+.mfp-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--surface2);color:var(--text3);transition:background 0.15s,color 0.15s;min-width:32px;text-align:center}
+.mfp-toggle.on{background:var(--gold);color:#fff}
+.markers-pill-active .map-select-wrap{border-color:rgba(140,115,85,0.6) !important}
+.markers-pill-active #markersLabel{color:var(--gold) !important}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 </style>
 </head>
@@ -416,6 +422,27 @@ textarea{resize:none}
       <span class="map-select-arrow" id="filterArrow">&#8964;</span>
     </div>
     <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
+  </div>
+  <!-- Markers visibility dropdown -->
+  <div class="map-filter-wrap" id="markersFilterWrap">
+    <div class="map-select-wrap" onclick="toggleMarkersDropdown()" id="markersSelectWrap">
+      <span id="markersLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Markers</span>
+      <span class="map-select-arrow" id="markersArrow">&#8964;</span>
+    </div>
+    <div class="buck-dropdown" id="markersDropdown" style="display:none;pointer-events:none;min-width:200px">
+      <div class="marker-toggle-row" onclick="toggleObsMarkers();event.stopPropagation()">
+        <span>Field Observations</span>
+        <div class="mfp-toggle" id="mfpObsToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleScrapeMarkers();event.stopPropagation()">
+        <span>Scrapes / Rubs</span>
+        <div class="mfp-toggle" id="mfpScrapeToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleBeddingMarkers();event.stopPropagation()">
+        <span>Bedding</span>
+        <div class="mfp-toggle" id="mfpBeddingToggle">OFF</div>
+      </div>
+    </div>
   </div>
   <!-- Map style dropdown -->
   <div class="map-filter-wrap">
@@ -1823,21 +1850,33 @@ async function addCamMarkers() {
 }
 
 let obsMarkers = [];
+// Marker visibility state — false = hidden by default
+let obsMarkersVisible = false;
+let scrapeMarkersVisible = false;
+let beddingMarkersVisible = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
   obsMarkers = [];
-  if(!mapInstance) return;
+  if(!mapInstance || !obsMarkersVisible) return;
   sightings
     .filter(s => s.source === 'observation' && s.obs_lat && s.obs_lng)
     .forEach(s => {
       const el = document.createElement('div');
-      // Hex literals — CSS vars don't resolve on off-DOM elements
-      el.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#E5B53B;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0';
-      el.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+      // Sulfur teardrop — same SVG path as cam pins, distinct fill #E5B53B vs gold #8C7355
+      // anchor:'bottom' so teardrop tip aligns to coordinate (matches cam pin architecture)
+      el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;flex-shrink:0';
+      el.innerHTML =
+        '<div style="width:30px;height:37px;position:relative;display:flex;align-items:center;justify-content:center">' +
+        '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#c9973a" stroke-width="1.5"/>' +
+        '</svg>' +
+        '<div style="position:relative;z-index:1;padding-bottom:8px">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '</div></div>';
       el.title = (s.deer_type || 'Observation') + (s.buck_name ? ' \u2014 ' + s.buck_name : '');
       el.addEventListener('click', () => showDet(s.id));
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([s.obs_lng, s.obs_lat])
         .addTo(mapInstance);
       obsMarkers.push(marker);
@@ -2192,6 +2231,55 @@ function closeAllMapDropdowns() {
   closeBuckDropdown();
   closeDateDropdown();
   closeStyleDropdown();
+  closeMarkersDropdown();
+}
+
+// --- Markers filter pill ---
+function toggleMarkersDropdown() {
+  const dd = document.getElementById('markersDropdown');
+  const arrow = document.getElementById('markersArrow');
+  const isOpen = dd.style.display !== 'none';
+  closeAllMapDropdowns();
+  if(!isOpen) {
+    dd.style.display = 'block';
+    dd.style.pointerEvents = 'auto';
+    if(arrow) arrow.classList.add('open');
+    setTimeout(() => document.addEventListener('click', closeMarkersDropdown, {once:true}), 50);
+  }
+}
+function closeMarkersDropdown() {
+  const dd = document.getElementById('markersDropdown');
+  const arrow = document.getElementById('markersArrow');
+  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
+  if(arrow) arrow.classList.remove('open');
+}
+function toggleObsMarkers() {
+  obsMarkersVisible = !obsMarkersVisible;
+  const tog = document.getElementById('mfpObsToggle');
+  tog.textContent = obsMarkersVisible ? 'ON' : 'OFF';
+  tog.classList.toggle('on', obsMarkersVisible);
+  addObsMarkers();
+  updateMarkersPillState();
+}
+function toggleScrapeMarkers() {
+  scrapeMarkersVisible = !scrapeMarkersVisible;
+  const tog = document.getElementById('mfpScrapeToggle');
+  tog.textContent = scrapeMarkersVisible ? 'ON' : 'OFF';
+  tog.classList.toggle('on', scrapeMarkersVisible);
+  renderPropertyMarkers();
+  updateMarkersPillState();
+}
+function toggleBeddingMarkers() {
+  beddingMarkersVisible = !beddingMarkersVisible;
+  const tog = document.getElementById('mfpBeddingToggle');
+  tog.textContent = beddingMarkersVisible ? 'ON' : 'OFF';
+  tog.classList.toggle('on', beddingMarkersVisible);
+  renderPropertyMarkers();
+  updateMarkersPillState();
+}
+function updateMarkersPillState() {
+  const anyOn = obsMarkersVisible || scrapeMarkersVisible || beddingMarkersVisible;
+  document.getElementById('markersFilterWrap').classList.toggle('markers-pill-active', anyOn);
 }
 
 function buildYearDropdown() { buildDateDropdown(); } // backward compat shim
@@ -4332,33 +4420,15 @@ const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement
 
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
-  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
-    el.dataset.ttpPe = el.style.pointerEvents;
-    el.style.pointerEvents = 'none';
-  });
-  document.getElementById('map').style.cursor = 'crosshair';
-  showToast('Tap the map to place your event', 4000);
-  if(mapInstance) {
-    mapInstance.once('click', function(e) {
-      if(!tapToPlaceActive) return;
-      onTapToPlaceClick(e);
-    });
-  }
-}
-
-function onTapToPlaceClick(e) {
-  // Restore map to normal interactive state after location chosen
-  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
-    el.style.pointerEvents = el.dataset.ttpPe || '';
-  });
-  document.getElementById('map').style.cursor = '';
-  tapToPlaceLngLat = { lat: e.lngLat.lat, lng: e.lngLat.lng };
+  if(!mapInstance) return;
+  // Drop pulsating draggable pin immediately at map center — no tap needed
+  const center = mapInstance.getCenter();
+  tapToPlaceLngLat = { lat: center.lat, lng: center.lng };
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
-  // Gold teardrop preview pin — same SVG path as camera pins, draggable
   const el = document.createElement('div');
   el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
   el.innerHTML =
-    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite">' +
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite" id="ttpPinInner">' +
     '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
     '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#8C7355" stroke="#a08468" stroke-width="1.5"/>' +
     '</svg>' +
@@ -4366,27 +4436,29 @@ function onTapToPlaceClick(e) {
     '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
     '</div></div>';
   tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', draggable: true })
-    .setLngLat([tapToPlaceLngLat.lng, tapToPlaceLngLat.lat])
+    .setLngLat([center.lng, center.lat])
     .addTo(mapInstance);
-  tapToPlacePreviewMarker.on('dragend', () => {
+  // Live coordinate update while dragging (drag fires continuously, dragend only at release)
+  tapToPlacePreviewMarker.on('drag', () => {
     const pos = tapToPlacePreviewMarker.getLngLat();
     tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
-    // Keep coords display in sync while dragging
     const coordEl = document.getElementById('ttpLocCoords');
     if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
   });
-  // Show location confirm modal with initial coordinates
+  // Show location confirm modal with initial center coordinates
   document.getElementById('ttpLocCoords').textContent =
-    tapToPlaceLngLat.lat.toFixed(5) + ', ' + tapToPlaceLngLat.lng.toFixed(5);
+    center.lat.toFixed(5) + ', ' + center.lng.toFixed(5);
   document.getElementById('ttpLocModal').classList.add('on');
 }
 
 function confirmTapToPlace() {
-  // Lock in final coords (may have been dragged) and make pin static
+  // Lock in final coords and stop pulse — pin is now confirmed
   if(tapToPlacePreviewMarker) {
     const pos = tapToPlacePreviewMarker.getLngLat();
     tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
     tapToPlacePreviewMarker.setDraggable(false);
+    const inner = tapToPlacePreviewMarker.getElement().querySelector('#ttpPinInner');
+    if(inner) { inner.style.animation = 'none'; inner.style.cursor = 'default'; }
   }
   document.getElementById('ttpLocModal').classList.remove('on');
   if(ttpAfterConfirm) {
@@ -4397,15 +4469,11 @@ function confirmTapToPlace() {
 }
 
 function cancelTapToPlace() {
-  tapToPlaceActive = false; // guards any pending once() listener
+  tapToPlaceActive = false;
   tapToPlaceLngLat = null;
-  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
-    el.style.pointerEvents = el.dataset.ttpPe || '';
-  });
-  document.getElementById('map').style.cursor = '';
+  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
   document.getElementById('ttpLocModal').classList.remove('on');
   document.getElementById('ttpTypeModal').classList.remove('on');
-  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
 }
 
 function showEventTypeModal() {
@@ -4611,6 +4679,10 @@ function renderPropertyMarkers() {
 
 function addPropertyMarker(m) {
   if(!mapInstance || !m.lat || !m.lng) return;
+  // Visibility: Stand always shown; Scrape/Rub/Bedding respect filter pill state
+  const t = m.feature_type;
+  if((t === 'Scrape' || t === 'Rub') && !scrapeMarkersVisible) return;
+  if(t === 'Bedding' && !beddingMarkersVisible) return;
   const color = FEAT_COLORS[m.feature_type] || '#8C7355';
   const label = FEAT_LABELS[m.feature_type] || m.feature_type[0];
   const el = document.createElement('div');
