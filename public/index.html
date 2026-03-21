@@ -342,6 +342,8 @@ textarea{resize:none}
 #ttpLocModal .ttp-loc-card{pointer-events:all}
 /* Location confirm card */
 .ttp-loc-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:22px 20px 18px;width:min(320px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
+/* Form card — wider, scrollable, for Add Camera / Field Obs / Mark Feature modals */
+.ttp-form-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 18px 20px;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - var(--tab-h) - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.8)}
 /* Event type card */
 .ttp-type-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 16px 16px;width:min(360px,calc(100vw - 32px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
 .ttp-type-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 12px}
@@ -649,6 +651,32 @@ textarea{resize:none}
     </div>
   </div>
 </div>
+<!-- Tap-to-place: Add Camera modal (Step 4) -->
+<div class="modal-overlay ttp-modal-ov" id="ttpAddCamModal">
+  <div class="ttp-form-card" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <span style="font-size:15px;font-weight:700;color:var(--text)">Add Camera</span>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:16px;padding:8px 10px;background:var(--bg);border-radius:8px;display:flex;align-items:center;gap:6px">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      <span id="ttpAddCamCoords" style="color:var(--text2);font-family:monospace;letter-spacing:0.4px">--</span>
+    </div>
+    <div class="field-grp">
+      <span class="field-lbl">Camera Name *</span>
+      <input type="text" id="ttpAddCamName" placeholder="e.g. North Ridge, Creek Cam..." autocomplete="off"/>
+    </div>
+    <div class="field-grp">
+      <span class="field-lbl">Facing Direction</span>
+      <div class="chip-row" id="ttpAddCamFacingRow"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="ttp-mbtn-cancel" onclick="cancelTtpAddCam()">Cancel</button>
+      <button class="ttp-mbtn-confirm" onclick="confirmTtpAddCam()">Add Camera</button>
+    </div>
+  </div>
+</div>
+
 <!-- ORPHANED MODAL — addCamModal was previously opened by FAB speed dial. FAB speed dial removed Mar 2026.
      This modal is pending replacement by #ttpAddCamModal (Step 4 of Log Event UX Rework). Do not use for new features. -->
 <div class="modal-overlay" id="addCamModal" onclick="if(event.target===this)cancelAddCamera()">
@@ -4125,9 +4153,51 @@ function selectEventType(type) {
 }
 
 function openTtpAddCamModal() {
-  // Step 4 — Add Camera modal (built in next step)
-  showToast('Add Camera coming soon', 2500);
+  const coordEl = document.getElementById('ttpAddCamCoords');
+  if(coordEl && tapToPlaceLngLat) {
+    coordEl.textContent = tapToPlaceLngLat.lat.toFixed(5) + ', ' + tapToPlaceLngLat.lng.toFixed(5);
+  }
+  document.getElementById('ttpAddCamName').value = '';
+  // Build facing chips
+  const row = document.getElementById('ttpAddCamFacingRow');
+  row.innerHTML = '';
+  ['N','NE','E','SE','S','SW','W','NW'].forEach(dir => {
+    const c = document.createElement('div');
+    c.className = 'chip';
+    c.textContent = dir;
+    c.onclick = () => {
+      row.querySelectorAll('.chip').forEach(x => x.classList.remove('on'));
+      c.classList.add('on');
+    };
+    row.appendChild(c);
+  });
+  document.getElementById('ttpAddCamModal').classList.add('on');
+  setTimeout(() => document.getElementById('ttpAddCamName').focus(), 120);
+}
+
+function cancelTtpAddCam() {
+  document.getElementById('ttpAddCamModal').classList.remove('on');
   cancelTapToPlace();
+}
+
+async function confirmTtpAddCam() {
+  const name = document.getElementById('ttpAddCamName').value.trim();
+  if(!name) { showToast('Camera name is required', 2000); return; }
+  const facingChip = document.getElementById('ttpAddCamFacingRow').querySelector('.chip.on');
+  const facing = facingChip ? facingChip.textContent : null;
+  // Capture loc before cancelTapToPlace() nulls it
+  const loc = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
+  if(!loc) { showToast('No location set', 2000); return; }
+  document.getElementById('ttpAddCamModal').classList.remove('on');
+  cancelTapToPlace();
+  try {
+    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true });
+  } catch(e) { console.error('Add camera error:', e); }
+  camLocations[name] = { lng: loc.lng, lat: loc.lat };
+  if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
+  addCamMarkers();
+  buildMapFilters();
+  showToast(`Camera "${name}" added`);
 }
 
 // --- Log Event mode state ---
