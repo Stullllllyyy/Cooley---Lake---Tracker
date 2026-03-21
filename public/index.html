@@ -337,6 +337,9 @@ textarea{resize:none}
 .tap-to-place #map,.tap-to-place .mapboxgl-canvas{cursor:crosshair !important}
 /* Override modal-overlay alignment: centered instead of bottom-sheet */
 .ttp-modal-ov{align-items:center !important;justify-content:center !important}
+/* Location confirm modal — transparent so map stays visible behind card */
+#ttpLocModal{background:transparent !important;pointer-events:none}
+#ttpLocModal .ttp-loc-card{pointer-events:all}
 /* Location confirm card */
 .ttp-loc-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:22px 20px 18px;width:min(320px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
 /* Event type card */
