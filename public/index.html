@@ -335,9 +335,12 @@ textarea{resize:none}
 
 /* ── Tap-to-place mode ───────────────────────────────────── */
 .tap-to-place #map,.tap-to-place .mapboxgl-canvas{cursor:crosshair !important}
-.ttp-cancel-pill{position:fixed;bottom:calc(var(--tab-h) + 16px + 62px);right:14px;z-index:50;display:none;align-items:center;gap:6px;background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:8px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:nowrap;user-select:none}
+.ttp-cancel-pill{position:fixed;bottom:calc(var(--tab-h) + 16px + 62px);right:14px;z-index:51;display:none;align-items:center;gap:6px;background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:8px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:nowrap;user-select:none}
 .ttp-cancel-pill.show{display:flex}
+.ttp-confirm-btn{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:51;display:none;align-items:center;gap:7px;background:var(--gold);color:#fff;border:none;padding:11px 22px;border-radius:22px;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.6);white-space:nowrap;user-select:none;letter-spacing:0.2px}
+.ttp-confirm-btn.show{display:flex}
 @keyframes ttpPulse{0%{box-shadow:0 0 0 0 rgba(229,181,59,0.55),0 2px 10px rgba(0,0,0,0.8)}70%{box-shadow:0 0 0 11px rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}100%{box-shadow:0 0 0 0 rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}}
+@keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 </style>
 </head>
 <body>
@@ -410,11 +413,15 @@ textarea{resize:none}
   <div id="legendContent"></div>
 </div>
 
-<!-- Tap-to-place cancel pill -->
+<!-- Tap-to-place UI (cancel pill + confirm button) -->
 <div class="ttp-cancel-pill" id="ttpCancelPill" onclick="cancelTapToPlace()">
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   Cancel
 </div>
+<button class="ttp-confirm-btn" id="ttpConfirmBtn" onclick="confirmTapToPlace()">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+  Confirm Location
+</button>
 
 <!-- FAB Speed Dial -->
 <div class="map-fabs" id="mapFabs">
@@ -4172,7 +4179,9 @@ let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
 
 // Overlay selectors that need pointer-events disabled so taps reach the map canvas
-const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.cam-popup,.movement-legend';
+// .map-fabs included so the FAB container (which shares z-index:50 with cancel pill)
+// doesn't swallow taps on the cancel pill
+const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend';
 
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
@@ -4193,19 +4202,37 @@ function enterTapToPlaceMode() {
 }
 
 function onTapToPlaceClick(e) {
-  // Restore pointer events and cursor after location chosen
+  // Restore pointer events and cursor — map is back to normal interactive state
   document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
     el.style.pointerEvents = el.dataset.ttpPe || '';
   });
   document.getElementById('map').style.cursor = '';
   tapToPlaceLngLat = { lat: e.lngLat.lat, lng: e.lngLat.lng };
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
+  // Teardrop preview pin — matches camera pin style, gold fill, pulsing glow
   const el = document.createElement('div');
-  el.style.cssText = 'width:32px;height:32px;border-radius:50%;background:#E5B53B;border:3px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;animation:ttpPulse 1.5s ease-out infinite';
-  el.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121415" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
-  tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
+  el.innerHTML =
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite">' +
+    '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#8C7355" stroke="#a08468" stroke-width="1.5"/>' +
+    '</svg>' +
+    '<div style="position:relative;z-index:1;padding-bottom:10px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '</div></div>';
+  tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', draggable: true })
     .setLngLat([tapToPlaceLngLat.lng, tapToPlaceLngLat.lat])
     .addTo(mapInstance);
+  tapToPlacePreviewMarker.on('dragend', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+  });
+  document.getElementById('ttpConfirmBtn').classList.add('show');
+}
+
+function confirmTapToPlace() {
+  document.getElementById('ttpConfirmBtn').classList.remove('show');
+  document.getElementById('ttpCancelPill').classList.remove('show');
   showEventTypeModal();
 }
 
@@ -4217,12 +4244,13 @@ function cancelTapToPlace() {
   });
   document.getElementById('map').style.cursor = '';
   document.getElementById('ttpCancelPill').classList.remove('show');
+  document.getElementById('ttpConfirmBtn').classList.remove('show');
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
 }
 
 // Step 2 stub — replaced when Step 2 is built
 function showEventTypeModal() {
-  showToast('Pin placed ✓ — event type selector coming next', 3000);
+  showToast('Location confirmed ✓ — event type selector coming next', 3000);
 }
 
 // --- Log Event mode state ---
