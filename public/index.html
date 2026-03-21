@@ -336,9 +336,9 @@ textarea{resize:none}
 /* ── Tap-to-place mode ───────────────────────────────────── */
 /* Override modal-overlay alignment: centered instead of bottom-sheet */
 .ttp-modal-ov{align-items:center !important;justify-content:center !important}
-/* Location confirm modal — transparent so map stays visible behind card */
-#ttpLocModal{background:transparent !important;pointer-events:none}
-#ttpLocModal .ttp-loc-card{pointer-events:all}
+/* Location confirm modal — transparent overlay, card at bottom so teardrop pin at map center is visible */
+#ttpLocModal{background:transparent !important;pointer-events:none;align-items:flex-end !important;justify-content:center !important}
+#ttpLocModal .ttp-loc-card{pointer-events:all;margin-bottom:16px;width:min(340px,calc(100vw - 32px))}
 /* Location confirm card */
 .ttp-loc-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:22px 20px 18px;width:min(320px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
 /* Form card — wider, scrollable, for Add Camera / Field Obs / Mark Feature modals */
@@ -464,8 +464,8 @@ textarea{resize:none}
   <div id="legendContent"></div>
 </div>
 
-<!-- Tap-to-place: location confirm modal -->
-<div class="modal-overlay ttp-modal-ov" id="ttpLocModal">
+<!-- Tap-to-place: location confirm modal — bottom-anchored so teardrop pin at map center stays visible -->
+<div class="modal-overlay" id="ttpLocModal">
   <div class="ttp-loc-card" onclick="event.stopPropagation()">
     <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:8px">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
@@ -4415,9 +4415,6 @@ let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
 let ttpAfterConfirm = null; // optional callback after confirmTapToPlace — bypasses event type modal
 
-// Overlay selectors disabled during tap-to-place so every tap reaches the Mapbox canvas
-const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend';
-
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
   if(!mapInstance) return;
@@ -4438,8 +4435,15 @@ function enterTapToPlaceMode() {
   tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', draggable: true })
     .setLngLat([center.lng, center.lat])
     .addTo(mapInstance);
-  // Live coordinate update while dragging (drag fires continuously, dragend only at release)
+  // drag: live coord display update while user is dragging
   tapToPlacePreviewMarker.on('drag', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  });
+  // dragend: authoritative final coord lock after release
+  tapToPlacePreviewMarker.on('dragend', () => {
     const pos = tapToPlacePreviewMarker.getLngLat();
     tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
     const coordEl = document.getElementById('ttpLocCoords');
@@ -4554,8 +4558,6 @@ let propertyMarkerInstances = [];
 
 function openTtpFeatureModal() {
   featFormLngLat = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
-  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => { el.style.pointerEvents = el.dataset.ttpPe || ''; });
-  document.getElementById('map').style.cursor = '';
   tapToPlaceActive = false;
   // Reset form
   featFormImgFile = null;
@@ -4704,10 +4706,8 @@ let obsAiHintSugg = null;
 let obsWxTimer = null;
 
 function openTtpObsModal() {
-  // Capture confirmed coords, restore pointer events + cursor (modal takes over now)
+  // Capture confirmed coords
   obsFormLngLat = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
-  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => { el.style.pointerEvents = el.dataset.ttpPe || ''; });
-  document.getElementById('map').style.cursor = '';
   tapToPlaceActive = false;
   // Reset form state
   obsFormImgFile = null; obsFormWxFetched = null; obsFormWxApplied = null; obsAiHintSugg = null;
