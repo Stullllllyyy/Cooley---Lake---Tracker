@@ -21,7 +21,8 @@ Near Term
 * [ ] Buck Profiles view — activate Profiles button, full buck dossier
 * [ ] Supabase Auth — email/password + magic link + invite code COOLEY2025
 * [ ] Multi-property architecture — property_id on all tables (do before Auth)
-* [ ] FAB marker system — Stand/Scrape/Rub/Bedding wired to GPS + property_markers table
+* [ ] FAB marker system — Stand/Scrape/Rub/Bedding wired to GPS + property_markers table. Stand lat/lng must be stored with full decimal precision to support proximity queries.
+* [ ] Stand Intel AI card — When stand marker tapped: nearby cameras within ~300 yards (PostGIS radius query), movement line patterns between cameras and stand, peak activity times at nearby cameras, best wind directions from historical sightings, AI "Hunt this stand when..." recommendation. Also feeds Intelligence tab Stand Intel section. Requires PostGIS — time with PostGIS enablement. Prerequisite: property_markers table live with precise lat/lng.
 * [ ] Unified Pin Management System — Phase 1: single "Add Pin" FAB flow with type selector (Camera / Stand / Scrape / Rub / Bedding / Observation), preset colors per type, distinct icon per type, edit/move/delete. Phase 2: pin filtering, pin history, Auth attribution, Hunt AI context feed. Ref: Spartan / Moultrie / OnX waypoint systems.
 * [ ] Log Event UX Rework — Tap to Place Flow: Location-first logging flow replacing current form-first approach. Tap + FAB → tap map to place pin → sheet slides up with event type selector (Camera Sighting / Field Observation / Mark Feature) → form opens with location pre-filled. Camera location becomes searchable dropdown from cameras table with inline Add New Camera option. Full spec needed before building — do not attempt without complete prompt from planning session.
 
