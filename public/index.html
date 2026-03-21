@@ -461,39 +461,7 @@ textarea{resize:none}
 
 <!-- FAB Speed Dial -->
 <div class="map-fabs" id="mapFabs">
-  <!-- Speed dial options — shown when open -->
-  <div class="fab-speed-dial" id="fabSpeedDial">
-    <div class="fab-option" onclick="closeFabDial();enterTapToPlaceMode()">
-      <span class="fab-option-lbl">Log Event</span>
-      <div class="fab-option-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-      </div>
-    </div>
-    <div class="fab-option" onclick="closeFabDial();toggleAddCamMode()" id="addCamBtn">
-      <span class="fab-option-lbl">Add Camera</span>
-      <div class="fab-option-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      </div>
-    </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Stand markers coming soon')">
-      <span class="fab-option-lbl">Add Stand</span>
-      <div class="fab-option-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M8 6l4-4 4 4"/><path d="M9 14h6"/><path d="M10 18h4"/></svg>
-      </div>
-    </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Scrape/rub markers coming soon')">
-      <span class="fab-option-lbl">Mark Scrape/Rub</span>
-      <div class="fab-option-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20 L10 14"/><path d="M8 20 L14 14"/><path d="M12 20 L18 14"/><path d="M6 4 Q12 8 18 4"/></svg>
-      </div>
-    </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Bedding area markers coming soon')">
-      <span class="fab-option-lbl">Mark Bedding</span>
-      <div class="fab-option-btn">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="14" rx="8" ry="5"/><path d="M6 14 Q8 10 12 10 Q16 10 18 14"/></svg>
-      </div>
-    </div>
-  </div>
+  <!-- Speed dial removed — + FAB now directly enters tap-to-place mode -->
   <!-- Main + FAB -->
   <div class="map-fab map-fab-main" id="fabMain" onclick="toggleFabDial()" title="Actions">
     <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -519,9 +487,6 @@ textarea{resize:none}
   <div id="popupSightings"></div>
   <div id="popupActions" style="padding:10px 12px 12px;border-top:1px solid var(--border);display:flex;gap:8px"></div>
 </div>
-
-<!-- FAB dial tap-outside overlay -->
-<div class="fab-dial-overlay" id="fabDialOverlay" onclick="closeFabDial()"></div>
 
 <!-- AI CHAT SHEET -->
 <div class="overlay" id="overlay-chat" onclick="closeSheet('chat')"></div>
@@ -583,160 +548,6 @@ textarea{resize:none}
   </div>
   <div class="sheet-body" id="intelContent">
     <div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>
-  </div>
-</div>
-
-<!-- LOG SHEET -->
-<div class="overlay" id="overlay-log" onclick="closeSheet('log')"></div>
-<div class="sheet" id="sheet-log">
-  <div class="sheet-handle"></div>
-  <div class="sheet-hdr">
-    <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      Log Event
-    </div>
-    <button class="sheet-x" onclick="closeSheet('log')">&#215;</button>
-  </div>
-
-  <!-- Mode Toggle -->
-  <div style="padding:10px 16px 0;flex-shrink:0">
-    <div style="display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:10px;overflow:hidden">
-      <button id="modeTabCam" onclick="setLogMode('camera')" style="flex:1;padding:9px 0;border:none;background:var(--gold);color:var(--bg);font-size:12px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Camera Sighting
-      </button>
-      <button id="modeTabObs" onclick="setLogMode('observation')" style="flex:1;padding:9px 0;border:none;background:transparent;color:var(--text3);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.2s">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        Field Observation
-      </button>
-    </div>
-  </div>
-
-  <div class="sheet-body">
-
-    <!-- ── CAMERA SIGHTING fields (shown in camera mode) ── -->
-    <div id="camFields">
-      <div class="photo-box" onclick="document.getElementById('finput').click()">
-        <div id="uph"><div style="margin-bottom:6px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><div style="font-size:12px;color:var(--text3);margin-top:6px">Tap to add trail cam photo</div></div>
-        <img id="uprev" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
-      </div>
-      <input type="file" id="finput" accept="image/*" style="display:none" onchange="handlePhoto(this)"/>
-    </div>
-
-    <!-- ── SHARED: Date / Time ── -->
-    <div class="two-col">
-      <div><span class="field-lbl">Date</span><input type="date" id="fd" onchange="updateMoon();autoWx()"/></div>
-      <div><span class="field-lbl" id="tlbl">Time</span><input type="time" id="ft" onchange="autoWx()"/></div>
-    </div>
-
-    <!-- ── CAMERA fields ── -->
-    <div id="camOnlyFields">
-      <div class="field-grp"><span class="field-lbl">Camera Location *</span><div class="chip-row" id="cch"></div></div>
-    </div>
-
-    <!-- ── OBSERVATION: Location picker ── -->
-    <div id="obsLocationFields" style="display:none">
-      <div class="field-grp">
-        <span class="field-lbl">Location</span>
-        <div style="display:flex;gap:6px">
-          <button id="locBtnGPS" onclick="setObsLocation('gps')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
-            GPS Blue Dot
-          </button>
-          <button id="locBtnPin" onclick="setObsLocation('pin')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:5px;transition:all 0.2s">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-            Drop Pin
-          </button>
-        </div>
-        <div id="obsLocStatus" style="margin-top:7px;font-size:11px;color:var(--text3);display:flex;align-items:center;gap:5px">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          Choose GPS location or drop a pin on the map
-        </div>
-      </div>
-    </div>
-
-    <!-- ── SHARED: Deer Type ── -->
-    <div class="field-grp"><span class="field-lbl">Deer Type *</span><div class="chip-row" id="dch"></div></div>
-
-    <!-- ── SHARED: Behavior ── -->
-    <div class="field-grp"><span class="field-lbl">Behavior</span><div class="chip-row" id="bch"></div></div>
-
-    <!-- ── SHARED: Buck Name (optional for both modes) ── -->
-    <div class="field-grp">
-      <span class="field-lbl">Buck Tag <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
-      <div style="position:relative">
-        <input type="text" id="fbuckname" placeholder="e.g. Marsh Buck, Drop Tine..." autocomplete="off"
-          oninput="filterBuckSuggestions(this.value)"
-          onfocus="showBuckSuggestions()"
-          onblur="setTimeout(hideBuckSuggestions,200)"/>
-        <datalist id="bucknamelist"></datalist>
-        <div id="buckSuggestDrop" style="display:none;position:absolute;top:100%;left:0;right:0;z-index:20;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-top:2px;box-shadow:0 4px 20px rgba(0,0,0,0.6)"></div>
-      </div>
-    </div>
-
-    <!-- ── SHARED: Wind / Temp ── -->
-    <div class="two-col">
-      <div><span class="field-lbl">Wind Dir</span>
-        <select id="fwind"><option value="">--</option><option>N</option><option>NE</option><option>E</option><option>SE</option><option>S</option><option>SW</option><option>W</option><option>NW</option><option>Calm</option></select>
-      </div>
-      <div><span class="field-lbl">Temp F</span><input type="number" id="ftemp" placeholder="--"/></div>
-    </div>
-
-    <!-- ── SHARED: Weather panel ── -->
-    <div id="wxpanel">
-      <div class="wx-panel">
-        <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Weather <span id="wxstat" style="font-size:9px;color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0">fetching...</span></div>
-        <div id="wxload" style="font-size:11px;color:var(--text3);font-style:italic;padding:4px 0 8px">Fetching conditions...</div>
-        <div id="wxdata" style="display:none">
-          <div class="wx-grid">
-            <div class="wx-cell"><div class="wx-val" id="wx-t">--</div><div class="wx-lbl">Temp F</div></div>
-            <div class="wx-cell"><div class="wx-val" id="wx-w">--</div><div class="wx-lbl">Wind mph</div></div>
-            <div class="wx-cell"><div class="wx-val" id="wx-g">--</div><div class="wx-lbl">Gust mph</div></div>
-          </div>
-          <div class="wx-row2">
-            <div class="wx-cell"><div class="wx-val" id="wx-d">--</div><div class="wx-lbl">Wind Dir</div></div>
-            <div class="wx-cell"><div class="wx-val" id="wx-h">--</div><div class="wx-lbl">Humidity</div></div>
-            <div class="wx-cell"><div class="wx-val" id="wx-p">--</div><div class="wx-lbl">Precip in</div></div>
-          </div>
-          <div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl" style="margin-bottom:2px">Barometric Pressure</div><div style="font-size:13px;color:var(--text)"><span id="wx-bp">--</span> hPa &nbsp;<span id="wx-bpt" style="font-size:11px;color:var(--text2)"></span></div></div></div>
-          <div style="font-size:10px;color:var(--gold);text-align:center;padding:6px 0;font-style:italic">Weather auto-applied to sighting</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── CAMERA: Travel Direction ── -->
-    <div id="camTravelFields">
-      <div class="field-grp">
-        <span class="field-lbl">Travel Direction</span>
-        <div class="chip-row" id="tch"></div>
-      </div>
-    </div>
-
-    <!-- ── SHARED: Notes ── -->
-    <div class="field-grp"><span class="field-lbl" id="notesLbl">Notes</span><textarea id="fnotes" rows="3" placeholder="Antler details, travel direction, buck ID notes..."></textarea></div>
-
-    <!-- ── AI Hint box (camera mode only) ── -->
-    <div id="aiHintBox" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:2px">AI Buck ID</div>
-          <div style="font-size:12px;color:var(--text)" id="aiHintText">Analyzing...</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="acceptAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
-          <button onclick="dismissAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
-        </div>
-      </div>
-      <div id="aiHintReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
-    </div>
-
-    <!-- ── SHARED: Moon row ── -->
-    <div class="moon-row">
-      <div id="micon" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></div>
-      <div><div style="font-size:13px;color:var(--text);font-weight:600" id="mlbl">Select a date</div><div style="font-size:10px;color:var(--text3)" id="msub">Moon phase auto-calculated</div></div>
-    </div>
-
-    <button class="log-btn dis" id="sbtn" onclick="submitSighting()">Log Camera Sighting</button>
   </div>
 </div>
 
@@ -835,6 +646,8 @@ textarea{resize:none}
     </div>
   </div>
 </div>
+<!-- ORPHANED MODAL — addCamModal was previously opened by FAB speed dial. FAB speed dial removed Mar 2026.
+     This modal is pending replacement by #ttpAddCamModal (Step 4 of Log Event UX Rework). Do not use for new features. -->
 <div class="modal-overlay" id="addCamModal" onclick="if(event.target===this)cancelAddCamera()">
   <div class="modal" onclick="event.stopPropagation()" style="max-height:none">
     <div class="modal-handle"></div>
@@ -870,7 +683,7 @@ textarea{resize:none}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // --- Sheet & Tab Management -
-const SHEETS = ['intel','log','sightings','detail','chat'];
+const SHEETS = ['intel','sightings','detail','chat'];
 
 function openSheet(name) {
   closeFabDial();
@@ -982,27 +795,12 @@ function updateMapWeather() {
   }).catch(()=>{});
 }
 
-// --- FAB Speed Dial ---
-let fabDialOpen = false;
+// --- FAB ---
 function toggleFabDial() {
   if(tapToPlaceActive) { cancelTapToPlace(); return; }
-  fabDialOpen = !fabDialOpen;
-  const dial = document.getElementById('fabSpeedDial');
-  const btn = document.getElementById('fabMain');
-  const overlay = document.getElementById('fabDialOverlay');
-  dial.classList.toggle('open', fabDialOpen);
-  btn.classList.toggle('open', fabDialOpen);
-  if(overlay) overlay.classList.toggle('on', fabDialOpen);
+  enterTapToPlaceMode();
 }
-function closeFabDial() {
-  fabDialOpen = false;
-  const dial = document.getElementById('fabSpeedDial');
-  const btn = document.getElementById('fabMain');
-  const overlay = document.getElementById('fabDialOverlay');
-  if(dial) dial.classList.remove('open');
-  if(btn) btn.classList.remove('open');
-  if(overlay) overlay.classList.remove('on');
-}
+function closeFabDial() { /* speed dial removed — kept for call-site compatibility */ }
 
 // --- AI Chat ---
 function openAiChat() {
@@ -1011,7 +809,7 @@ function openAiChat() {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('tab-chat')?.classList.add('on');
   // Close other sheets
-  ['intel','log','sightings','detail'].forEach(s => {
+  ['intel','sightings','detail'].forEach(s => {
     document.getElementById('sheet-'+s)?.classList.remove('open');
     document.getElementById('overlay-'+s)?.classList.remove('on');
   });
