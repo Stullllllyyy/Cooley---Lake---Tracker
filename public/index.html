@@ -334,7 +334,7 @@ textarea{resize:none}
 .stitle{font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
 
 /* ── Tap-to-place mode ───────────────────────────────────── */
-.tap-to-place #map{cursor:crosshair !important}
+.tap-to-place #map,.tap-to-place .mapboxgl-canvas{cursor:crosshair !important}
 .ttp-cancel-pill{position:fixed;bottom:calc(var(--tab-h) + 16px + 62px);right:14px;z-index:50;display:none;align-items:center;gap:6px;background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:8px 14px;border-radius:20px;font-size:12px;font-family:var(--font);cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 4px 16px rgba(0,0,0,0.5);white-space:nowrap;user-select:none}
 .ttp-cancel-pill.show{display:flex}
 @keyframes ttpPulse{0%{box-shadow:0 0 0 0 rgba(229,181,59,0.55),0 2px 10px rgba(0,0,0,0.8)}70%{box-shadow:0 0 0 11px rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}100%{box-shadow:0 0 0 0 rgba(229,181,59,0),0 2px 10px rgba(0,0,0,0.8)}}
@@ -1048,7 +1048,7 @@ const FACING_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
 const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a","#8ae84a","#f0a050"];
 const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 
-let sightings = [], curFilter = "all", curMapFilter = "all", curYear = "all";
+let sightings = [], curFilter = "all", curMapFilter = "none", curYear = "all";
 let intelYear = "all", intelBuck = "all";
 let wxFetched = null, wxApplied = null;
 let formImgFile = null;
@@ -4170,22 +4170,34 @@ function showDet(id) {
 let tapToPlaceActive = false;
 let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
-let _ttpClickHandler = null;
+
+// Overlay selectors that need pointer-events disabled so taps reach the map canvas
+const TTP_OVERLAY_SEL = '.map-hdr,.map-filter-bar,.cam-popup,.movement-legend';
 
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
-  document.body.classList.add('tap-to-place');
+  // Disable pointer events on overlays so every tap reaches the Mapbox canvas
+  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
+    el.dataset.ttpPe = el.style.pointerEvents;
+    el.style.pointerEvents = 'none';
+  });
+  document.getElementById('map').style.cursor = 'crosshair';
   document.getElementById('ttpCancelPill').classList.add('show');
   showToast('Tap the map to place your event', 4000);
-  _ttpClickHandler = function(e) {
-    mapInstance.off('click', _ttpClickHandler);
-    _ttpClickHandler = null;
-    onTapToPlaceClick(e);
-  };
-  if(mapInstance) mapInstance.on('click', _ttpClickHandler);
+  if(mapInstance) {
+    mapInstance.once('click', function(e) {
+      if(!tapToPlaceActive) return; // cancelled before tap
+      onTapToPlaceClick(e);
+    });
+  }
 }
 
 function onTapToPlaceClick(e) {
+  // Restore pointer events and cursor after location chosen
+  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
+    el.style.pointerEvents = el.dataset.ttpPe || '';
+  });
+  document.getElementById('map').style.cursor = '';
   tapToPlaceLngLat = { lat: e.lngLat.lat, lng: e.lngLat.lng };
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
   const el = document.createElement('div');
@@ -4198,15 +4210,14 @@ function onTapToPlaceClick(e) {
 }
 
 function cancelTapToPlace() {
-  tapToPlaceActive = false;
+  tapToPlaceActive = false; // also guards any pending once() listener
   tapToPlaceLngLat = null;
-  document.body.classList.remove('tap-to-place');
+  document.querySelectorAll(TTP_OVERLAY_SEL).forEach(el => {
+    el.style.pointerEvents = el.dataset.ttpPe || '';
+  });
+  document.getElementById('map').style.cursor = '';
   document.getElementById('ttpCancelPill').classList.remove('show');
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
-  if(_ttpClickHandler && mapInstance) {
-    mapInstance.off('click', _ttpClickHandler);
-    _ttpClickHandler = null;
-  }
 }
 
 // Step 2 stub — replaced when Step 2 is built
