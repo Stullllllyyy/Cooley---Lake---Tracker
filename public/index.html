@@ -420,19 +420,19 @@ textarea{resize:none}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
       </div>
     </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Stand markers coming soon')">
+    <div class="fab-option" onclick="closeFabDial();enterFeatureDropMode('stand')">
       <span class="fab-option-lbl">Add Stand</span>
       <div class="fab-option-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="M8 6l4-4 4 4"/><path d="M9 14h6"/><path d="M10 18h4"/></svg>
       </div>
     </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Scrape/rub markers coming soon')">
+    <div class="fab-option" onclick="closeFabDial();enterFeatureDropMode('scrape')">
       <span class="fab-option-lbl">Mark Scrape/Rub</span>
       <div class="fab-option-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20 L10 14"/><path d="M8 20 L14 14"/><path d="M12 20 L18 14"/><path d="M6 4 Q12 8 18 4"/></svg>
       </div>
     </div>
-    <div class="fab-option" onclick="closeFabDial();showToast('Bedding area markers coming soon')">
+    <div class="fab-option" onclick="closeFabDial();enterFeatureDropMode('bedding')">
       <span class="fab-option-lbl">Mark Bedding</span>
       <div class="fab-option-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><ellipse cx="12" cy="14" rx="8" ry="5"/><path d="M6 14 Q8 10 12 10 Q16 10 18 14"/></svg>
@@ -463,6 +463,49 @@ textarea{resize:none}
   <div class="popup-stats" id="popupStats"></div>
   <div id="popupSightings"></div>
   <div id="popupActions" style="padding:10px 12px 12px;border-top:1px solid var(--border);display:flex;gap:8px"></div>
+</div>
+
+<!-- Observation pin popup -->
+<div class="cam-popup" id="obsPopup">
+  <div class="popup-hdr">
+    <div class="popup-title" id="obsPopupTitle" style="color:var(--sulfur)">Field Observation</div>
+    <button class="popup-close" onclick="closeObsPopup()">&#215;</button>
+  </div>
+  <div id="obsPopupBody"></div>
+</div>
+
+<!-- Feature marker popup -->
+<div class="cam-popup" id="featurePopup">
+  <div class="popup-hdr">
+    <div class="popup-title" id="featurePopupTitle">Feature Marker</div>
+    <button class="popup-close" onclick="closeFeaturePopup()">&#215;</button>
+  </div>
+  <div id="featurePopupBody"></div>
+</div>
+
+<!-- Obs edit modal -->
+<div class="modal-overlay" id="obsEditModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title">Edit Observation</div>
+      <button class="modal-x" onclick="document.getElementById('obsEditModal').style.display='none'">&#215;</button>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Deer Type</span>
+      <select id="obsEditType"></select>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Behavior</span>
+      <select id="obsEditBehavior"></select>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Buck Tag</span>
+      <input id="obsEditBuckName" type="text" placeholder="Name if known"/>
+    </div>
+    <div class="field-grp"><span class="field-lbl">Notes</span>
+      <textarea id="obsEditNotes" rows="3" placeholder="Optional notes"></textarea>
+    </div>
+    <button class="save-btn" onclick="saveObsEdit()">Save Changes</button>
+    <button class="del-btn" onclick="deleteObsSightingConfirm()">Delete Observation</button>
+  </div>
 </div>
 
 <!-- FAB dial tap-outside overlay -->
@@ -1032,6 +1075,20 @@ const DTYPES = ["Buck - Mature (4.5+)","Buck - 3.5","Buck - 2.5","Buck - 1.5","D
 const BEHS = ["Feeding","Traveling","Scraping/Rubbing","Bedding","Chasing","Breeding","Alert/Spooked","Other"];
 const TRAVEL_DIRS = ["Entering","Exiting","Passing Through","Unknown"];
 const FACING_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
+const PIN_COLORS = [
+  { hex: '#8C7355', label: 'Bronze' },
+  { hex: '#E5B53B', label: 'Sulfur' },
+  { hex: '#c07b4c', label: 'Russet' },
+  { hex: '#4a7a4e', label: 'Forest' },
+  { hex: '#4a7ac8', label: 'Blue'   },
+  { hex: '#c84a4a', label: 'Red'    },
+];
+const FEATURE_TYPES = {
+  stand:   { label: 'Stand',        abbr: 'ST', color: '#8C7355' },
+  scrape:  { label: 'Scrape/Rub',   abbr: 'SR', color: '#c07b4c' },
+  rub:     { label: 'Rub',          abbr: 'RB', color: '#c07b4c' },
+  bedding: { label: 'Bedding Area', abbr: 'BD', color: '#4a7a4e' },
+};
 const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a","#8ae84a","#f0a050"];
 const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 
@@ -1420,10 +1477,10 @@ let editMode = false;
 
 async function loadCamLocations() {
   try {
-    const { data } = await sb.from('cameras').select('name, lng, lat').order('id');
+    const { data } = await sb.from('cameras').select('name, lng, lat, color').order('id');
     if(data && data.length) {
       data.forEach(c => {
-        if(c.lng && c.lat) camLocations[c.name] = { lng: c.lng, lat: c.lat };
+        if(c.lng && c.lat) camLocations[c.name] = { lng: c.lng, lat: c.lat, color: c.color || null };
       });
     }
   } catch(e) { console.log('Using default cam positions'); }
@@ -1463,6 +1520,7 @@ function initMap() {
     lineLayerAdded = true;
     addCamMarkers();
     addObsMarkers();
+    addFeatureMarkers();
     updateBuckLines();
     // Restore heatmap and core area if a buck filter is active
     if(heatmapOn) showHeatmap();
@@ -1547,14 +1605,13 @@ async function addCamMarkers() {
     const hasBuck = buckFiltered.length > 0;
 
     // Colors — faded pins keep normal color, just low opacity via CSS
+    const savedColor = pos.color || '#8C7355';
     let fill, stroke;
     if(isBuckFilter) {
-      fill = hasBuck ? buckColor(curMapFilter) : '#8C7355';
-      stroke = hasBuck ? buckColor(curMapFilter) : '#a08468';
-    } else if(mature) {
-      fill = '#8C7355'; stroke = '#a08468';
+      fill = hasBuck ? buckColor(curMapFilter) : savedColor;
+      stroke = hasBuck ? buckColor(curMapFilter) : savedColor;
     } else {
-      fill = '#8C7355'; stroke = '#a08468';
+      fill = savedColor; stroke = savedColor;
     }
 
     const el = document.createElement('div');
@@ -1665,10 +1722,12 @@ function addObsMarkers() {
     .forEach(s => {
       const el = document.createElement('div');
       // Hex literals — CSS vars don't resolve on off-DOM elements
-      el.style.cssText = 'width:26px;height:26px;border-radius:50%;background:#E5B53B;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0';
+      const obsColor = s.pin_color || '#E5B53B';
+      el.style.cssText = `width:26px;height:26px;border-radius:50%;background:${obsColor};border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0`;
       el.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
       el.title = (s.deer_type || 'Observation') + (s.buck_name ? ' \u2014 ' + s.buck_name : '');
-      el.addEventListener('click', () => showDet(s.id));
+      el.dataset.sightingId = s.id;
+      el.addEventListener('click', () => showObsPopup(s.id));
       const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([s.obs_lng, s.obs_lat])
         .addTo(mapInstance);
@@ -1680,6 +1739,7 @@ function refreshMapPins() {
   if(!mapInstance) return;
   addCamMarkers();
   addObsMarkers();
+  addFeatureMarkers();
   updateBuckLines();
   if(dotMapOn) showDotMap();
 }
@@ -2222,12 +2282,13 @@ async function showPin(camName) {
     </button>`;
   // Show popup immediately — don't block on Supabase
   popup.classList.add('show');
-  // Fetch facing direction async and fill in after popup is visible
-  const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
+  // Fetch facing + color async and fill in after popup is visible
+  const camData = await sb.from('cameras').select('facing, color').eq('name', camName).single();
   const currentFacing = camData?.data?.facing || '';
-  // Remove any existing facing row to prevent duplicates
-  const existingFacing = document.getElementById('camFacingRow');
-  if(existingFacing) existingFacing.remove();
+  const currentColor = camData?.data?.color || '#8C7355';
+  // Remove any existing facing/color rows to prevent duplicates
+  document.getElementById('camFacingRow')?.remove();
+  document.getElementById('camColorRow')?.remove();
   const facingHtml = document.createElement('div');
   facingHtml.id = 'camFacingRow';
   facingHtml.style.cssText = 'padding:8px 12px 4px;border-top:1px solid var(--border)';
@@ -2237,6 +2298,10 @@ async function showPin(camName) {
         style="padding:4px 8px;border-radius:6px;border:1px solid ${currentFacing===d?'var(--blue)':'var(--border2)'};background:${currentFacing===d?'rgba(74,127,193,0.15)':'transparent'};color:${currentFacing===d?'var(--blue)':'var(--text3)'};font-size:11px;cursor:pointer;font-family:var(--font)">${d}</button>`).join('')}
     </div>`;
   actions.parentNode.appendChild(facingHtml);
+  const colorRow = document.createElement('div');
+  colorRow.id = 'camColorRow';
+  colorRow.innerHTML = renderPinColorSwatches(currentColor, 'setCamPinColor', camName);
+  actions.parentNode.appendChild(colorRow);
 }
 
 
@@ -4889,8 +4954,314 @@ function renderDash() {
 }
 
 
+// ─── PIN COLOR SWATCHES ────────────────────────────────────────────────────
+
+function renderPinColorSwatches(currentColor, fnName, fnArg) {
+  const cur = currentColor || '#8C7355';
+  const swatches = PIN_COLORS.map(c => {
+    const active = cur === c.hex;
+    return `<div onclick="${fnName}('${fnArg}','${c.hex}',this)" title="${c.label}"
+      style="width:26px;height:26px;border-radius:50%;background:${c.hex};cursor:pointer;flex-shrink:0;
+             border:2px solid ${active ? '#fff' : 'transparent'};
+             box-shadow:${active ? '0 0 0 2px ' + c.hex : 'none'};
+             transition:all 0.15s"></div>`;
+  }).join('');
+  return `<div style="padding:10px 12px 12px;border-top:1px solid var(--border)">
+    <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">PIN COLOR</div>
+    <div style="display:flex;gap:8px;align-items:center">${swatches}</div>
+  </div>`;
+}
+
+function updateSwatchHighlight(container, selectedHex) {
+  container.querySelectorAll('div[title]').forEach(el => {
+    const active = el.style.background === selectedHex ||
+      el.getAttribute('style').includes('background:' + selectedHex);
+    el.style.border = active ? '2px solid #fff' : '2px solid transparent';
+    el.style.boxShadow = active ? '0 0 0 2px ' + selectedHex : 'none';
+  });
+}
+
+// ─── CAMERA PIN COLOR ──────────────────────────────────────────────────────
+
+async function setCamPinColor(camName, hex, swatchEl) {
+  await sb.from('cameras').update({ color: hex }).eq('name', camName);
+  if(camLocations[camName]) camLocations[camName].color = hex;
+  // Update swatch highlight in popup
+  const row = document.getElementById('camColorRow');
+  if(row) {
+    row.querySelectorAll('div[title]').forEach(el => {
+      const active = el.style.background === hex;
+      el.style.border = active ? '2px solid #fff' : '2px solid transparent';
+      el.style.boxShadow = active ? '0 0 0 2px ' + hex : 'none';
+    });
+  }
+  // Update the live pin SVG fill
+  const marker = mapMarkers[camName];
+  if(marker) {
+    const pinPath = marker.getElement().querySelector('.pin-bg path');
+    if(pinPath) { pinPath.setAttribute('fill', hex); pinPath.setAttribute('stroke', hex); }
+  }
+}
+
+// ─── OBS POPUP ────────────────────────────────────────────────────────────
+
+let obsPopupSightingId = null;
+
+function showObsPopup(sightingId) {
+  const s = sightings.find(x => x.id === sightingId);
+  if(!s) return;
+  obsPopupSightingId = sightingId;
+  const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const color = s.pin_color || '#E5B53B';
+  const coordStr = s.obs_lat && s.obs_lng
+    ? `${s.obs_lat.toFixed(5)}, ${s.obs_lng.toFixed(5)}`
+    : 'No coordinates';
+  document.getElementById('obsPopupBody').innerHTML = `
+    <div style="padding:4px 16px 10px;border-bottom:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">
+        ${s.deer_type || 'Unknown'}
+        ${bc ? `<span style="font-size:10px;margin-left:6px;padding:1px 7px;border-radius:8px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</span>` : ''}
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-top:3px">${fmtD(s.date)} &mdash; ${fmtT(s.time)}</div>
+      ${s.behavior ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${s.behavior}</div>` : ''}
+      ${s.notes ? `<div style="font-size:11px;color:var(--text3);margin-top:6px;font-style:italic;line-height:1.5">${s.notes}</div>` : ''}
+      <div style="font-size:10px;color:var(--text3);margin-top:6px">&#128205; ${coordStr}</div>
+    </div>
+    ${renderPinColorSwatches(color, 'setObsPinColor', sightingId)}
+    <div style="padding:8px 12px 12px;display:flex;gap:8px">
+      <button class="popup-act-btn" onclick="openObsEdit(${sightingId})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        Edit
+      </button>
+      <button class="popup-act-btn danger" onclick="deleteObsSightingConfirm()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete
+      </button>
+    </div>`;
+  const popup = document.getElementById('obsPopup');
+  popup.classList.add('show');
+  // Close camera popup if open
+  document.getElementById('camPopup').classList.remove('show');
+}
+
+function closeObsPopup() {
+  document.getElementById('obsPopup').classList.remove('show');
+  obsPopupSightingId = null;
+}
+
+async function setObsPinColor(sightingId, hex, swatchEl) {
+  await sb.from('sightings').update({ pin_color: hex }).eq('id', sightingId);
+  const s = sightings.find(x => x.id === sightingId);
+  if(s) s.pin_color = hex;
+  // Update swatch highlight
+  const parent = swatchEl.parentNode;
+  parent.querySelectorAll('div[title]').forEach(el => {
+    const active = el.style.background === hex;
+    el.style.border = active ? '2px solid #fff' : '2px solid transparent';
+    el.style.boxShadow = active ? '0 0 0 2px ' + hex : 'none';
+  });
+  // Update live marker color
+  const markerEl = obsMarkers.find(m => m.getElement().dataset.sightingId == sightingId);
+  if(markerEl) markerEl.getElement().style.background = hex;
+}
+
+function openObsEdit(sightingId) {
+  const s = sightings.find(x => x.id === sightingId);
+  if(!s) return;
+  obsPopupSightingId = sightingId;
+  // Populate dropdowns
+  const typeEl = document.getElementById('obsEditType');
+  typeEl.innerHTML = DTYPES.map(t => `<option${s.deer_type===t?' selected':''}>${t}</option>`).join('');
+  const behEl = document.getElementById('obsEditBehavior');
+  behEl.innerHTML = `<option value="">--</option>` + BEHS.map(b => `<option${s.behavior===b?' selected':''}>${b}</option>`).join('');
+  document.getElementById('obsEditBuckName').value = s.buck_name || '';
+  document.getElementById('obsEditNotes').value = s.notes || '';
+  closeObsPopup();
+  document.getElementById('obsEditModal').style.display = 'flex';
+}
+
+async function saveObsEdit() {
+  if(!obsPopupSightingId) return;
+  const updates = {
+    deer_type: document.getElementById('obsEditType').value,
+    behavior: document.getElementById('obsEditBehavior').value || null,
+    buck_name: document.getElementById('obsEditBuckName').value.trim() || null,
+    notes: document.getElementById('obsEditNotes').value.trim() || null,
+  };
+  syncDot(true);
+  await sb.from('sightings').update(updates).eq('id', obsPopupSightingId);
+  syncDot(false);
+  const s = sightings.find(x => x.id === obsPopupSightingId);
+  if(s) Object.assign(s, updates);
+  document.getElementById('obsEditModal').style.display = 'none';
+  refreshMapPins(); renderLog(); renderDash();
+  showToast('Observation updated');
+}
+
+function deleteObsSightingConfirm() {
+  showConfirm('Delete this observation? This cannot be undone.', async () => {
+    if(!obsPopupSightingId) return;
+    syncDot(true);
+    await sb.from('sightings').delete().eq('id', obsPopupSightingId);
+    syncDot(false);
+    sightings = sightings.filter(x => x.id !== obsPopupSightingId);
+    document.getElementById('obsEditModal').style.display = 'none';
+    closeObsPopup();
+    refreshMapPins(); renderLog(); renderDash();
+    showToast('Observation deleted');
+    obsPopupSightingId = null;
+  });
+}
+
+// ─── FEATURE MARKERS ──────────────────────────────────────────────────────
+
+let propertyMarkers = [];
+let featureMapMarkers = [];
+let featureDropType = null;
+
+async function loadPropertyMarkers() {
+  try {
+    const { data } = await sb.from('property_markers').select('*');
+    if(data) propertyMarkers = data;
+    if(mapInstance) addFeatureMarkers();
+  } catch(e) { /* table may not exist yet */ }
+}
+
+function addFeatureMarkers() {
+  featureMapMarkers.forEach(m => m.remove());
+  featureMapMarkers = [];
+  if(!mapInstance) return;
+  propertyMarkers.forEach(pm => {
+    if(!pm.lat || !pm.lng) return;
+    const ft = FEATURE_TYPES[pm.type] || { label: pm.type, abbr: '?', color: '#8C7355' };
+    const color = pm.color || ft.color;
+    const el = document.createElement('div');
+    el.style.cssText = `width:30px;height:30px;border-radius:6px;background:${color};border:2px solid #fff;
+      box-shadow:0 2px 8px rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;
+      cursor:pointer;flex-shrink:0;color:#fff;font-size:9px;font-weight:700;font-family:'Roboto',sans-serif;letter-spacing:0.3px`;
+    el.textContent = ft.abbr;
+    el.title = ft.label;
+    el.dataset.markerId = pm.id;
+    el.addEventListener('click', () => showFeaturePopup(pm.id));
+    const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+      .setLngLat([pm.lng, pm.lat])
+      .addTo(mapInstance);
+    featureMapMarkers.push(marker);
+  });
+}
+
+function showFeaturePopup(markerId) {
+  const pm = propertyMarkers.find(x => x.id === markerId);
+  if(!pm) return;
+  const ft = FEATURE_TYPES[pm.type] || { label: pm.type, abbr: '?', color: '#8C7355' };
+  const color = pm.color || ft.color;
+  document.getElementById('featurePopupTitle').textContent = ft.label;
+  document.getElementById('featurePopupTitle').style.color = color;
+  document.getElementById('featurePopupBody').innerHTML = `
+    <div style="padding:4px 16px 10px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px;color:var(--text2)">${ft.label}</div>
+      ${pm.label ? `<div style="font-size:14px;font-weight:600;color:var(--text);margin-top:2px">${pm.label}</div>` : ''}
+      <div style="font-size:10px;color:var(--text3);margin-top:6px">&#128205; ${pm.lat.toFixed(5)}, ${pm.lng.toFixed(5)}</div>
+    </div>
+    ${renderPinColorSwatches(color, 'setFeaturePinColor', markerId)}
+    <div style="padding:8px 12px 12px">
+      <button class="popup-act-btn danger" style="width:100%" onclick="deleteFeatureMarker(${markerId})">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        Delete Marker
+      </button>
+    </div>`;
+  const popup = document.getElementById('featurePopup');
+  popup.classList.add('show');
+  document.getElementById('camPopup').classList.remove('show');
+  closeObsPopup();
+}
+
+function closeFeaturePopup() {
+  document.getElementById('featurePopup').classList.remove('show');
+}
+
+async function setFeaturePinColor(markerId, hex, swatchEl) {
+  await sb.from('property_markers').update({ color: hex }).eq('id', markerId);
+  const pm = propertyMarkers.find(x => x.id === markerId);
+  if(pm) pm.color = hex;
+  // Update swatch highlight
+  const parent = swatchEl.parentNode;
+  parent.querySelectorAll('div[title]').forEach(el => {
+    const active = el.style.background === hex;
+    el.style.border = active ? '2px solid #fff' : '2px solid transparent';
+    el.style.boxShadow = active ? '0 0 0 2px ' + hex : 'none';
+  });
+  // Update live marker element
+  const markerEl = featureMapMarkers.find(m => m.getElement().dataset.markerId == markerId);
+  if(markerEl) markerEl.getElement().style.background = hex;
+  // Update popup title color
+  document.getElementById('featurePopupTitle').style.color = hex;
+}
+
+function deleteFeatureMarker(markerId) {
+  const pm = propertyMarkers.find(x => x.id === markerId);
+  const ft = pm ? (FEATURE_TYPES[pm.type] || { label: pm.type }) : { label: 'marker' };
+  showConfirm(`Delete this ${ft.label}? This cannot be undone.`, async () => {
+    syncDot(true);
+    await sb.from('property_markers').delete().eq('id', markerId);
+    syncDot(false);
+    propertyMarkers = propertyMarkers.filter(x => x.id !== markerId);
+    closeFeaturePopup();
+    addFeatureMarkers();
+    showToast('Marker deleted');
+  });
+}
+
+function enterFeatureDropMode(type) {
+  if(!mapInstance) { showToast('Map not ready'); return; }
+  featureDropType = type;
+  const ft = FEATURE_TYPES[type] || { label: type };
+  showToast(`Tap map to place ${ft.label} marker`, 4000);
+  mapInstance.once('click', async function(e) {
+    if(!featureDropType) return;
+    const { lat, lng } = e.lngLat;
+    const t = featureDropType;
+    featureDropType = null;
+    syncDot(true);
+    const { data } = await sb.from('property_markers').insert({ type: t, lat, lng }).select().single();
+    syncDot(false);
+    if(data) {
+      propertyMarkers.push(data);
+      addFeatureMarkers();
+      showToast(`${(FEATURE_TYPES[t]||{label:t}).label} marker placed`);
+    }
+  });
+}
+
+// ─── SHARED CONFIRM MODAL ─────────────────────────────────────────────────
+
+function showConfirm(message, onConfirm) {
+  let modal = document.getElementById('sharedConfirmModal');
+  if(!modal) {
+    modal = document.createElement('div');
+    modal.id = 'sharedConfirmModal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:700;display:none;align-items:center;justify-content:center;padding:24px';
+    document.body.appendChild(modal);
+  }
+  modal.innerHTML = `<div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px;width:100%;max-width:320px;box-shadow:0 8px 40px rgba(0,0,0,0.8)">
+    <div style="font-size:14px;color:var(--text);margin-bottom:16px;line-height:1.5">${message}</div>
+    <div style="display:flex;gap:8px">
+      <button onclick="document.getElementById('sharedConfirmModal').style.display='none'"
+        style="flex:1;padding:10px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>
+      <button id="sharedConfirmOk"
+        style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--red);color:#fff;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">Delete</button>
+    </div>
+  </div>`;
+  modal.style.display = 'flex';
+  document.getElementById('sharedConfirmOk').onclick = () => {
+    modal.style.display = 'none';
+    onConfirm();
+  };
+}
+
 // --- startup
 loadSightings();
+loadPropertyMarkers();
 updateMapWeather();
 
 function startMap() {
