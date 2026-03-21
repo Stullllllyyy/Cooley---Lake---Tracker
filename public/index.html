@@ -289,9 +289,6 @@ textarea{resize:none}
 .pin-menu-item:last-child{border:none}
 .pin-menu-item:active{background:var(--surface2)}
 .pin-menu-item.danger{color:var(--red)}
-/* add cam modal */
-.add-cam-modal{position:fixed;bottom:var(--tab-h);left:0;right:0;z-index:500;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:16px 16px 32px;transform:translateY(calc(100% + var(--tab-h)));transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
-.add-cam-modal.open{transform:translateY(0)}
 /* conditions overlay */
 .map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
 .map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
@@ -529,6 +526,35 @@ textarea{resize:none}
   <div class="popup-stats" id="popupStats"></div>
   <div id="popupSightings"></div>
   <div id="popupActions" style="padding:10px 12px 12px;border-top:1px solid var(--border);display:flex;gap:8px"></div>
+</div>
+
+<!-- Feature marker edit modal -->
+<div class="modal-overlay" id="featEditModal" onclick="if(event.target===this)cancelFeatEdit()">
+  <div class="modal" onclick="event.stopPropagation()" style="max-height:none">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title" id="featEditTitle">Edit Feature</div>
+      <button class="modal-x" onclick="cancelFeatEdit()">&#215;</button>
+    </div>
+    <div style="padding:4px 0 8px">
+      <div class="field-grp">
+        <span class="field-lbl">Feature Type</span>
+        <div class="chip-row" id="featEditTypeRow"></div>
+      </div>
+      <div class="field-grp">
+        <span class="field-lbl">Name <span style="color:var(--text3);font-size:9px;text-transform:none;letter-spacing:0">(optional)</span></span>
+        <input type="text" id="featEditName" placeholder="e.g. North Stand, Ditch Scrape..." autocomplete="off"/>
+      </div>
+      <div class="field-grp">
+        <span class="field-lbl">Notes</span>
+        <textarea id="featEditNotes" rows="3" placeholder="Any details about this feature..."></textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button onclick="cancelFeatEdit()" style="flex:1;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>
+        <button onclick="submitFeatEdit()" style="flex:2;padding:12px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">Save Changes</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- AI CHAT SHEET -->
@@ -972,38 +998,6 @@ textarea{resize:none}
     <div style="display:flex;gap:10px;margin-top:18px">
       <button class="ttp-mbtn-cancel" onclick="cancelTtpAddCam()">Cancel</button>
       <button class="ttp-mbtn-confirm" onclick="confirmTtpAddCam()">Add Camera</button>
-    </div>
-  </div>
-</div>
-
-<!-- ORPHANED MODAL — addCamModal was previously opened by FAB speed dial. FAB speed dial removed Mar 2026.
-     This modal is pending replacement by #ttpAddCamModal (Step 4 of Log Event UX Rework). Do not use for new features. -->
-<div class="modal-overlay" id="addCamModal" onclick="if(event.target===this)cancelAddCamera()">
-  <div class="modal" onclick="event.stopPropagation()" style="max-height:none">
-    <div class="modal-handle"></div>
-    <div class="modal-hdr">
-      <div class="modal-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        Add Camera
-      </div>
-      <button class="modal-x" onclick="cancelAddCamera()">&#215;</button>
-    </div>
-    <div style="padding:4px 0 8px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:14px;padding:8px 10px;background:var(--bg);border-radius:8px;display:flex;align-items:center;gap:6px">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        <span id="addCamCoords" style="color:var(--text2)">Tap a location on the map first</span>
-      </div>
-      <div class="field-grp">
-        <span class="field-lbl">Camera Name</span>
-        <input type="text" id="addCamName" placeholder="e.g. North Ridge, Creek Cam..." autocomplete="off"/>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button onclick="cancelAddCamera()" style="flex:1;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>
-        <button onclick="confirmAddCamera()" style="flex:2;padding:12px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:5px"><path d="M12 5v14M5 12h14"/></svg>
-          Add Camera
-        </button>
-      </div>
     </div>
   </div>
 </div>
@@ -2423,6 +2417,8 @@ async function showPin(camName) {
   const stats = document.getElementById('popupStats');
   const sights = document.getElementById('popupSightings');
   title.textContent = camName;
+  title.style.color = '';
+  stats.style.gridTemplateColumns = '';
   popup.className = 'cam-popup' + (bc_color ? ' gold' : '');
   stats.innerHTML = `
     <div class="pstat"><div class="pstat-n">${cs.length}</div><div class="pstat-l">Total</div></div>
@@ -3328,92 +3324,7 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
 }
 
 
-// --- Add camera -
-let addCamMode = false;
-let pendingCamLngLat = null;
 
-function toggleAddCamMode() {
-  addCamMode = !addCamMode;
-  const btn = document.getElementById('addCamBtn');
-
-  if(addCamMode) {
-    // Disable pointer events on all map overlays so clicks reach the map
-    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
-      el.dataset.oldPe = el.style.pointerEvents;
-      el.style.pointerEvents = 'none';
-    });
-    document.getElementById('map').style.cursor = 'crosshair';
-    const fabMain = document.getElementById('fabMain');
-    if(fabMain) { fabMain.style.background='rgba(74,127,193,0.3)'; fabMain.style.borderColor='var(--blue)'; fabMain.style.color='var(--blue)'; }
-    // Show hint
-    const hint = document.createElement('div');
-    hint.id = 'addCamHint';
-    hint.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(18,20,21,0.92);border:1px solid var(--blue);border-radius:14px;padding:16px 24px;font-size:13px;color:var(--text);z-index:400;text-align:center;pointer-events:none;box-shadow:0 4px 24px rgba(0,0,0,0.7)';
-    hint.innerHTML = '<div style="margin-bottom:8px"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div><strong style="color:var(--blue)">Add Camera Mode</strong><br/><span style="font-size:11px;color:var(--text2)">Tap anywhere on the map<br/>to place your new camera pin</span>';
-    document.body.appendChild(hint);
-    setTimeout(() => { const h = document.getElementById('addCamHint'); if(h) h.remove(); }, 3000);
-
-    // Use map click event
-    mapInstance.once('click', e => {
-      if(!addCamMode) return;
-      pendingCamLngLat = e.lngLat;
-      // Restore pointer events
-      document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
-        el.style.pointerEvents = el.dataset.oldPe || '';
-      });
-      document.getElementById('map').style.cursor = '';
-      const coordEl = document.getElementById('addCamCoords');
-      if(coordEl) coordEl.textContent = '📍 ' + e.lngLat.lat.toFixed(5) + ', ' + e.lngLat.lng.toFixed(5);
-      const nameEl = document.getElementById('addCamName');
-      if(nameEl) { nameEl.value = ''; setTimeout(() => nameEl.focus(), 100); }
-      const modal = document.getElementById('addCamModal');
-      if(modal) modal.style.display = 'flex';
-      if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';} }
-      const hintEl = document.getElementById('addCamHint');
-      if(hintEl) hintEl.remove();
-    });
-
-  } else {
-    // Restore everything
-    document.querySelectorAll('.map-hdr,.map-filter-bar,.map-fabs,.cam-popup,.movement-legend').forEach(el => {
-      el.style.pointerEvents = el.dataset.oldPe || '';
-    });
-    document.getElementById('map').style.cursor = '';
-    if(btn) { const fm=document.getElementById('fabMain');if(fm){fm.style.background='';fm.style.borderColor='';fm.style.color='';}btn.style.pointerEvents=''; }
-    cancelAddCamera();
-  }
-}
-
-async function confirmAddCamera() {
-  const name = document.getElementById('addCamName').value.trim();
-  if(!name || !pendingCamLngLat) return;
-  // Save to Supabase
-  try {
-    await sb.from('cameras').insert({
-      name, lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat, active: true
-    });
-  } catch(e) { console.error('Insert cam error:', e); }
-  // Add to local camLocations
-  camLocations[name] = { lng: pendingCamLngLat.lng, lat: pendingCamLngLat.lat };
-  // Add to CAMNAMES if not there
-  if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length-1, 0, name);
-  cancelAddCamera();
-  addCamMarkers();
-  buildMapFilters();
-  showToast(`Camera "${name}" added`);
-}
-
-function cancelAddCamera() {
-  addCamMode = false;
-  pendingCamLngLat = null;
-  const modal = document.getElementById('addCamModal');
-  if(modal) modal.style.display = 'none';
-  document.getElementById('map').style.cursor = '';
-  const fm = document.getElementById('fabMain');
-  if(fm) { fm.style.background=''; fm.style.borderColor=''; fm.style.color=''; }
-  const hint = document.getElementById('addCamHint');
-  if(hint) hint.remove();
-}
 
 // --- Pin context menu -
 let menuTargetCam = null;
@@ -4706,11 +4617,164 @@ function addPropertyMarker(m) {
       '<div class="cam-pin-content"><div class="cam-pin-ico">' + icon + '</div></div>' +
     '</div>';
   el.title = t + (m.name ? ': ' + m.name : '');
+  el.addEventListener('click', () => showFeaturePopup(m));
   const inst = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, 0] })
     .setLngLat([m.lng, m.lat])
     .addTo(mapInstance);
   propertyMarkerInstances.push(inst);
 }
+
+// --- Feature marker info card ---
+let activeFeatureMarker = null;
+
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
+
+function showFeaturePopup(m) {
+  activeFeatureMarker = m;
+  const popup  = document.getElementById('camPopup');
+  const title  = document.getElementById('popupTitle');
+  const stats  = document.getElementById('popupStats');
+  const sights = document.getElementById('popupSightings');
+  const actions = document.getElementById('popupActions');
+  // Remove any camera-specific facing row left over from a previous camera popup
+  const facingRow = document.getElementById('camFacingRow');
+  if(facingRow) facingRow.remove();
+
+  const color = FEAT_COLORS[m.type] || 'var(--gold)';
+  const label = m.name ? m.type + ': ' + m.name : m.type;
+  title.textContent = label;
+  title.style.color = color;
+  popup.className = 'cam-popup';
+
+  // 2-col stat grid: type + date added
+  const dateStr = m.created_at
+    ? new Date(m.created_at).toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'})
+    : '—';
+  stats.style.gridTemplateColumns = '1fr 1fr';
+  stats.innerHTML =
+    '<div class="pstat"><div class="pstat-n" style="font-size:15px;color:' + color + '">' + esc(m.type) + '</div><div class="pstat-l">Type</div></div>' +
+    '<div class="pstat"><div class="pstat-n" style="font-size:12px">' + dateStr + '</div><div class="pstat-l">Added</div></div>';
+
+  // Body: notes (if any) + coordinates
+  let bodyHtml = '';
+  if(m.notes) {
+    bodyHtml +=
+      '<div style="padding:10px 16px;border-top:1px solid var(--border)">' +
+      '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Notes</div>' +
+      '<div style="font-size:12px;color:var(--text2);line-height:1.6">' + esc(m.notes) + '</div>' +
+      '</div>';
+  }
+  const borderTop = m.notes ? '' : 'border-top:1px solid var(--border);';
+  bodyHtml +=
+    '<div style="padding:8px 16px 10px;' + borderTop + '">' +
+    '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Coordinates</div>' +
+    '<div style="font-size:11px;color:var(--text2);font-family:monospace">' + m.lat.toFixed(6) + ', ' + m.lng.toFixed(6) + '</div>' +
+    '</div>';
+  sights.innerHTML = bodyHtml;
+
+  // Actions: Edit / Move / Delete (two-step confirm)
+  actions.innerHTML =
+    '<button class="popup-act-btn" onclick="openFeatEdit()">' +
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+    ' Edit</button>' +
+    '<button class="popup-act-btn" onclick="moveFeatMarker()">' +
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>' +
+    ' Move</button>' +
+    '<button class="popup-act-btn danger" id="featDelBtn" onclick="deleteFeatMarker(this)">' +
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
+    ' Delete</button>';
+
+  popup.classList.add('show');
+}
+
+function openFeatEdit() {
+  if(!activeFeatureMarker) return;
+  const m = activeFeatureMarker;
+  const color = FEAT_COLORS[m.type] || 'var(--gold)';
+  const titleEl = document.getElementById('featEditTitle');
+  titleEl.textContent = 'Edit ' + m.type;
+  titleEl.style.color = color;
+  document.getElementById('featEditName').value = m.name || '';
+  document.getElementById('featEditNotes').value = m.notes || '';
+  // Build type chips
+  const row = document.getElementById('featEditTypeRow');
+  row.innerHTML = '';
+  FEAT_TYPES.forEach(t => {
+    const c = document.createElement('div');
+    c.className = 'chip' + (t === m.type ? ' on' : '');
+    c.textContent = t;
+    c.onclick = () => { row.querySelectorAll('.chip').forEach(x => x.classList.remove('on')); c.classList.add('on'); };
+    row.appendChild(c);
+  });
+  closePopup();
+  document.getElementById('featEditModal').classList.add('on');
+}
+
+async function submitFeatEdit() {
+  if(!activeFeatureMarker) return;
+  const typeChip = document.querySelector('#featEditTypeRow .chip.on');
+  if(!typeChip) { showToast('Select a feature type'); return; }
+  const updates = {
+    type: typeChip.textContent,
+    name: document.getElementById('featEditName').value.trim() || null,
+    notes: document.getElementById('featEditNotes').value.trim() || null
+  };
+  const {error} = await sb.from('property_markers').update(updates).eq('id', activeFeatureMarker.id);
+  if(error) { showToast('Save failed — try again'); return; }
+  const idx = propertyMarkers.findIndex(x => x.id === activeFeatureMarker.id);
+  if(idx >= 0) Object.assign(propertyMarkers[idx], updates);
+  const savedLabel = updates.name || updates.type;
+  activeFeatureMarker = null;
+  document.getElementById('featEditModal').classList.remove('on');
+  renderPropertyMarkers();
+  showToast(savedLabel + ' updated');
+}
+
+function cancelFeatEdit() {
+  document.getElementById('featEditModal').classList.remove('on');
+}
+
+function moveFeatMarker() {
+  if(!activeFeatureMarker) return;
+  const m = activeFeatureMarker;
+  closePopup();
+  ttpAfterConfirm = () => {
+    const newLoc = tapToPlaceLngLat;
+    cancelTapToPlace();
+    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng }).eq('id', m.id).then(({error}) => {
+      if(error) { showToast('Move failed — try again'); return; }
+      const idx = propertyMarkers.findIndex(x => x.id === m.id);
+      if(idx >= 0) { propertyMarkers[idx].lat = newLoc.lat; propertyMarkers[idx].lng = newLoc.lng; }
+      renderPropertyMarkers();
+      showToast((m.name || m.type) + ' location updated');
+    });
+    activeFeatureMarker = null;
+  };
+  enterTapToPlaceMode();
+}
+
+function deleteFeatMarker(btnEl) {
+  if(!activeFeatureMarker) return;
+  if(btnEl.dataset.pending === '1') {
+    const m = activeFeatureMarker;
+    closePopup();
+    sb.from('property_markers').delete().eq('id', m.id).then(({error}) => {
+      if(error) { showToast('Delete failed — try again'); return; }
+      propertyMarkers = propertyMarkers.filter(x => x.id !== m.id);
+      renderPropertyMarkers();
+      showToast((m.name || m.type) + ' removed');
+    });
+    activeFeatureMarker = null;
+  } else {
+    btnEl.dataset.pending = '1';
+    btnEl.textContent = 'Confirm?';
+    btnEl.style.background = 'rgba(224,85,85,0.15)';
+    setTimeout(() => {
+      if(btnEl.dataset.pending === '1') { btnEl.dataset.pending = ''; }
+    }, 3000);
+  }
+}
+
 
 // --- Field Observation modal state ---
 let obsFormImgFile = null;
