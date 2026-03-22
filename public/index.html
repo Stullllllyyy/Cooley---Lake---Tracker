@@ -2582,7 +2582,7 @@ async function saveCamPinSettings(camName) {
   if(pendingCamColor !== null) updates.color = pendingCamColor;
   if(pendingFacing !== null) updates.facing = pendingFacing;
   if(pendingCamLoc !== null) { updates.lat = pendingCamLoc.lat; updates.lng = pendingCamLoc.lng; }
-  if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
+  if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingCamLoc, pendingCamColor, pendingFacing})); return; }
   const {error} = await sb.from('cameras').update(updates).eq('name', camName);
   if(error) { showToast('Save failed'); return; }
   if(updates.color) {
