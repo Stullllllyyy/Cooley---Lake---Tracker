@@ -162,6 +162,51 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .stat-row-val{color:var(--text);font-weight:600;text-align:right;max-width:58%;font-size:11px}
 .prop-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
 
+/* intel redesign - named buck cards */
+.intel-buck-card{background:#1a1d1e;border:1px solid var(--border);border-left:3px solid var(--bronze);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color 0.2s}
+.intel-buck-card:active{opacity:0.85}
+.intel-buck-thumb{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--bronze);flex-shrink:0}
+.intel-buck-thumb-placeholder{width:52px;height:52px;border-radius:50%;background:#121415;border:2px solid var(--bronze);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.intel-buck-info{flex:1;min-width:0}
+.intel-buck-name{font-size:14px;font-weight:700;color:var(--bronze);margin-bottom:2px}
+.intel-buck-stats{font-size:11px;color:var(--silver);line-height:1.6}
+.intel-buck-stats span{color:var(--text2)}
+.intel-view-all-btn{width:100%;padding:10px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);letter-spacing:0.5px;transition:all 0.2s;margin-top:4px;margin-bottom:14px}
+.intel-view-all-btn:active{background:rgba(140,115,85,0.1)}
+
+/* intel redesign - 4-box grid */
+.intel-4grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:600px){.intel-4grid{grid-template-columns:1fr}}
+.intel-box{background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--bronze);border-radius:var(--radius);padding:14px;min-height:200px;display:flex;flex-direction:column}
+.intel-box-title{font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.intel-box-body{flex:1}
+
+/* intel redesign - conditions chart */
+.intel-conditions-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+
+/* intel redesign - AI insights */
+.intel-ai-bullet{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:12px;color:var(--silver);line-height:1.7}
+.intel-ai-bullet svg{flex-shrink:0;margin-top:4px}
+.intel-ai-loading{display:flex;align-items:center;gap:10px;padding:12px 0;font-size:12px;color:var(--text2)}
+
+/* intel redesign - recent activity row */
+.intel-activity-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:11px}
+.intel-activity-row:last-child{border:none}
+.intel-activity-row:active{background:rgba(140,115,85,0.08)}
+
+/* intel redesign - buck dossier modal */
+.dossier-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+.dossier-modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dossier-modal::-webkit-scrollbar{display:none}
+.dossier-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;border-radius:16px 16px 0 0}
+.dossier-body{padding:16px}
+.dossier-photo{width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius);margin-bottom:14px}
+.dossier-section{margin-bottom:14px}
+.dossier-section-title{font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;font-weight:700}
+
+/* intel redesign - season divider */
+.intel-season-divider{height:1px;background:var(--bronze);opacity:0.3;margin:18px 0 14px}
+
 /* sightings */
 .filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px}
 .filter-scroll::-webkit-scrollbar{display:none}
@@ -368,9 +413,67 @@ textarea{resize:none}
 .markers-pill-active .map-select-wrap{border-color:rgba(140,115,85,0.6) !important}
 .markers-pill-active #markersLabel{color:var(--gold) !important}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+/* Auth gate */
+#authGate{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.auth-card{width:100%;max-width:360px;padding:32px 24px;text-align:center}
+.auth-logo{width:80px;height:auto;margin:0 auto 16px;display:block;filter:drop-shadow(0 2px 12px rgba(140,115,85,0.3))}
+.auth-tagline{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--bronze);font-weight:600;margin-bottom:32px}
+.auth-title{font-size:18px;font-weight:700;color:var(--silver);margin-bottom:24px}
+.auth-input{width:100%;padding:12px 16px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--silver);font-size:14px;font-family:var(--font);margin-bottom:12px;outline:none;transition:border-color 0.2s}
+.auth-input:focus{border-color:var(--bronze)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--bronze);color:#fff;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
+.auth-btn:active{opacity:0.8}
+.auth-btn:disabled{opacity:0.5;cursor:default}
+.auth-link{font-size:12px;color:var(--text2);margin-top:16px;cursor:pointer;display:inline-block}
+.auth-link:hover{color:var(--bronze)}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:11px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-error{font-size:12px;color:var(--red);margin-bottom:12px;min-height:18px}
+.auth-magic{width:100%;padding:11px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;font-family:var(--font);cursor:pointer;transition:all 0.2s}
+.auth-magic:hover{border-color:var(--bronze);color:var(--bronze)}
+.auth-success{font-size:12px;color:var(--bronze);margin-top:8px}
+.auth-back{font-size:12px;color:var(--text3);margin-top:20px;cursor:pointer}
+.auth-back:hover{color:var(--silver)}
+/* Logout button */
+.logout-btn{pointer-events:auto;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.25);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;margin-left:8px;flex-shrink:0}
+.logout-btn:active{opacity:0.7}
 </style>
 </head>
 <body>
+
+<!-- Auth Gate -->
+<div id="authGate">
+  <div class="auth-card">
+    <img src="HuginnLogo.svg" class="auth-logo" alt="Huginn"/>
+    <div class="auth-tagline">Know More. Hunt Smarter.</div>
+
+    <!-- Sign In Form (default) -->
+    <div id="authSignIn">
+      <div class="auth-title">Sign In</div>
+      <div class="auth-error" id="authSignInError"></div>
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleSignIn()"/>
+      <button class="auth-btn" id="authSignInBtn" onclick="handleSignIn()">Sign In</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-magic" id="authMagicBtn" onclick="handleMagicLink()">Email me a login link</button>
+      <div id="authMagicSuccess"></div>
+      <div class="auth-link" onclick="showAuthView('signup')">Request Access</div>
+    </div>
+
+    <!-- Sign Up / Request Access Form -->
+    <div id="authSignUp" style="display:none">
+      <div class="auth-title">Request Access</div>
+      <div class="auth-error" id="authSignUpError"></div>
+      <input class="auth-input" id="authInviteCode" type="text" placeholder="Invite code" autocomplete="off"/>
+      <input class="auth-input" id="authSignUpEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authSignUpPass" type="password" placeholder="Create password" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleSignUp()"/>
+      <button class="auth-btn" id="authSignUpBtn" onclick="handleSignUp()">Create Account</button>
+      <div class="auth-back" onclick="showAuthView('signin')">&larr; Back to Sign In</div>
+    </div>
+  </div>
+</div>
 
 <div id="map"></div>
 
@@ -386,12 +489,15 @@ textarea{resize:none}
       </div>
     </div>
   </div>
-  <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
-    <div>
-      <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
-      <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+  <div style="display:flex;align-items:center;pointer-events:auto">
+    <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
+      <div>
+        <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
+        <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+      </div>
+      <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
     </div>
-    <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+    <button class="logout-btn" onclick="handleLogout()" title="Sign out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
   </div>
 </div>
 
@@ -1040,6 +1146,7 @@ textarea{resize:none}
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','sightings','trail-cam','detail','chat'];
@@ -1236,6 +1343,101 @@ const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
+
+// --- Auth gate ---
+const AUTH_INVITE_CODE = 'COOLEY2025';
+let appBooted = false;
+
+function showAuthView(view) {
+  document.getElementById('authSignIn').style.display = view === 'signin' ? 'block' : 'none';
+  document.getElementById('authSignUp').style.display = view === 'signup' ? 'block' : 'none';
+  document.getElementById('authSignInError').textContent = '';
+  document.getElementById('authSignUpError').textContent = '';
+  document.getElementById('authMagicSuccess').innerHTML = '';
+}
+
+async function handleSignIn() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authSignInError');
+  const btn = document.getElementById('authSignInBtn');
+  errEl.textContent = '';
+  if(!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if(error) errEl.textContent = error.message;
+}
+
+async function handleSignUp() {
+  const code = document.getElementById('authInviteCode').value.trim();
+  const email = document.getElementById('authSignUpEmail').value.trim();
+  const pass = document.getElementById('authSignUpPass').value;
+  const errEl = document.getElementById('authSignUpError');
+  const btn = document.getElementById('authSignUpBtn');
+  errEl.textContent = '';
+  if(code !== AUTH_INVITE_CODE) { errEl.textContent = 'Invalid invite code.'; return; }
+  if(!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+  if(pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  const { error } = await sb.auth.signUp({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if(error) { errEl.textContent = error.message; return; }
+  errEl.textContent = '';
+  showAuthView('signin');
+  document.getElementById('authSignInError').innerHTML = '<span style="color:var(--bronze)">Check your email to confirm your account, then sign in.</span>';
+}
+
+async function handleMagicLink() {
+  const email = document.getElementById('authEmail').value.trim();
+  const errEl = document.getElementById('authSignInError');
+  const successEl = document.getElementById('authMagicSuccess');
+  const btn = document.getElementById('authMagicBtn');
+  errEl.textContent = ''; successEl.innerHTML = '';
+  if(!email) { errEl.textContent = 'Enter your email address first.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const { error } = await sb.auth.signInWithOtp({ email });
+  btn.disabled = false; btn.textContent = 'Email me a login link';
+  if(error) { errEl.textContent = error.message; return; }
+  successEl.innerHTML = '<div class="auth-success">Login link sent — check your email.</div>';
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+}
+
+function bootApp() {
+  if(appBooted) return;
+  appBooted = true;
+  document.getElementById('authGate').style.display = 'none';
+  loadSightings();
+  updateMapWeather();
+  startMap();
+}
+
+function showAuthGate() {
+  appBooted = false;
+  document.getElementById('authGate').style.display = 'flex';
+  showAuthView('signin');
+  // Clear sensitive form fields
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authSignUpEmail').value = '';
+  document.getElementById('authSignUpPass').value = '';
+  document.getElementById('authInviteCode').value = '';
+}
+
+// Auth state listener
+sb.auth.onAuthStateChange((event, session) => {
+  if(session) { bootApp(); }
+  else { showAuthGate(); }
+});
+
+// Initial session check
+sb.auth.getSession().then(({ data: { session } }) => {
+  if(session) bootApp();
+  // If no session, authGate is already visible (default display:flex)
+});
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -3423,7 +3625,710 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
   </div>`;
 }
 
+// --- Intel redesign helpers ---
 
+// Deer silhouette SVG for buck cards with no photo
+const DEER_SILHOUETTE_SVG = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/><ellipse cx="12" cy="17" rx="3" ry="4" fill="none"/></svg>`;
+
+// --- Render buck profile cards into #intelBuckCards ---
+let buckCardsExpanded = false;
+
+function renderBuckCards(filteredSightings) {
+  const container = document.getElementById('intelBuckCards');
+  if(!container) return;
+
+  // Group sightings by buck_name (non-null only)
+  const buckMap = {};
+  filteredSightings.forEach(s => {
+    if(!s.buck_name || !s.buck_name.trim()) return;
+    const name = s.buck_name.trim();
+    if(!buckMap[name]) buckMap[name] = [];
+    buckMap[name].push(s);
+  });
+
+  // Sort by sighting count descending
+  const sorted = Object.entries(buckMap).sort((a, b) => b[1].length - a[1].length);
+
+  if(sorted.length === 0) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // Section title
+  let html = `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>
+    Named Bucks
+  </div>`;
+
+  const top5 = sorted.slice(0, 5);
+  const rest = sorted.slice(5);
+
+  // Render a single card
+  const renderCard = ([buckName, sights]) => {
+    // Best photo: most recent sighting with image_url
+    const withPhoto = sights.filter(s => s.image_url).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const photoUrl = withPhoto.length ? withPhoto[0].image_url : null;
+
+    // Last seen date
+    const dates = sights.map(s => s.date).filter(Boolean).sort();
+    const lastSeen = dates.length ? dates[dates.length - 1] : null;
+
+    // Most active camera
+    const camCounts = {};
+    sights.forEach(s => { if(s.camera_name) camCounts[s.camera_name] = (camCounts[s.camera_name] || 0) + 1; });
+    const topCam = Object.entries(camCounts).sort((a, b) => b[1] - a[1])[0];
+
+    // Most active time of day
+    const hourCounts = {};
+    sights.forEach(s => {
+      if(!s.time) return;
+      const h = parseInt(s.time);
+      if(h >= 5 && h < 10) hourCounts['Dawn/AM'] = (hourCounts['Dawn/AM'] || 0) + 1;
+      else if(h >= 10 && h < 16) hourCounts['Midday'] = (hourCounts['Midday'] || 0) + 1;
+      else if(h >= 16 && h < 20) hourCounts['Evening'] = (hourCounts['Evening'] || 0) + 1;
+      else hourCounts['Night'] = (hourCounts['Night'] || 0) + 1;
+    });
+    const topTime = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
+
+    const escapedName = buckName.replace(/'/g, "\\'");
+
+    return `<div class="intel-buck-card" onclick="openBuckDossier('${escapedName}')">
+      ${photoUrl
+        ? `<img class="intel-buck-thumb" src="${photoUrl}" alt="${buckName}"/>`
+        : `<div class="intel-buck-thumb-placeholder">${DEER_SILHOUETTE_SVG}</div>`}
+      <div class="intel-buck-info">
+        <div class="intel-buck-name">${buckName}</div>
+        <div class="intel-buck-stats">
+          <span>${sights.length} sighting${sights.length !== 1 ? 's' : ''}</span>
+          ${lastSeen ? ` &middot; Last seen ${fmtD(lastSeen)}` : ''}
+        </div>
+        <div class="intel-buck-stats">
+          ${topCam ? `<span>${topCam[0]}</span>` : ''}
+          ${topTime ? ` &middot; <span>${topTime[0]}</span>` : ''}
+        </div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>`;
+  };
+
+  // Render top 5
+  top5.forEach(entry => { html += renderCard(entry); });
+
+  // "View All Bucks" button + remaining cards
+  if(rest.length > 0) {
+    html += `<div id="intelBuckCardsMore" style="display:${buckCardsExpanded ? 'block' : 'none'}">`;
+    rest.forEach(entry => { html += renderCard(entry); });
+    html += `</div>`;
+    html += `<button class="intel-view-all-btn" id="intelViewAllBtn" onclick="toggleAllBucks()">
+      ${buckCardsExpanded ? 'Show Less' : `View All Bucks (${sorted.length})`}
+    </button>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function toggleAllBucks() {
+  buckCardsExpanded = !buckCardsExpanded;
+  const more = document.getElementById('intelBuckCardsMore');
+  const btn = document.getElementById('intelViewAllBtn');
+  if(more) more.style.display = buckCardsExpanded ? 'block' : 'none';
+  if(btn) {
+    // Count total from current content
+    const container = document.getElementById('intelBuckCards');
+    const total = container ? container.querySelectorAll('.intel-buck-card').length : 0;
+    btn.textContent = buckCardsExpanded ? 'Show Less' : `View All Bucks (${total})`;
+  }
+}
+
+// --- 4-Box Grid renderers (Stage 3) ---
+
+// Box 1: Wind Rose SVG
+function renderWindRose(filteredSightings) {
+  const el = document.getElementById('intelWindRoseBody');
+  if(!el) return;
+  const DIRS = ["N","NE","E","SE","S","SW","W","NW"];
+  const counts = {};
+  DIRS.forEach(d => counts[d] = 0);
+  filteredSightings.forEach(s => {
+    if(s.wind_dir && counts[s.wind_dir] !== undefined) counts[s.wind_dir]++;
+  });
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const topDir = DIRS.reduce((a, b) => counts[a] >= counts[b] ? a : b, DIRS[0]);
+
+  const size = 100, cx = size, cy = size, maxR = size * 0.75;
+  const step = (Math.PI * 2) / 8;
+  const start = -Math.PI / 2;
+
+  let rings = '', wedges = '', labels = '';
+
+  // Guide rings
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    rings += `<circle cx="${cx}" cy="${cy}" r="${maxR * pct}" fill="none" stroke="#2a2d2e" stroke-width="0.5"/>`;
+  });
+
+  // Axis lines
+  DIRS.forEach((_, i) => {
+    const a = start + i * step;
+    wedges += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a) * maxR}" y2="${cy + Math.sin(a) * maxR}" stroke="#2a2d2e" stroke-width="0.5"/>`;
+  });
+
+  // Filled wedges
+  DIRS.forEach((d, i) => {
+    const cnt = counts[d];
+    if(!cnt) return;
+    const pct = cnt / maxCount;
+    const r = Math.max(8, maxR * pct);
+    const a1 = start + i * step - step * 0.42;
+    const a2 = start + i * step + step * 0.42;
+    const isTop = d === topDir;
+    const isHigh = counts[d] >= maxCount * 0.5;
+    const fill = isTop ? '#8C7355' : isHigh ? '#BCC6CC' : '#4A4D4E';
+    const opacity = isTop ? 1 : isHigh ? 0.7 : 0.45;
+    wedges += `<path d="M ${cx} ${cy} L ${cx + Math.cos(a1)*r} ${cy + Math.sin(a1)*r} A ${r} ${r} 0 0 1 ${cx + Math.cos(a2)*r} ${cy + Math.sin(a2)*r} Z" fill="${fill}" fill-opacity="${opacity}"/>`;
+  });
+
+  // Center dot
+  wedges += `<circle cx="${cx}" cy="${cy}" r="3" fill="#4A4D4E"/>`;
+
+  // Direction labels + counts
+  DIRS.forEach((d, i) => {
+    const a = start + i * step;
+    const lr = maxR + 14;
+    const lx = cx + Math.cos(a) * lr;
+    const ly = cy + Math.sin(a) * lr + 3.5;
+    const isTop = d === topDir;
+    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" font-family="'Roboto',sans-serif" fill="${isTop ? '#8C7355' : '#8a9199'}" font-weight="${isTop ? 'bold' : 'normal'}">${d}</text>`;
+    if(counts[d] > 0) {
+      const cr = Math.max(14, maxR * (counts[d]/maxCount) * 0.6);
+      const nx = cx + Math.cos(a) * cr;
+      const ny = cy + Math.sin(a) * cr + 3.5;
+      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="8" font-family="'Roboto',sans-serif" fill="${isTop ? '#121415' : '#BCC6CC'}" font-weight="bold">${counts[d]}</text>`;
+    }
+  });
+
+  const svgW = size * 2, svgH = size * 2 + 16;
+  el.innerHTML = `<div style="display:flex;justify-content:center">
+    <svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;max-width:${svgW}px">
+      ${rings}${wedges}${labels}
+    </svg>
+  </div>`;
+}
+
+// Box 2: Activity by Time of Day (Chart.js)
+let intelActivityChartInstance = null;
+
+function renderActivityChart(filteredSightings) {
+  const el = document.getElementById('intelActivityBody');
+  if(!el) return;
+  // Destroy old chart instance if present
+  if(intelActivityChartInstance) {
+    intelActivityChartInstance.destroy();
+    intelActivityChartInstance = null;
+  }
+
+  const buckets = {
+    'Dawn (4-7a)':  [4, 7],
+    'Morning (7-10a)': [7, 10],
+    'Midday (10a-2p)': [10, 14],
+    'Afternoon (2-5p)': [14, 17],
+    'Evening (5-8p)': [17, 20],
+    'Night (8p-4a)': [20, 4]
+  };
+  const counts = {};
+  Object.keys(buckets).forEach(k => counts[k] = 0);
+  filteredSightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(buckets).forEach(([label, [start, end]]) => {
+      if(start < end ? (h >= start && h < end) : (h >= start || h < end)) counts[label]++;
+    });
+  });
+
+  // Insert canvas if not already there
+  if(!el.querySelector('canvas')) {
+    el.innerHTML = `<canvas id="intelActivityCanvas" style="width:100%;max-height:160px"></canvas>`;
+  }
+  const canvas = document.getElementById('intelActivityCanvas');
+  if(!canvas || typeof Chart === 'undefined') return;
+
+  intelActivityChartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(counts).map(k => k.replace(/\(.+\)/, '').trim()),
+      datasets: [{
+        data: Object.values(counts),
+        backgroundColor: '#8C7355',
+        borderRadius: 4,
+        maxBarThickness: 28
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d1e',
+          titleColor: '#BCC6CC',
+          bodyColor: '#BCC6CC',
+          borderColor: '#2a2c2e',
+          borderWidth: 1,
+          callbacks: {
+            title: (items) => Object.keys(counts)[items[0].dataIndex],
+            label: (item) => item.raw + ' sighting' + (item.raw !== 1 ? 's' : '')
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8a9199', font: { family: "'Roboto',sans-serif", size: 9 } },
+          grid: { display: false },
+          border: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#4A4D4E',
+            font: { family: "'Roboto',sans-serif", size: 9 },
+            stepSize: 1,
+            precision: 0
+          },
+          grid: { color: '#2a2d2e', drawBorder: false },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// Box 3: Key Insights (wrapper around fetchAiInsights)
+function renderKeyInsights(filteredSightings) {
+  console.log('[KeyInsights] renderKeyInsights called, sightings:', filteredSightings.length);
+  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  console.log('[KeyInsights] cacheKey:', cacheKey);
+  fetchAiInsights(filteredSightings, cacheKey);
+}
+
+// Box 4: Recent Camera Activity
+function renderRecentActivity(filteredSightings) {
+  const el = document.getElementById('intelRecentBody');
+  if(!el) return;
+  const recent = filteredSightings
+    .filter(s => s.date)
+    .sort((a, b) => {
+      const da = a.date + (a.time || '00:00');
+      const db = b.date + (b.time || '00:00');
+      return db.localeCompare(da);
+    })
+    .slice(0, 5);
+
+  if(!recent.length) {
+    el.innerHTML = `<div style="font-size:11px;color:var(--text3);padding:8px 0">No recent activity.</div>`;
+    return;
+  }
+
+  el.innerHTML = recent.map(s => {
+    const camName = s.camera_name || 'Field obs';
+    const escapedCam = (s.camera_name || '').replace(/'/g, "\\'");
+    const deerType = s.deer_type || 'Unknown';
+    const dateStr = s.date ? fmtD(s.date) : '';
+    const timeStr = s.time ? s.time.slice(0, 5) : '';
+    const behavior = s.behavior || '';
+    return `<div class="intel-activity-row" onclick="goToCamera('${escapedCam}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--silver);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${camName}</div>
+        <div style="font-size:10px;color:var(--text2)">${deerType}${behavior ? ' &middot; ' + behavior : ''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:10px;color:var(--text2)">${dateStr}</div>
+        <div style="font-size:10px;color:var(--text3)">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Fetch AI key insights from /api/claude.js
+let aiInsightsCache = {};
+async function fetchAiInsights(filteredSightings, cacheKey) {
+  console.log('[KeyInsights] fetchAiInsights called, cacheKey:', cacheKey);
+  const el = document.getElementById('intelAiInsights');
+  console.log('[KeyInsights] #intelAiInsights element found:', !!el);
+  if(aiInsightsCache[cacheKey]) {
+    console.log('[KeyInsights] CACHE HIT — re-rendering cached data');
+    // Re-render cached insights into fresh DOM element
+    if(el) {
+      el.innerHTML = aiInsightsCache[cacheKey].map(insight =>
+        `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+      ).join('');
+    }
+    return aiInsightsCache[cacheKey];
+  }
+  console.log('[KeyInsights] CACHE MISS — showing loading spinner');
+  if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
+
+  // Build a compact summary of sightings for the AI
+  const buckSightings = filteredSightings.filter(s => s.deer_type && s.deer_type.includes('Buck'));
+  const cameras = [...new Set(filteredSightings.map(s => s.camera_name).filter(Boolean))];
+  const namedBucks = [...new Set(filteredSightings.filter(s => s.buck_name).map(s => s.buck_name))];
+  const recentDates = filteredSightings.map(s => s.date).filter(Boolean).sort().reverse().slice(0, 10);
+  const winds = {};
+  filteredSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
+  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,3).map(([w]) => w);
+  const behaviors = {};
+  filteredSightings.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
+
+  const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
+
+  console.log('[KeyInsights] Summary built, length:', summary.length);
+  console.log('[KeyInsights] About to call /api/claude...');
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
+        }]
+      })
+    });
+    console.log('[KeyInsights] fetch response status:', resp.status, resp.statusText);
+    if(!resp.ok) {
+      console.error('[KeyInsights] HTTP error:', resp.status, resp.statusText);
+      throw new Error('HTTP ' + resp.status);
+    }
+    const data = await resp.json();
+    console.log('[KeyInsights] Response data:', JSON.stringify(data).slice(0, 500));
+    const text = data.content?.[0]?.text || '';
+    console.log('[KeyInsights] Extracted text:', text.slice(0, 300));
+    if(!text) console.warn('[KeyInsights] Empty response text, full data:', data);
+    // Parse JSON array from response
+    const match = text.match(/\[[\s\S]*\]/);
+    let insights = [];
+    if(match) {
+      console.log('[KeyInsights] JSON array matched, parsing...');
+      try { insights = JSON.parse(match[0]); } catch(e) { console.warn('[KeyInsights] JSON parse failed, using raw text:', e); insights = [text]; }
+    } else {
+      console.warn('[KeyInsights] No JSON array found in response, using raw text');
+      insights = [text];
+    }
+    console.log('[KeyInsights] Final insights count:', insights.length, insights);
+    aiInsightsCache[cacheKey] = insights;
+    console.log('[KeyInsights] About to render to DOM, el exists:', !!el);
+    if(el) {
+      el.innerHTML = insights.map(insight =>
+        `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+      ).join('');
+      console.log('[KeyInsights] Rendered to DOM, innerHTML length:', el.innerHTML.length);
+    }
+    return insights;
+  } catch(e) {
+    console.error('[KeyInsights] CATCH block error:', e);
+    if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
+    return [];
+  }
+}
+
+// Open buck dossier modal
+function openBuckDossier(buckName) {
+  const bs = sightings.filter(s => s.buck_name === buckName);
+  if(!bs.length) return;
+
+  const photos = bs.filter(s => s.image_url).sort((a,b) => b.date.localeCompare(a.date));
+  const cameras = [...new Set(bs.map(s => s.camera_name).filter(Boolean))];
+  const dates = bs.map(s => s.date).filter(Boolean).sort();
+  const behaviors = {};
+  bs.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
+  const topBehaviors = Object.entries(behaviors).sort((a,b) => b[1]-a[1]);
+
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const bWind = {}; WINDS.forEach(w => bWind[w]=0);
+  bs.forEach(s => { if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++; });
+  const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b) => bWind[b]-bWind[a]).slice(0,3);
+
+  const temps = bs.filter(s => s.temp_f).map(s => parseFloat(s.temp_f));
+  const avgTemp = temps.length ? Math.round(temps.reduce((a,b)=>a+b,0)/temps.length) : null;
+
+  // Movement summary: camera sequence
+  const camSeq = [...new Set(bs.sort((a,b) => new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00'))).map(s => s.camera_name))];
+
+  // Time of day
+  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
+  const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
+  bs.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
+    });
+  });
+  const peakTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])[0];
+
+  // Sighting history rows
+  const historyRows = bs.sort((a,b) => b.date.localeCompare(a.date)).map(s =>
+    `<div class="stat-row">
+      <span class="stat-row-lbl">${fmtD(s.date)}${s.time ? ' '+s.time.slice(0,5) : ''}</span>
+      <span class="stat-row-val" style="font-size:10px">${s.camera_name || 'Field obs'} ${s.behavior ? '&middot; '+s.behavior : ''}</span>
+    </div>`
+  ).join('');
+
+  // Build dossier modal
+  const existing = document.getElementById('buckDossierOverlay');
+  if(existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'buckDossierOverlay';
+  overlay.className = 'dossier-overlay';
+  overlay.onclick = function(e) { if(e.target === this) closeBuckDossier(); };
+  overlay.innerHTML = `
+    <div class="dossier-modal">
+      <div class="dossier-hdr">
+        <div style="font-size:16px;font-weight:700;color:var(--bronze)">${buckName}</div>
+        <button onclick="closeBuckDossier()" style="width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#215;</button>
+      </div>
+      <div class="dossier-body">
+        ${photos.length ? `<img class="dossier-photo" src="${photos[0].image_url}" alt="${buckName}"/>` : ''}
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Overview</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:700;color:var(--bronze)">${bs.length}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Sightings</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:700;color:var(--bronze)">${cameras.length}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Cameras</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:14px;font-weight:700;color:var(--bronze)">${peakTime ? peakTime[0] : '--'}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Peak Time</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Camera Locations</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${cameras.map(c => {
+              const cnt = bs.filter(s => s.camera_name === c).length;
+              return `<span style="font-size:11px;padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text2)">${c} <strong style="color:var(--bronze)">${cnt}</strong></span>`;
+            }).join('')}
+          </div>
+        </div>
+
+        ${bTopWinds.length ? `<div class="dossier-section">
+          <div class="dossier-section-title">Wind Preference</div>
+          <div style="font-size:12px;color:var(--silver)">${bTopWinds.join(', ')} winds${avgTemp ? ' &middot; Avg temp '+avgTemp+'F' : ''}</div>
+        </div>` : ''}
+
+        ${topBehaviors.length ? `<div class="dossier-section">
+          <div class="dossier-section-title">Behavior Breakdown</div>
+          ${topBehaviors.map(([b,c]) => {
+            const pct = Math.round(c/bs.length*100);
+            return `<div style="margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+                <span style="color:var(--text2)">${b}</span><span style="color:var(--bronze)">${c} (${pct}%)</span>
+              </div>
+              <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:var(--bronze);border-radius:2px"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        ${camSeq.length > 1 ? `<div class="dossier-section">
+          <div class="dossier-section-title">Movement Summary</div>
+          <div style="font-size:12px;color:var(--silver)">Corridor: ${camSeq.join(' &rarr; ')}</div>
+        </div>` : ''}
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Sighting History</div>
+          <div style="background:var(--bg);border-radius:10px;padding:10px;max-height:200px;overflow-y:auto">
+            ${historyRows}
+          </div>
+        </div>
+
+        <button onclick="goToBuck('${buckName}')" style="width:100%;padding:10px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          View on Map
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function closeBuckDossier() {
+  const el = document.getElementById('buckDossierOverlay');
+  if(el) el.remove();
+}
+
+// Jump to camera on map from Recent Activity
+function goToCamera(camName) {
+  closeSheet('intel');
+  activateTab('map');
+  setTimeout(() => {
+    if(camLocations[camName] && mapInstance) {
+      mapInstance.flyTo({ center: [camLocations[camName].lng, camLocations[camName].lat], zoom: 16 });
+    }
+  }, 400);
+}
+
+// Render 7-day conditions chart using Chart.js
+let conditionsChartInstance = null;
+
+async function renderConditionsChart() {
+  const canvas = document.getElementById('intelConditionsCanvas');
+  if(!canvas || typeof Chart === 'undefined') return;
+
+  // Destroy previous instance
+  if(conditionsChartInstance) {
+    conditionsChartInstance.destroy();
+    conditionsChartInstance = null;
+  }
+
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + CLAT + '&longitude=' + CLNG +
+      '&daily=temperature_2m_max,windspeed_10m_max' +
+      '&hourly=surface_pressure' +
+      '&wind_speed_unit=mph&temperature_unit=fahrenheit' +
+      '&timezone=America%2FChicago&forecast_days=7';
+    const r = await fetch(url);
+    const j = await r.json();
+    if(!j.daily) return;
+
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const labels = j.daily.time.map(d => {
+      const dt = new Date(d + 'T12:00:00');
+      return dayNames[dt.getDay()];
+    });
+    const temps = j.daily.temperature_2m_max;
+    const winds = j.daily.windspeed_10m_max;
+    // Average pressure per day (hPa → inHg: divide by 33.8639)
+    const pressures = j.daily.time.map((_, i) => {
+      const dayP = j.hourly.surface_pressure.slice(i * 24, (i + 1) * 24).filter(Boolean);
+      if(!dayP.length) return null;
+      const avgHpa = dayP.reduce((a, b) => a + b, 0) / dayP.length;
+      return Math.round(avgHpa / 33.8639 * 100) / 100;
+    });
+
+    conditionsChartInstance = new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Temperature',
+            data: temps,
+            borderColor: '#8C7355',
+            backgroundColor: 'rgba(140,115,85,0.08)',
+            fill: true,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#8C7355',
+            pointHoverRadius: 6,
+            borderWidth: 2,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Pressure',
+            data: pressures,
+            borderColor: '#BCC6CC',
+            backgroundColor: 'rgba(188,198,204,0.06)',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#BCC6CC',
+            pointHoverRadius: 6,
+            borderWidth: 2,
+            yAxisID: 'y1'
+          },
+          {
+            label: 'Wind Speed',
+            data: winds,
+            borderColor: '#E5B53B',
+            backgroundColor: 'rgba(229,181,59,0.06)',
+            fill: false,
+            tension: 0.35,
+            pointRadius: 4,
+            pointBackgroundColor: '#E5B53B',
+            pointHoverRadius: 6,
+            borderWidth: 2,
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'start',
+            labels: {
+              color: '#8a9199',
+              font: { family: "'Roboto',sans-serif", size: 10 },
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(18,20,21,0.95)',
+            titleColor: '#BCC6CC',
+            bodyColor: '#BCC6CC',
+            borderColor: '#2a2c2e',
+            borderWidth: 1,
+            padding: 10,
+            titleFont: { family: "'Roboto',sans-serif", size: 11 },
+            bodyFont: { family: "'Roboto',sans-serif", size: 11 },
+            callbacks: {
+              label: function(ctx) {
+                const v = ctx.raw;
+                if(v == null) return ctx.dataset.label + ': --';
+                if(ctx.datasetIndex === 0) return 'Temp: ' + Math.round(v) + '\u00B0F';
+                if(ctx.datasetIndex === 1) return 'Pressure: ' + v.toFixed(2) + ' inHg';
+                return 'Wind: ' + Math.round(v) + ' mph';
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
+            grid: { display: false },
+            border: { display: false }
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 9 } },
+            grid: { color: '#2a2d2e', drawBorder: false },
+            border: { display: false }
+          },
+          y1: {
+            position: 'right',
+            ticks: {
+              color: '#4A4D4E',
+              font: { family: "'Roboto',sans-serif", size: 9 },
+              callback: function(v) { return v.toFixed(1); }
+            },
+            grid: { display: false },
+            border: { display: false }
+          }
+        }
+      }
+    });
+  } catch(e) {
+    console.error('Conditions chart error:', e);
+  }
+}
 
 
 // --- Pin context menu -
@@ -6201,15 +7106,10 @@ const channel = sb.channel('sightings-changes')
 function renderDash() {
   if(!document.getElementById("intelContent")) return;
   buildIntelFilters();
-  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
-  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
-
   const ys = intelFiltered(sightings);
   const totalCount = ys.length;
   const buckCount = ys.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
-  const matureList = ys.filter(s => s.deer_type && s.deer_type.includes("Mature"));
-  const matureCount = matureList.length;
-  const nb = intelBuck !== 'all' ? [intelBuck] : getNamedBucks();
+  const matureCount = ys.filter(s => s.deer_type && s.deer_type.includes("Mature")).length;
 
   // Stats strip
   let html = `<div class="sgrid">
@@ -6224,350 +7124,72 @@ function renderDash() {
     return;
   }
 
-  // --- Pre-compute all aggregates -
-  // Wind counts
-  const windCounts = {};
-  WINDS.forEach(w => windCounts[w] = 0);
-  ys.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
-  const maxWind = Math.max(...Object.values(windCounts), 1);
-  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
+  // --- Section 1: Named Buck Profile Cards (top 5 + View All) ---
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Buck Profiles</div>`;
+  html += `<div id="intelBuckCards" class="intel-buck-cards-section" style="margin-bottom:32px">
+    <!-- Buck profile cards populated by renderBuckCards() -->
+  </div>`;
 
-  // Time of day counts
-  const timeCounts = {};
-  Object.keys(TIME_BUCKETS).forEach(k => timeCounts[k] = 0);
-  ys.forEach(s => {
-    if(!s.time) return;
-    const h = parseInt(s.time);
-    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
-      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
-    });
-  });
-  const maxTime = Math.max(...Object.values(timeCounts), 1);
-  const topTime = Object.entries(timeCounts).sort((a,b) => b[1]-a[1])[0];
-
-  // Camera counts
-  const camCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
-  const camMatureCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camMatureCounts[c] = 0);
-  ys.forEach(s => {
-    if(camCounts[s.camera_name] !== undefined) {
-      camCounts[s.camera_name]++;
-      if(s.deer_type && s.deer_type.includes("Mature")) camMatureCounts[s.camera_name]++;
-    }
-  });
-  const maxCam = Math.max(...Object.values(camCounts), 1);
-  const topCam = Object.entries(camCounts).sort((a,b) => b[1]-a[1])[0];
-
-  // Mature buck conditions
-  const matureTemps = matureList.filter(s => s.temp_f).map(s => s.temp_f);
-  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b)=>a+b,0)/matureTemps.length) : null;
-  const moonCounts = {};
-  matureList.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
-  const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
-  const highP = ys.filter(s => s.pressure && s.pressure > 1020);
-  const lowP = ys.filter(s => s.pressure && s.pressure <= 1020);
-  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
-  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
-
-  // --- Named buck cards -
-  if(nb.length > 0) {
-    html += `<div class="stitle" style="margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>Named Bucks</div>`;
-    nb.forEach(bname => {
-      const bs = ys.filter(s => s.buck_name === bname);
-      const color = '#8C7355';
-      const cameras = [...new Set(bs.map(s => s.camera_name))];
-      const dates = bs.map(s => s.date).sort();
-      const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
-
-      // Wind aggregates
-      const bWind = {}; WINDS.forEach(w => bWind[w]=0);
-      const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
-      const bMoon = {}; const bBehav = {};
-      const bTemps = [], bPressures = [], bWindSpeeds = [], bHumid = [];
-      const weatherEvents = { rain:0, snow:0, postFront:0, calm:0 };
-
-      bs.forEach(s => {
-        if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++;
-        if(s.temp_f) bTemps.push(parseFloat(s.temp_f));
-        if(s.pressure) bPressures.push(parseFloat(s.pressure));
-        if(s.wind_speed) bWindSpeeds.push(parseFloat(s.wind_speed));
-        if(s.humidity) bHumid.push(parseFloat(s.humidity));
-        if(s.precip && parseFloat(s.precip) > 0.1) weatherEvents.rain++;
-        if(s.wind_speed && parseFloat(s.wind_speed) < 3) weatherEvents.calm++;
-        if(s.pressure && parseFloat(s.pressure) > 1020) weatherEvents.postFront++;
-        if(s.moon_phase) bMoon[s.moon_phase] = (bMoon[s.moon_phase]||0)+1;
-        if(s.behavior) bBehav[s.behavior] = (bBehav[s.behavior]||0)+1;
-        if(s.time) {
-          const h = parseInt(s.time);
-          Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
-            if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
-          });
-        }
-      });
-
-      const bMaxWind = Math.max(...Object.values(bWind), 1);
-      const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b_) => bWind[b_]-bWind[a]).slice(0,3);
-      const bTopTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b_)=>b_[1]-a[1]);
-      const bTopMoon = Object.entries(bMoon).sort((a,b_)=>b_[1]-a[1]).slice(0,2);
-      const bTopBehav = Object.entries(bBehav).sort((a,b_)=>b_[1]-a[1]);
-      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b_)=>a+b_,0)/bTemps.length) : null;
-      const bMinTemp = bTemps.length ? Math.round(Math.min(...bTemps)) : null;
-      const bMaxTemp = bTemps.length ? Math.round(Math.max(...bTemps)) : null;
-      const bAvgPress = bPressures.length ? Math.round(bPressures.reduce((a,b_)=>a+b_,0)/bPressures.length) : null;
-      const bMinPress = bPressures.length ? Math.round(Math.min(...bPressures)) : null;
-      const bMaxPress = bPressures.length ? Math.round(Math.max(...bPressures)) : null;
-      const bAvgWind = bWindSpeeds.length ? Math.round(bWindSpeeds.reduce((a,b_)=>a+b_,0)/bWindSpeeds.length) : null;
-      const bAvgHumid = bHumid.length ? Math.round(bHumid.reduce((a,b_)=>a+b_,0)/bHumid.length) : null;
-      const camSeq = [...new Set(bs.sort((a,b_)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b_.date+'T'+(b_.time||'00:00'))).map(s=>s.camera_name))];
-
-      // Build mini wind rose SVG for buck card
-      const miniRose = buildWindRoseSVG(bWind, bMaxWind, bTopWinds, 70);
-
-      // Build mini 24hr timeline
-      const miniTimeline = build24HrTimeline(bs, true);
-
-      html += `<div class="buck-intel">
-        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
-          ${recentImg
-            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
-            <div style="font-size:11px;color:var(--text2)">${bs.length} sightings &middot; ${cameras.join(', ')}</div>
-            <div style="font-size:10px;color:var(--text3)">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
-          </div>
-          <div class="bi-arrow">&#8964;</div>
-        </button>
-        <div class="bi-body">
-
-          <!-- Wind + Time row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <div style="background:var(--bg);border-radius:10px;padding:10px">
-              <div class="cond-title">Wind Pattern</div>
-              ${miniRose}
-            </div>
-            <div style="background:var(--bg);border-radius:10px;padding:10px">
-              <div class="cond-title">Activity Hours</div>
-              ${miniTimeline}
-            </div>
-          </div>
-
-          <!-- Weather conditions grid -->
-          <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
-            <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgTemp !== null ? bAvgTemp+'' : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}F-${bMaxTemp}F</div>` : ''}
-              </div>
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgPress !== null ? bAvgPress : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
-                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
-              </div>
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgWind !== null ? bAvgWind : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Wind mph</div>
-                ${bAvgHumid !== null ? `<div style="font-size:9px;color:var(--text3)">${bAvgHumid}% humid</div>` : ''}
-              </div>
-            </div>
-            <!-- Weather event tags -->
-            ${(weatherEvents.postFront > 0 || weatherEvents.calm > 0 || weatherEvents.rain > 0) ? `
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              ${weatherEvents.postFront > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a2535;border:1px solid #2a4060;border-radius:8px;color:#a08468">&#8679; High pressure: ${weatherEvents.postFront}x</span>` : ''}
-              ${weatherEvents.calm > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:var(--text2)">Calm wind: ${weatherEvents.calm}x</span>` : ''}
-              ${weatherEvents.rain > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#151a20;border:1px solid #2a3540;border-radius:8px;color:#6090b0">Rain event: ${weatherEvents.rain}x</span>` : ''}
-            </div>` : ''}
-          </div>
-
-          <!-- Stats rows -->
-          <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px">
-            <div class="stat-row"><span class="stat-row-lbl">Top moon phases</span><span class="stat-row-val">${bTopMoon.map(([m,c])=>`${m} (${c})`).join(', ')||'--'}</span></div>
-            <div class="stat-row"><span class="stat-row-lbl">Top behaviors</span><span class="stat-row-val">${bTopBehav.slice(0,2).map(([b,c])=>`${b} (${c})`).join(', ')||'--'}</span></div>
-            <div class="stat-row"><span class="stat-row-lbl">Camera pattern</span><span class="stat-row-val" style="font-size:10px">${camSeq.join(' &rarr; ')}</span></div>
-          </div>
-
-          ${bs.length >= 3 ? `<div class="insight" style="margin-bottom:10px">
-            <div class="insight-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pattern Analysis</div>
-            <div class="insight-text">
-              ${bTopWinds.length ? `Most active on <strong style="color:var(--blue)">${bTopWinds[0]}${bTopWinds[1]?' / '+bTopWinds[1]:''} wind</strong>. ` : ''}
-              ${bTopTime.length ? `Peak: <strong style="color:var(--blue)">${bTopTime[0][0]}</strong>. ` : ''}
-              ${bAvgTemp !== null ? `Moves in <strong style="color:var(--blue)">${bAvgTemp < 40 ? 'cold' : bAvgTemp < 55 ? 'cool' : 'mild'} temps</strong> (avg ${bAvgTemp}F). ` : ''}
-              ${bAvgPress !== null && bAvgPress > 1018 ? `Favors <strong style="color:var(--blue)">high pressure</strong> days. ` : ''}
-              ${camSeq.length > 1 ? `Confirmed corridor: <strong style="color:var(--blue)">${camSeq.join(' &rarr; ')}</strong>.` : ''}
-            </div>
-          </div>` : `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:6px 0">Log ${3-bs.length} more sighting${3-bs.length>1?'s':''} to unlock pattern analysis.</div>`}
-
-          ${bs.length >= 4 ? (() => {
-            // Core Area Analysis
-            // Midday hits per cam (10am-4pm = near bedding)
-            const middayCams = {};
-            const dawnDuskCams = {};
-            bs.forEach(s => {
-              if(!s.time) return;
-              const h = parseInt(s.time);
-              const cam = s.camera_name;
-              if(h >= 10 && h < 16) middayCams[cam] = (middayCams[cam]||0) + 1;
-              if((h >= 5 && h < 8) || (h >= 17 && h < 20)) dawnDuskCams[cam] = (dawnDuskCams[cam]||0) + 1;
-            });
-            const topMidday = Object.entries(middayCams).sort((a,b_)=>b_[1]-a[1]);
-            const topDawnDusk = Object.entries(dawnDuskCams).sort((a,b_)=>b_[1]-a[1]);
-
-            // First/last detection sequence per camera
-            const camFirstLast = {};
-            bs.forEach(s => {
-              if(!s.date) return;
-              const cam = s.camera_name;
-              if(!camFirstLast[cam]) camFirstLast[cam] = { first: s.date, last: s.date, count: 0 };
-              if(s.date < camFirstLast[cam].first) camFirstLast[cam].first = s.date;
-              if(s.date > camFirstLast[cam].last) camFirstLast[cam].last = s.date;
-              camFirstLast[cam].count++;
-            });
-
-            // Infer travel direction: cameras with most dawn sightings = entry point from that direction
-            // cameras with most dusk sightings = exit point
-            const dawnCams = {}; const duskCams = {};
-            bs.forEach(s => {
-              if(!s.time) return;
-              const h = parseInt(s.time);
-              const cam = s.camera_name;
-              if(h >= 5 && h < 8) dawnCams[cam] = (dawnCams[cam]||0)+1;
-              if(h >= 17 && h < 20) duskCams[cam] = (duskCams[cam]||0)+1;
-            });
-            const topDawn = Object.entries(dawnCams).sort((a,b_)=>b_[1]-a[1])[0];
-            const topDusk = Object.entries(duskCams).sort((a,b_)=>b_[1]-a[1])[0];
-
-            // Weighted camera density for core area
-            const camW = {}; bs.forEach(s => {
-              const h = s.time ? parseInt(s.time) : -1;
-              const w = (h >= 10 && h < 16) ? 2 : 1;
-              camW[s.camera_name] = (camW[s.camera_name]||0) + w;
-            });
-            const sortedCams = Object.entries(camW).sort((a,b_)=>b_[1]-a[1]);
-            const coreCams = sortedCams.slice(0, Math.min(3, sortedCams.length));
-            const totalCamW = sortedCams.reduce((a,b_)=>a+b_[1],0);
-            const corePct = totalCamW > 0 ? Math.round(coreCams.reduce((a,b_)=>a+b_[1],0)/totalCamW*100) : 0;
-
-            // Plain-language summary
-            let summary = '';
-            if(coreCams.length > 0) {
-              summary += `Probable core area near <strong style="color:var(--blue)">${coreCams.map(([c])=>c).join(' / ')}</strong> (${corePct}% of weighted activity). `;
-            }
-            if(topMidday && topMidday.length > 0) {
-              summary += `<strong style="color:var(--blue)">${topMidday[0][0]}</strong> has the most midday hits (${topMidday[0][1]}) — likely closest to his bedding area. `;
-            }
-            if(topDawn && topDusk && topDawn[0] !== topDusk[0]) {
-              summary += `Likely enters at <strong style="color:var(--blue)">${topDawn[0]}</strong> (dawn) and exits toward <strong style="color:var(--blue)">${topDusk[0]}</strong> (dusk). `;
-            } else if(topDawn) {
-              summary += `Most dawn activity at <strong style="color:var(--blue)">${topDawn[0]}</strong>. `;
-            }
-
-            return `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(74,127,193,0.2)">
-              <div class="cond-title" style="margin-bottom:10px">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
-                Core Area Analysis
-              </div>
-
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-                <div style="background:var(--surface2);border-radius:8px;padding:8px">
-                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Midday Cams (near bed)</div>
-                  ${topMidday.length
-                    ? topMidday.slice(0,3).map(([cam,cnt]) => `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
-                        <span style="color:var(--text2)">${cam}</span>
-                        <span style="color:var(--blue);font-weight:600">${cnt}</span>
-                      </div>`).join('')
-                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No midday data</div>'}
-                </div>
-                <div style="background:var(--surface2);border-radius:8px;padding:8px">
-                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Dawn/Dusk Travel</div>
-                  ${topDawnDusk.length
-                    ? topDawnDusk.slice(0,3).map(([cam,cnt]) => `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
-                        <span style="color:var(--text2)">${cam}</span>
-                        <span style="color:var(--blue);font-weight:600">${cnt}</span>
-                      </div>`).join('')
-                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No travel data</div>'}
-                </div>
-              </div>
-
-              <div style="margin-bottom:10px">
-                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">First → Last Detection per Camera</div>
-                ${Object.entries(camFirstLast).sort((a,b_)=>b_[1].count-a[1].count).slice(0,5).map(([cam,d]) =>
-                  `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border)">
-                    <span style="font-size:11px;color:var(--text2)">${cam}</span>
-                    <span style="font-size:10px;color:var(--text3)">${fmtD(d.first)}${d.first!==d.last?' → '+fmtD(d.last):''} &middot; <strong style="color:var(--text2)">${d.count}</strong></span>
-                  </div>`
-                ).join('')}
-              </div>
-
-              ${summary ? `<div style="font-size:11px;color:var(--text2);line-height:1.6;padding:8px;background:rgba(74,127,193,0.06);border-radius:8px;border-left:2px solid var(--blue)">${summary}</div>` : ''}
-            </div>`;
-          })() : ''}
-
-          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> View movement map + core area</button>
-        </div>
-      </div>`;
-    });
-  }
-
-  // --- Property Intelligence -
-  html += `<div class="stitle" style="margin:16px 0 10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Property Intelligence</div>`;
-
-  // Wind rose - radial SVG chart
-  html += `<div class="prop-stat" style="padding:0;overflow:hidden">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-      <div style="padding:14px;border-right:1px solid var(--border)">
-        <div class="cond-title">Wind Direction</div>
-        ${buildWindRoseSVG(windCounts, maxWind, topWinds, 120)}
-      </div>
-      <div style="padding:14px">
-        <div class="cond-title">Activity by Time of Day</div>
-        ${build24HrTimeline(ys)}
-      </div>
+  // --- Section 2: 4-Box Analytics Grid ---
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Analytics</div>`;
+  html += `<div class="intel-4grid" id="intel4Grid" style="margin-bottom:32px">
+    <div class="intel-box" id="intelBoxWindRose">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div>
+      <div class="intel-box-body" id="intelWindRoseBody"><!-- Wind rose SVG will render here --></div>
     </div>
-  </div>`;
-    html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
-    ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
-  </div>`;
-  html += `<div class="insight insight-gold">
-    <div class="insight-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Key Insights &mdash; ${totalCount} Sightings</div>
-    <div class="insight-text">
-      ${topWinds.length?`<strong style="color:#E5B53B">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
-      ${topTime?`<strong style="color:#E5B53B">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
-      ${avgMatureTemp?`<strong style="color:#E5B53B">Mature buck temp:</strong> avg ${avgMatureTemp}F at sighting.<br/>`:""}
-      ${topMoon?`<strong style="color:#E5B53B">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
-      ${highP.length&&lowP.length?`<strong style="color:#E5B53B">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
-      ${topCam?`<strong style="color:#E5B53B">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
+    <div class="intel-box" id="intelBoxActivity">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg> Activity by Time</div>
+      <div class="intel-box-body" id="intelActivityBody"><!-- Activity timeline will render here --></div>
+    </div>
+    <div class="intel-box" id="intelBoxInsights">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div>
+      <div class="intel-box-body" id="intelAiInsights"><!-- AI insights will render here --></div>
+    </div>
+    <div class="intel-box" id="intelBoxRecent">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Recent Camera Activity</div>
+      <div class="intel-box-body" id="intelRecentBody"><!-- Recent sightings will render here --></div>
     </div>
   </div>`;
 
-  // --- 7-day hunt forecast -
-  html += `<div class="prop-stat">
-    <div class="cond-title" style="margin-bottom:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>7-Day Hunt Forecast</div>
-    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+
+  // --- Conditions graph (last 7 days) ---
+  html += `<div class="intel-conditions-wrap" style="margin-bottom:32px">
+    <div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:12px">Conditions &mdash; Last 7 Days</div>
+    <div style="position:relative;height:220px">
+      <canvas id="intelConditionsCanvas"></canvas>
+    </div>
   </div>`;
 
-  // --- Weather & movement correlation -
-  html += `<div class="prop-stat">
+  // --- Weather & movement correlation (keep exactly as-is) -
+  html += `<div class="prop-stat" style="margin-bottom:32px">
     <div class="cond-title" style="margin-bottom:10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8" y2="21"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="16" y1="16" x2="16" y2="21"/></svg>Weather Impact on Movement</div>
     ${buildWeatherCorrelation(sightings)}
   </div>`;
 
-  // Season intel
+  // --- 7-day hunt forecast -
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">7-Day Forecast</div>`;
+  html += `<div class="prop-stat" style="margin-bottom:32px">
+    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+  </div>`;
+
+  // --- Season Intel (relocated to bottom) ---
+  html += `<div class="intel-season-divider"></div>`;
   html += `<div class="card intel"><div class="stitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Season Intel</div>
     <p style="font-size:12px;color:#BCC6CC;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#E5B53B">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#E5B53B">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
   </div>`;
 
   document.getElementById("intelContent").innerHTML = html;
+  renderBuckCards(ys);
+  renderWindRose(ys);
+  renderActivityChart(ys);
+  renderKeyInsights(ys);
+  renderRecentActivity(ys);
+  renderConditionsChart();
   setTimeout(loadHuntForecast, 100);
 }
 
 
-// --- startup
-loadSightings();
-updateMapWeather();
-
+// --- startup (gated by auth — bootApp() calls these)
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
     setTimeout(startMap, 200);
@@ -6579,7 +7201,6 @@ function startMap() {
   loadPropertyMarkers();
   setTimeout(initMap, 500);
 }
-setTimeout(startMap, 300);
 </script>
 
 <!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:'Roboto',sans-serif">Loading map...</div>
