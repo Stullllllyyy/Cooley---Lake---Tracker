@@ -2637,14 +2637,16 @@ async function renameCamera(oldName) {
 
 function enableDragForCamera(camName) {
   closePopup();
-  // Turn on edit mode so pins become draggable
-  if(!editMode) toggleEditMode();
-  // Flash a message
-  const msg = document.createElement('div');
-  msg.textContent = 'Drag the ' + camName + ' pin to reposition it';
-  msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(74,127,193,0.9);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;z-index:200;pointer-events:none;font-family:Roboto,sans-serif';
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  const marker = mapMarkers[camName];
+  if(!marker) { showToast('Pin not found on map'); return; }
+  marker.setDraggable(true);
+  showToast('Drag the ' + camName + ' pin to reposition, then release to save');
+  const onDrop = () => {
+    marker.off('dragend', onDrop);
+    marker.setDraggable(false);
+    showToast(camName + ' location saved');
+  };
+  marker.on('dragend', onDrop);
 }
 
 async function confirmDeleteCamera(camName) {
@@ -4577,7 +4579,7 @@ const PIN_COLOR_STROKES = {
 let featFormLngLat = null;
 let featFormImgFile = null;
 let propertyMarkers = [];
-let propertyMarkerInstances = [];
+let propertyMarkerInstances = {}; // keyed by marker id
 
 function openTtpFeatureModal() {
   featFormLngLat = tapToPlaceLngLat ? { lat: tapToPlaceLngLat.lat, lng: tapToPlaceLngLat.lng } : null;
@@ -4695,8 +4697,8 @@ async function loadPropertyMarkers() {
 }
 
 function renderPropertyMarkers() {
-  propertyMarkerInstances.forEach(m => m.remove());
-  propertyMarkerInstances = [];
+  Object.values(propertyMarkerInstances).forEach(m => m.remove());
+  propertyMarkerInstances = {};
   propertyMarkers.forEach(m => addPropertyMarker(m));
 }
 
@@ -4729,7 +4731,7 @@ function addPropertyMarker(m) {
   const inst = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, 0] })
     .setLngLat([m.lng, m.lat])
     .addTo(mapInstance);
-  propertyMarkerInstances.push(inst);
+  propertyMarkerInstances[m.id] = inst;
 }
 
 // --- Feature marker info card ---
@@ -4866,19 +4868,23 @@ function moveFeatMarker() {
   if(!activeFeatureMarker) return;
   const m = activeFeatureMarker;
   closePopup();
-  ttpAfterConfirm = () => {
-    const newLoc = tapToPlaceLngLat;
-    cancelTapToPlace();
-    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng }).eq('id', m.id).then(({error}) => {
+  const marker = propertyMarkerInstances[m.id];
+  if(!marker) { showToast('Pin not found on map'); return; }
+  marker.setDraggable(true);
+  showToast('Drag the ' + (m.name || m.type) + ' pin to reposition, then release to save');
+  const onDrop = () => {
+    marker.off('dragend', onDrop);
+    marker.setDraggable(false);
+    const ll = marker.getLngLat();
+    sb.from('property_markers').update({ lat: ll.lat, lng: ll.lng }).eq('id', m.id).then(({error}) => {
       if(error) { showToast('Move failed — try again'); return; }
       const idx = propertyMarkers.findIndex(x => x.id === m.id);
-      if(idx >= 0) { propertyMarkers[idx].lat = newLoc.lat; propertyMarkers[idx].lng = newLoc.lng; }
-      renderPropertyMarkers();
-      showToast((m.name || m.type) + ' location updated');
+      if(idx >= 0) { propertyMarkers[idx].lat = ll.lat; propertyMarkers[idx].lng = ll.lng; }
+      showToast((m.name || m.type) + ' location saved');
     });
     activeFeatureMarker = null;
   };
-  enterTapToPlaceMode();
+  marker.on('dragend', onDrop);
 }
 
 function deleteFeatMarker(btnEl) {
