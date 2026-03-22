@@ -162,6 +162,51 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .stat-row-val{color:var(--text);font-weight:600;text-align:right;max-width:58%;font-size:11px}
 .prop-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
 
+/* intel redesign - named buck cards */
+.intel-buck-card{background:#1a1d1e;border:1px solid var(--border);border-left:3px solid var(--bronze);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color 0.2s}
+.intel-buck-card:active{opacity:0.85}
+.intel-buck-thumb{width:52px;height:52px;border-radius:50%;object-fit:cover;border:2px solid var(--bronze);flex-shrink:0}
+.intel-buck-thumb-placeholder{width:52px;height:52px;border-radius:50%;background:#121415;border:2px solid var(--bronze);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.intel-buck-info{flex:1;min-width:0}
+.intel-buck-name{font-size:14px;font-weight:700;color:var(--bronze);margin-bottom:2px}
+.intel-buck-stats{font-size:11px;color:var(--silver);line-height:1.6}
+.intel-buck-stats span{color:var(--text2)}
+.intel-view-all-btn{width:100%;padding:10px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);letter-spacing:0.5px;transition:all 0.2s;margin-top:4px;margin-bottom:14px}
+.intel-view-all-btn:active{background:rgba(140,115,85,0.1)}
+
+/* intel redesign - 4-box grid */
+.intel-4grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+@media(max-width:600px){.intel-4grid{grid-template-columns:1fr}}
+.intel-box{background:var(--bg);border:1px solid var(--border);border-top:3px solid var(--bronze);border-radius:var(--radius);padding:14px;min-height:200px;display:flex;flex-direction:column}
+.intel-box-title{font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.intel-box-body{flex:1}
+
+/* intel redesign - conditions chart */
+.intel-conditions-wrap{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:14px}
+
+/* intel redesign - AI insights */
+.intel-ai-bullet{display:flex;align-items:flex-start;gap:8px;margin-bottom:10px;font-size:12px;color:var(--silver);line-height:1.7}
+.intel-ai-bullet svg{flex-shrink:0;margin-top:4px}
+.intel-ai-loading{display:flex;align-items:center;gap:10px;padding:12px 0;font-size:12px;color:var(--text2)}
+
+/* intel redesign - recent activity row */
+.intel-activity-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:11px}
+.intel-activity-row:last-child{border:none}
+.intel-activity-row:active{background:rgba(140,115,85,0.08)}
+
+/* intel redesign - buck dossier modal */
+.dossier-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
+.dossier-modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:100%;max-width:440px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.dossier-modal::-webkit-scrollbar{display:none}
+.dossier-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1;border-radius:16px 16px 0 0}
+.dossier-body{padding:16px}
+.dossier-photo{width:100%;max-height:240px;object-fit:cover;border-radius:var(--radius);margin-bottom:14px}
+.dossier-section{margin-bottom:14px}
+.dossier-section-title{font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2px;margin-bottom:8px;font-weight:700}
+
+/* intel redesign - season divider */
+.intel-season-divider{height:1px;background:var(--bronze);opacity:0.3;margin:18px 0 14px}
+
 /* sightings */
 .filter-scroll{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;margin-bottom:12px}
 .filter-scroll::-webkit-scrollbar{display:none}
@@ -1040,6 +1085,7 @@ textarea{resize:none}
 
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','sightings','trail-cam','detail','chat'];
@@ -3423,7 +3469,327 @@ function buildCamGrid(camNames, camCounts, camMatureCounts, maxCam, topCam) {
   </div>`;
 }
 
+// --- Intel redesign helpers ---
 
+// Deer silhouette SVG for buck cards with no photo
+const DEER_SILHOUETTE_SVG = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/><ellipse cx="12" cy="17" rx="3" ry="4" fill="none"/></svg>`;
+
+// Fetch AI key insights from /api/claude.js
+let aiInsightsCache = {};
+async function fetchAiInsights(filteredSightings, cacheKey) {
+  if(aiInsightsCache[cacheKey]) return aiInsightsCache[cacheKey];
+  const el = document.getElementById('intelAiInsights');
+  if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
+
+  // Build a compact summary of sightings for the AI
+  const buckSightings = filteredSightings.filter(s => s.deer_type && s.deer_type.includes('Buck'));
+  const cameras = [...new Set(filteredSightings.map(s => s.camera_name).filter(Boolean))];
+  const namedBucks = [...new Set(filteredSightings.filter(s => s.buck_name).map(s => s.buck_name))];
+  const recentDates = filteredSightings.map(s => s.date).filter(Boolean).sort().reverse().slice(0, 10);
+  const winds = {};
+  filteredSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
+  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,3).map(([w]) => w);
+  const behaviors = {};
+  filteredSightings.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
+
+  const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
+
+  try {
+    const resp = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 400,
+        messages: [{
+          role: 'user',
+          content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
+        }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    // Parse JSON array from response
+    const match = text.match(/\[[\s\S]*\]/);
+    let insights = [];
+    if(match) {
+      try { insights = JSON.parse(match[0]); } catch(e) { insights = [text]; }
+    } else {
+      insights = [text];
+    }
+    aiInsightsCache[cacheKey] = insights;
+    if(el) {
+      el.innerHTML = insights.map(insight =>
+        `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+      ).join('');
+    }
+    return insights;
+  } catch(e) {
+    console.error('AI insights error:', e);
+    if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
+    return [];
+  }
+}
+
+// Open buck dossier modal
+function openBuckDossier(buckName) {
+  const bs = sightings.filter(s => s.buck_name === buckName);
+  if(!bs.length) return;
+
+  const photos = bs.filter(s => s.image_url).sort((a,b) => b.date.localeCompare(a.date));
+  const cameras = [...new Set(bs.map(s => s.camera_name).filter(Boolean))];
+  const dates = bs.map(s => s.date).filter(Boolean).sort();
+  const behaviors = {};
+  bs.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
+  const topBehaviors = Object.entries(behaviors).sort((a,b) => b[1]-a[1]);
+
+  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
+  const bWind = {}; WINDS.forEach(w => bWind[w]=0);
+  bs.forEach(s => { if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++; });
+  const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b) => bWind[b]-bWind[a]).slice(0,3);
+
+  const temps = bs.filter(s => s.temp_f).map(s => parseFloat(s.temp_f));
+  const avgTemp = temps.length ? Math.round(temps.reduce((a,b)=>a+b,0)/temps.length) : null;
+
+  // Movement summary: camera sequence
+  const camSeq = [...new Set(bs.sort((a,b) => new Date(a.date+'T'+(a.time||'00:00'))-new Date(b.date+'T'+(b.time||'00:00'))).map(s => s.camera_name))];
+
+  // Time of day
+  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
+  const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
+  bs.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
+      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
+    });
+  });
+  const peakTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b)=>b[1]-a[1])[0];
+
+  // Sighting history rows
+  const historyRows = bs.sort((a,b) => b.date.localeCompare(a.date)).map(s =>
+    `<div class="stat-row">
+      <span class="stat-row-lbl">${fmtD(s.date)}${s.time ? ' '+s.time.slice(0,5) : ''}</span>
+      <span class="stat-row-val" style="font-size:10px">${s.camera_name || 'Field obs'} ${s.behavior ? '&middot; '+s.behavior : ''}</span>
+    </div>`
+  ).join('');
+
+  // Build dossier modal
+  const existing = document.getElementById('buckDossierOverlay');
+  if(existing) existing.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'buckDossierOverlay';
+  overlay.className = 'dossier-overlay';
+  overlay.onclick = function(e) { if(e.target === this) closeBuckDossier(); };
+  overlay.innerHTML = `
+    <div class="dossier-modal">
+      <div class="dossier-hdr">
+        <div style="font-size:16px;font-weight:700;color:var(--bronze)">${buckName}</div>
+        <button onclick="closeBuckDossier()" style="width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">&#215;</button>
+      </div>
+      <div class="dossier-body">
+        ${photos.length ? `<img class="dossier-photo" src="${photos[0].image_url}" alt="${buckName}"/>` : ''}
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Overview</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:700;color:var(--bronze)">${bs.length}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Sightings</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:20px;font-weight:700;color:var(--bronze)">${cameras.length}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Cameras</div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:10px;text-align:center">
+              <div style="font-size:14px;font-weight:700;color:var(--bronze)">${peakTime ? peakTime[0] : '--'}</div>
+              <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:2px">Peak Time</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Camera Locations</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${cameras.map(c => {
+              const cnt = bs.filter(s => s.camera_name === c).length;
+              return `<span style="font-size:11px;padding:4px 10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text2)">${c} <strong style="color:var(--bronze)">${cnt}</strong></span>`;
+            }).join('')}
+          </div>
+        </div>
+
+        ${bTopWinds.length ? `<div class="dossier-section">
+          <div class="dossier-section-title">Wind Preference</div>
+          <div style="font-size:12px;color:var(--silver)">${bTopWinds.join(', ')} winds${avgTemp ? ' &middot; Avg temp '+avgTemp+'F' : ''}</div>
+        </div>` : ''}
+
+        ${topBehaviors.length ? `<div class="dossier-section">
+          <div class="dossier-section-title">Behavior Breakdown</div>
+          ${topBehaviors.map(([b,c]) => {
+            const pct = Math.round(c/bs.length*100);
+            return `<div style="margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px">
+                <span style="color:var(--text2)">${b}</span><span style="color:var(--bronze)">${c} (${pct}%)</span>
+              </div>
+              <div style="height:3px;background:var(--border);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:var(--bronze);border-radius:2px"></div>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>` : ''}
+
+        ${camSeq.length > 1 ? `<div class="dossier-section">
+          <div class="dossier-section-title">Movement Summary</div>
+          <div style="font-size:12px;color:var(--silver)">Corridor: ${camSeq.join(' &rarr; ')}</div>
+        </div>` : ''}
+
+        <div class="dossier-section">
+          <div class="dossier-section-title">Sighting History</div>
+          <div style="background:var(--bg);border-radius:10px;padding:10px;max-height:200px;overflow-y:auto">
+            ${historyRows}
+          </div>
+        </div>
+
+        <button onclick="goToBuck('${buckName}')" style="width:100%;padding:10px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          View on Map
+        </button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function closeBuckDossier() {
+  const el = document.getElementById('buckDossierOverlay');
+  if(el) el.remove();
+}
+
+// Jump to camera on map from Recent Activity
+function goToCamera(camName) {
+  closeSheet('intel');
+  activateTab('map');
+  setTimeout(() => {
+    if(camLocations[camName] && mapInstance) {
+      mapInstance.flyTo({ center: [camLocations[camName].lng, camLocations[camName].lat], zoom: 16 });
+    }
+  }, 400);
+}
+
+// Render 7-day conditions chart using Chart.js
+async function renderConditionsChart() {
+  const canvas = document.getElementById('intelConditionsChart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  try {
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756' +
+      '&daily=temperature_2m_max,windspeed_10m_max' +
+      '&hourly=surface_pressure' +
+      '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
+      '&timezone=America%2FChicago&forecast_days=7';
+    const r = await fetch(url);
+    const j = await r.json();
+    if(!j.daily) return;
+
+    const labels = j.daily.time.map(d => {
+      const dt = new Date(d+'T12:00:00');
+      return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+    });
+    const temps = j.daily.temperature_2m_max;
+    const winds = j.daily.windspeed_10m_max;
+    // Average pressure per day from hourly data
+    const pressures = j.daily.time.map((_,i) => {
+      const dayPressures = j.hourly.surface_pressure.slice(i*24, (i+1)*24).filter(Boolean);
+      return dayPressures.length ? Math.round(dayPressures.reduce((a,b)=>a+b,0)/dayPressures.length * 10)/10 : null;
+    });
+
+    new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Temp (F)',
+            data: temps,
+            borderColor: '#8C7355',
+            backgroundColor: 'rgba(140,115,85,0.1)',
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y'
+          },
+          {
+            label: 'Pressure (hPa)',
+            data: pressures,
+            borderColor: '#BCC6CC',
+            backgroundColor: 'rgba(188,198,204,0.1)',
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y1'
+          },
+          {
+            label: 'Wind (mph)',
+            data: winds,
+            borderColor: '#E5B53B',
+            backgroundColor: 'rgba(229,181,59,0.1)',
+            tension: 0.3,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'bottom',
+            labels: {
+              color: '#8a9199',
+              font: { family: "'Roboto',sans-serif", size: 10 },
+              boxWidth: 12,
+              padding: 12,
+              usePointStyle: true,
+              pointStyle: 'circle'
+            }
+          },
+          tooltip: {
+            backgroundColor: '#1a1d1e',
+            titleColor: '#BCC6CC',
+            bodyColor: '#BCC6CC',
+            borderColor: '#2a2c2e',
+            borderWidth: 1,
+            padding: 10,
+            titleFont: { family: "'Roboto',sans-serif" },
+            bodyFont: { family: "'Roboto',sans-serif" }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
+            grid: { color: '#2a2d2e', drawBorder: false }
+          },
+          y: {
+            position: 'left',
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
+            grid: { color: '#2a2d2e', drawBorder: false }
+          },
+          y1: {
+            position: 'right',
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
+            grid: { display: false }
+          }
+        }
+      }
+    });
+  } catch(e) {
+    console.error('Conditions chart error:', e);
+  }
+}
 
 
 // --- Pin context menu -
@@ -6223,6 +6589,31 @@ function renderDash() {
     document.getElementById("intelContent").innerHTML = html;
     return;
   }
+
+  // --- Section 1: Named Buck Profile Cards (top 5 + View All) ---
+  html += `<div id="intelBuckCards" class="intel-buck-cards-section" style="margin-bottom:14px">
+    <!-- Buck profile cards will be populated in Stage 2 -->
+  </div>`;
+
+  // --- Section 2: 4-Box Analytics Grid ---
+  html += `<div class="intel-4grid" id="intel4Grid">
+    <div class="intel-box" id="intelBoxWindRose">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div>
+      <div class="intel-box-body" id="intelWindRoseBody"><!-- Wind rose SVG will render here --></div>
+    </div>
+    <div class="intel-box" id="intelBoxActivity">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg> Activity by Time</div>
+      <div class="intel-box-body" id="intelActivityBody"><!-- Activity timeline will render here --></div>
+    </div>
+    <div class="intel-box" id="intelBoxInsights">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div>
+      <div class="intel-box-body" id="intelAiInsights"><!-- AI insights will render here --></div>
+    </div>
+    <div class="intel-box" id="intelBoxRecent">
+      <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Recent Camera Activity</div>
+      <div class="intel-box-body" id="intelRecentBody"><!-- Recent sightings will render here --></div>
+    </div>
+  </div>`;
 
   // --- Pre-compute all aggregates -
   // Wind counts
