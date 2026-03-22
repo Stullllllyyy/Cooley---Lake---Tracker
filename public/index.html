@@ -190,9 +190,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .intel-ai-loading{display:flex;align-items:center;gap:10px;padding:12px 0;font-size:12px;color:var(--text2)}
 
 /* intel redesign - recent activity row */
-.intel-activity-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s;font-size:11px}
+.intel-activity-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:11px}
 .intel-activity-row:last-child{border:none}
-.intel-activity-row:active{background:rgba(140,115,85,0.08)}
 
 /* intel redesign - buck dossier modal */
 .dossier-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -751,6 +750,9 @@ textarea{resize:none}
   <div style="display:flex;gap:8px;padding:8px 14px;border-bottom:1px solid var(--border);flex-shrink:0">
     <select id="intelYear" onchange="setIntelYear(this.value)" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:12px;padding:7px 10px;font-family:var(--font);cursor:pointer;outline:none">
       <option value="all">All Years</option>
+    </select>
+    <select id="intelMonth" onchange="setIntelMonth(this.value)" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:12px;padding:7px 10px;font-family:var(--font);cursor:pointer;outline:none">
+      <option value="all">All Months</option>
     </select>
     <select id="intelBuck" onchange="setIntelBuck(this.value)" style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:10px;color:var(--text2);font-size:12px;padding:7px 10px;font-family:var(--font);cursor:pointer;outline:none">
       <option value="all">All Bucks</option>
@@ -1451,7 +1453,7 @@ const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a"
 const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
 
 let sightings = [], curFilter = "all", curMapFilter = "none", curYear = "all";
-let intelYear = "all", intelBuck = "all";
+let intelYear = "all", intelMonth = "all", intelBuck = "all";
 let wxFetched = null, wxApplied = null;
 let formImgFile = null;
 let editId = null, editImgFile = null, editImgChanged = false;
@@ -3826,22 +3828,13 @@ function renderActivityChart(filteredSightings) {
     intelActivityChartInstance = null;
   }
 
-  const buckets = {
-    'Dawn (4-7a)':  [4, 7],
-    'Morning (7-10a)': [7, 10],
-    'Midday (10a-2p)': [10, 14],
-    'Afternoon (2-5p)': [14, 17],
-    'Evening (5-8p)': [17, 20],
-    'Night (8p-4a)': [20, 4]
-  };
-  const counts = {};
-  Object.keys(buckets).forEach(k => counts[k] = 0);
+  // 24 hourly buckets (0-23)
+  const hourLabels = ['12a','1a','2a','3a','4a','5a','6a','7a','8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p','7p','8p','9p','10p','11p'];
+  const counts = new Array(24).fill(0);
   filteredSightings.forEach(s => {
     if(!s.time) return;
     const h = parseInt(s.time);
-    Object.entries(buckets).forEach(([label, [start, end]]) => {
-      if(start < end ? (h >= start && h < end) : (h >= start || h < end)) counts[label]++;
-    });
+    if(h >= 0 && h < 24) counts[h]++;
   });
 
   // Insert canvas if not already there
@@ -3854,9 +3847,9 @@ function renderActivityChart(filteredSightings) {
   intelActivityChartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: Object.keys(counts).map(k => k.replace(/\(.+\)/, '').trim()),
+      labels: hourLabels,
       datasets: [{
-        data: Object.values(counts),
+        data: counts,
         backgroundColor: '#8C7355',
         borderRadius: 4,
         maxBarThickness: 28
@@ -3874,14 +3867,18 @@ function renderActivityChart(filteredSightings) {
           borderColor: '#2a2c2e',
           borderWidth: 1,
           callbacks: {
-            title: (items) => Object.keys(counts)[items[0].dataIndex],
+            title: (items) => hourLabels[items[0].dataIndex],
             label: (item) => item.raw + ' sighting' + (item.raw !== 1 ? 's' : '')
           }
         }
       },
       scales: {
         x: {
-          ticks: { color: '#8a9199', font: { family: "'Roboto',sans-serif", size: 9 } },
+          ticks: {
+            color: '#8a9199',
+            font: { family: "'Roboto',sans-serif", size: 9 },
+            callback: function(val, idx) { return idx % 2 === 0 ? hourLabels[idx] : ''; }
+          },
           grid: { display: false },
           border: { display: false }
         },
@@ -3904,7 +3901,7 @@ function renderActivityChart(filteredSightings) {
 // Box 3: Key Insights (wrapper around fetchAiInsights)
 function renderKeyInsights(filteredSightings) {
   console.log('[KeyInsights] renderKeyInsights called, sightings:', filteredSightings.length);
-  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  const cacheKey = intelYear + '_' + intelMonth + '_' + intelBuck + '_' + filteredSightings.length;
   console.log('[KeyInsights] cacheKey:', cacheKey);
   fetchAiInsights(filteredSightings, cacheKey);
 }
@@ -3929,12 +3926,11 @@ function renderRecentActivity(filteredSightings) {
 
   el.innerHTML = recent.map(s => {
     const camName = s.camera_name || 'Field obs';
-    const escapedCam = (s.camera_name || '').replace(/'/g, "\\'");
     const deerType = s.deer_type || 'Unknown';
     const dateStr = s.date ? fmtD(s.date) : '';
     const timeStr = s.time ? s.time.slice(0, 5) : '';
     const behavior = s.behavior || '';
-    return `<div class="intel-activity-row" onclick="goToCamera('${escapedCam}')">
+    return `<div class="intel-activity-row">
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;color:var(--silver);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${camName}</div>
         <div style="font-size:10px;color:var(--text2)">${deerType}${behavior ? ' &middot; ' + behavior : ''}</div>
@@ -4515,6 +4511,11 @@ function setIntelYear(y) {
   renderDash();
 }
 
+function setIntelMonth(m) {
+  intelMonth = m;
+  renderDash();
+}
+
 function setIntelBuck(b) {
   intelBuck = b;
   renderDash();
@@ -4522,12 +4523,22 @@ function setIntelBuck(b) {
 
 function buildIntelFilters() {
   const yrSel = document.getElementById('intelYear');
+  const moSel = document.getElementById('intelMonth');
   const bkSel = document.getElementById('intelBuck');
   if(!yrSel || !bkSel) return;
   const years = getAvailableYears();
   yrSel.innerHTML = '<option value="all">All Years</option>' +
     years.map(y => `<option value="${y}"${intelYear===y?' selected':''}>${y}</option>`).join('');
   yrSel.value = intelYear;
+  if(moSel) {
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    moSel.innerHTML = '<option value="all">All Months</option>' +
+      monthNames.map((name, i) => {
+        const val = String(i + 1).padStart(2, '0');
+        return `<option value="${val}"${intelMonth===val?' selected':''}>${name}</option>`;
+      }).join('');
+    moSel.value = intelMonth;
+  }
   const bucks = getNamedBucks().sort();
   bkSel.innerHTML = '<option value="all">All Bucks</option>' +
     bucks.map(b => `<option value="${b}"${intelBuck===b?' selected':''}>${b}</option>`).join('');
@@ -4537,6 +4548,7 @@ function buildIntelFilters() {
 function intelFiltered(arr) {
   let base = arr;
   if(intelYear !== 'all') base = base.filter(s => s.date && s.date.startsWith(intelYear));
+  if(intelMonth !== 'all') base = base.filter(s => s.date && s.date.slice(5, 7) === intelMonth);
   if(intelBuck !== 'all') base = base.filter(s => s.buck_name === intelBuck);
   return base;
 }
