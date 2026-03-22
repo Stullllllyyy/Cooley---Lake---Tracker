@@ -1243,6 +1243,14 @@ function closePopup() {
     if(m) { m.setDraggable(false); m.setLngLat([activeFeatureMarker.lng, activeFeatureMarker.lat]); }
     pendingFeatLoc = null;
   }
+  // Snap back pending observation pin move if user closes without saving
+  if(pendingObsLoc && activeObsSighting && originalObsLoc) {
+    const m = obsMarkerInstances[activeObsSighting.id];
+    if(m) { m.setDraggable(false); m.setLngLat([originalObsLoc.lng, originalObsLoc.lat]); }
+    pendingObsLoc = null;
+    originalObsLoc = null;
+  }
+  pendingObsColor = null;
   document.getElementById('camPopup').classList.remove('show');
 }
 
@@ -1893,6 +1901,7 @@ let beddingMarkersVisible = false;
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
   obsMarkers = [];
+  obsMarkerInstances = {};
   if(!mapInstance || !obsMarkersVisible) return;
   sightings
     .filter(s => s.source === 'observation' && s.obs_lat && s.obs_lng)
@@ -1919,6 +1928,7 @@ function addObsMarkers() {
         .setLngLat([s.obs_lng, s.obs_lat])
         .addTo(mapInstance);
       obsMarkers.push(marker);
+      obsMarkerInstances[s.id] = marker;
     });
 }
 
@@ -2520,7 +2530,7 @@ async function showPin(camName) {
       Delete
     </button>`;
   // Remove any extra rows left from a previous popup type
-  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow','obsSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   // Show popup immediately
   popup.classList.add('show');
   // Color row — synchronous (camLocations already loaded), visible right away
@@ -2578,13 +2588,12 @@ function stageFacing(dir, btn) {
 }
 
 async function saveCamPinSettings(camName) {
-  showToast('[debug] save tapped — loc=' + JSON.stringify(pendingCamLoc));
   try {
     const updates = {};
     if(pendingCamColor !== null) updates.color = pendingCamColor;
     if(pendingFacing !== null) updates.facing = pendingFacing;
     if(pendingCamLoc !== null) { updates.lat = pendingCamLoc.lat; updates.lng = pendingCamLoc.lng; }
-    if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingCamLoc, pendingCamColor, pendingFacing})); return; }
+    if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
     const {error} = await sb.from('cameras').update(updates).eq('name', camName);
     if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
     if(updates.color) {
@@ -2594,24 +2603,24 @@ async function saveCamPinSettings(camName) {
     if(updates.lat !== undefined && camLocations[camName]) {
       camLocations[camName].lat = updates.lat;
       camLocations[camName].lng = updates.lng;
+      addCamMarkers();
     }
-    const hadLocMove = pendingCamLoc !== null;
     pendingCamColor = null;
     pendingFacing = null;
     pendingCamLoc = null;
     originalCamLoc = null;
     movePinCamActive = null;
-    if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
-  } catch(err) { showToast('[error] ' + String(err)); }
+    showToast('\u2713 Saved');
+    closePopup();
+  } catch(err) { showToast('Save failed: ' + String(err)); }
 }
 
 async function saveFeatPinSettings(markerId) {
-  showToast('[debug] feat save tapped — loc=' + JSON.stringify(pendingFeatLoc));
   try {
     const updates = {};
     if(pendingFeatColor !== null) updates.color = pendingFeatColor;
     if(pendingFeatLoc !== null) { updates.lat = pendingFeatLoc.lat; updates.lng = pendingFeatLoc.lng; }
-    if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingFeatLoc, pendingFeatColor})); return; }
+    if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
     const {error} = await sb.from('property_markers').update(updates).eq('id', markerId);
     if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
     const idx = propertyMarkers.findIndex(x => x.id === markerId);
@@ -2620,11 +2629,11 @@ async function saveFeatPinSettings(markerId) {
       if(updates.lat !== undefined) { propertyMarkers[idx].lat = updates.lat; propertyMarkers[idx].lng = updates.lng; }
     }
     if(updates.color || updates.lat !== undefined) renderPropertyMarkers();
-    const hadLocMove = pendingFeatLoc !== null;
     pendingFeatColor = null;
     pendingFeatLoc = null;
-    if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
-  } catch(err) { showToast('[error] ' + String(err)); }
+    showToast('\u2713 Saved');
+    closePopup();
+  } catch(err) { showToast('Save failed: ' + String(err)); }
 }
 
 async function setCameraColor(camName, color) {
@@ -4788,6 +4797,10 @@ let pendingCamLoc = null;    // {lat,lng} after move-pin drag, before Save Chang
 let originalCamLoc = null;   // {lat,lng} for snap-back if closed without saving
 let movePinCamActive = null; // camName currently in move-pin mode
 let pendingFeatLoc = null;   // {lat,lng} after feat marker drag, before Save Changes
+let pendingObsColor = null;
+let pendingObsLoc = null;    // {lat,lng} after obs move-pin drag, before Save Changes
+let originalObsLoc = null;   // {lat,lng} for snap-back if closed without saving
+let obsMarkerInstances = {}; // keyed by sighting id for drag access
 
 function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
@@ -4798,12 +4811,6 @@ function showFeaturePopup(m) {
   const stats  = document.getElementById('popupStats');
   const sights = document.getElementById('popupSightings');
   const actions = document.getElementById('popupActions');
-  // Remove any camera-specific facing row left over from a previous camera popup
-  const facingRow = document.getElementById('camFacingRow');
-  if(facingRow) facingRow.remove();
-  const existFeatCR = document.getElementById('camColorRow');
-  if(existFeatCR) existFeatCR.remove();
-
   const color = FEAT_COLORS[m.type] || 'var(--gold)';
   const label = m.name ? m.type + ': ' + m.name : m.type;
   title.textContent = label;
@@ -4849,7 +4856,7 @@ function showFeaturePopup(m) {
     ' Delete</button>';
 
   pendingFeatColor = null;
-  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow','obsSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   popup.classList.add('show');
   // Color swatch row for feature marker
   const featColorRow = buildColorSwatchRow(
@@ -5010,16 +5017,13 @@ let activeObsSighting = null;
 
 function showObsPopup(s) {
   activeObsSighting = s;
+  pendingObsColor = null;
   const popup  = document.getElementById('camPopup');
   const title  = document.getElementById('popupTitle');
   const stats  = document.getElementById('popupStats');
   const sights = document.getElementById('popupSightings');
   const actions = document.getElementById('popupActions');
-  // Remove any stale extra rows from previous popup type
-  const facingRow = document.getElementById('camFacingRow');
-  if(facingRow) facingRow.remove();
-  const existCR = document.getElementById('camColorRow');
-  if(existCR) existCR.remove();
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow','obsSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
 
   title.textContent = s.buck_name || s.deer_type || 'Observation';
   title.style.color = '';
@@ -5059,6 +5063,9 @@ function showObsPopup(s) {
     '<button class="popup-act-btn" onclick="openObsEdit()">' +
     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
     ' Edit</button>' +
+    '<button class="popup-act-btn" onclick="enableDragForObs()">' +
+    '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>' +
+    ' Move Pin</button>' +
     '<button class="popup-act-btn danger" id="obsDelBtn" onclick="deleteObsSighting(this)">' +
     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
     ' Delete</button>';
@@ -5066,10 +5073,57 @@ function showObsPopup(s) {
   popup.classList.add('show');
   const obsColorRow = buildColorSwatchRow(
     s.pin_color || '#E5B53B',
-    c => setObsColor(s.id, c)
+    c => { pendingObsColor = c; }
   );
   obsColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(obsColorRow);
+  const obsSaveRow = document.createElement('div');
+  obsSaveRow.id = 'obsSaveRow';
+  obsSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
+  obsSaveRow.innerHTML = '<button onclick="saveObsPinSettings(' + s.id + ')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>';
+  actions.parentNode.appendChild(obsSaveRow);
+}
+
+function enableDragForObs() {
+  if(!activeObsSighting) return;
+  const s = activeObsSighting;
+  originalObsLoc = { lat: s.obs_lat, lng: s.obs_lng };
+  pendingObsLoc = null;
+  closePopup();
+  const marker = obsMarkerInstances[s.id];
+  if(!marker) { showToast('Pin not found on map'); originalObsLoc = null; return; }
+  marker.setDraggable(true);
+  showToast('Drag the observation pin to reposition');
+  const onDrop = () => {
+    marker.off('dragend', onDrop);
+    marker.setDraggable(false);
+    const ll = marker.getLngLat();
+    pendingObsLoc = { lat: ll.lat, lng: ll.lng };
+    showObsPopup(s);
+  };
+  marker.on('dragend', onDrop);
+}
+
+async function saveObsPinSettings(sightingId) {
+  try {
+    const updates = {};
+    if(pendingObsColor !== null) updates.pin_color = pendingObsColor;
+    if(pendingObsLoc !== null) { updates.obs_lat = pendingObsLoc.lat; updates.obs_lng = pendingObsLoc.lng; }
+    if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
+    const {error} = await sb.from('sightings').update(updates).eq('id', sightingId);
+    if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
+    const idx = sightings.findIndex(x => x.id === sightingId);
+    if(idx >= 0) {
+      if(updates.pin_color) sightings[idx].pin_color = updates.pin_color;
+      if(updates.obs_lat !== undefined) { sightings[idx].obs_lat = updates.obs_lat; sightings[idx].obs_lng = updates.obs_lng; }
+    }
+    pendingObsColor = null;
+    pendingObsLoc = null;
+    originalObsLoc = null;
+    addObsMarkers();
+    showToast('\u2713 Saved');
+    closePopup();
+  } catch(err) { showToast('Save failed: ' + String(err)); }
 }
 
 function openObsEdit() {
