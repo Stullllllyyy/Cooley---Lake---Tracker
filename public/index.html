@@ -379,7 +379,7 @@ textarea{resize:none}
 <div class="map-hdr">
   <div>
     <div style="display:flex;align-items:center;gap:8px">
-      <img src="huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95))" alt="Huginn"/>
+      <img src="huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95))" alt="Huginn" onerror="console.error('logo failed to load:', this.src)"/>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">HUGINN <span class="sync-dot" id="syncDot"></span></div>
         <div style="font-size:9px;color:rgba(220,210,190,0.85);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">Know More. Hunt Smarter.</div>
@@ -2448,6 +2448,8 @@ function toggleEditMode() {
 }
 
 async function showPin(camName) {
+  pendingCamColor = null;
+  pendingFacing = null;
   const cs = yearFiltered(sightings).filter(s => s.camera_name === camName);
   const bucks = cs.filter(s => s.deer_type && s.deer_type.includes('Buck')).length;
   const mature = cs.filter(s => s.deer_type && s.deer_type.includes('Mature')).length;
@@ -2502,34 +2504,37 @@ async function showPin(camName) {
       Delete
     </button>`;
   // Remove any extra rows left from a previous popup type
-  const existCR = document.getElementById('camColorRow');
-  if(existCR) existCR.remove();
+  ['camColorRow','camFacingRow','camSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   // Show popup immediately
   popup.classList.add('show');
   // Color row — synchronous (camLocations already loaded), visible right away
   const camColorRow = buildColorSwatchRow(
     (camLocations[camName] && camLocations[camName].color) || '#8C7355',
-    c => setCameraColor(camName, c)
+    c => { pendingCamColor = c; }
   );
   camColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(camColorRow);
   // Fetch facing direction async — insert above color row when ready
   const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
   const currentFacing = camData?.data?.facing || '';
-  const existingFacing = document.getElementById('camFacingRow');
-  if(existingFacing) existingFacing.remove();
   const facingHtml = document.createElement('div');
   facingHtml.id = 'camFacingRow';
   facingHtml.style.cssText = 'padding:8px 12px 4px;border-top:1px solid var(--border)';
   facingHtml.innerHTML = `<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Camera Facing Direction</div>
     <div style="display:flex;flex-wrap:wrap;gap:5px">
-      ${FACING_DIRS.map(d => `<button onclick="setCameraFacing('${camName}','${d}',this)"
+      ${FACING_DIRS.map(d => `<button onclick="stageFacing('${d}',this)"
         style="padding:4px 8px;border-radius:6px;border:1px solid ${currentFacing===d?'var(--blue)':'var(--border2)'};background:${currentFacing===d?'rgba(74,127,193,0.15)':'transparent'};color:${currentFacing===d?'var(--blue)':'var(--text3)'};font-size:11px;cursor:pointer;font-family:var(--font)">${d}</button>`).join('')}
     </div>`;
   // Insert facing row above the color row so color row stays at bottom
   const colorEl = document.getElementById('camColorRow');
   if(colorEl) actions.parentNode.insertBefore(facingHtml, colorEl);
   else actions.parentNode.appendChild(facingHtml);
+  // Save button row
+  const camSaveRow = document.createElement('div');
+  camSaveRow.id = 'camSaveRow';
+  camSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
+  camSaveRow.innerHTML = `<button onclick="saveCamPinSettings('${camName}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  actions.parentNode.appendChild(camSaveRow);
 }
 
 
@@ -2544,6 +2549,43 @@ async function setCameraFacing(camName, dir, btn) {
     b.style.background = isThis ? 'rgba(74,127,193,0.15)' : 'transparent';
     b.style.color = isThis ? 'var(--blue)' : 'var(--text3)';
   });
+}
+
+function stageFacing(dir, btn) {
+  pendingFacing = dir;
+  btn.closest('div').querySelectorAll('button').forEach(b => {
+    const isThis = b.textContent.trim() === dir;
+    b.style.borderColor = isThis ? 'var(--blue)' : 'var(--border2)';
+    b.style.background = isThis ? 'rgba(74,127,193,0.15)' : 'transparent';
+    b.style.color = isThis ? 'var(--blue)' : 'var(--text3)';
+  });
+}
+
+async function saveCamPinSettings(camName) {
+  const updates = {};
+  if(pendingCamColor !== null) updates.color = pendingCamColor;
+  if(pendingFacing !== null) updates.facing = pendingFacing;
+  if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
+  const {error} = await sb.from('cameras').update(updates).eq('name', camName);
+  if(error) { showToast('Save failed'); return; }
+  if(updates.color) {
+    if(camLocations[camName]) camLocations[camName].color = updates.color;
+    addCamMarkers();
+  }
+  pendingCamColor = null;
+  pendingFacing = null;
+  showToast('\u2713 Saved');
+}
+
+async function saveFeatPinSettings(markerId) {
+  if(pendingFeatColor === null) { showToast('Nothing to save'); return; }
+  const {error} = await sb.from('property_markers').update({ color: pendingFeatColor }).eq('id', markerId);
+  if(error) { showToast('Save failed'); return; }
+  const idx = propertyMarkers.findIndex(x => x.id === markerId);
+  if(idx >= 0) propertyMarkers[idx].color = pendingFeatColor;
+  renderPropertyMarkers();
+  pendingFeatColor = null;
+  showToast('\u2713 Saved');
 }
 
 async function setCameraColor(camName, color) {
@@ -4692,6 +4734,9 @@ function addPropertyMarker(m) {
 
 // --- Feature marker info card ---
 let activeFeatureMarker = null;
+let pendingCamColor = null;
+let pendingFacing = null;
+let pendingFeatColor = null;
 
 function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
@@ -4752,14 +4797,22 @@ function showFeaturePopup(m) {
     '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>' +
     ' Delete</button>';
 
+  pendingFeatColor = null;
+  ['camColorRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   popup.classList.add('show');
   // Color swatch row for feature marker
   const featColorRow = buildColorSwatchRow(
     m.color || FEAT_COLORS[m.type] || '#8C7355',
-    c => setFeatureColor(m.id, c)
+    c => { pendingFeatColor = c; }
   );
   featColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(featColorRow);
+  // Save button row
+  const featSaveRow = document.createElement('div');
+  featSaveRow.id = 'featSaveRow';
+  featSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
+  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings(${m.id})" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  actions.parentNode.appendChild(featSaveRow);
 }
 
 function openFeatEdit() {
