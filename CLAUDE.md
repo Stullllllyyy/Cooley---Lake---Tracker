@@ -24,8 +24,39 @@ Key Constants (in index.html)
 Supabase Tables
 * sightings — core data table. Key fields: id, date, time, camera_name, deer_type, behavior, buck_name, wind_dir, temp_f, wind_speed, wind_gust, humidity, precip, pressure, notes, travel_dir, image_url, moon_phase, source ('camera'|'observation'), obs_lat, obs_lng
 * cameras — camera locations. Fields: id, name, lat, lng, facing
-* property_markers — stands, scrapes, rubs, bedding (planned, not yet built)
+* property_markers — stands, scrapes, rubs, bedding areas. Fields: id, type ('Stand'|'Scrape'|'Rub'|'Bedding'), name, notes, lat, lng, photo_url, created_at. NOTE: column is "type" not "feature_type" — no date or active columns in deployed schema. lat/lng are float8 for full decimal precision (PostGIS-ready).
 * ai_feedback — AI correction logging (planned, not yet built)
+Log Event UX Architecture — Tap-to-Place Flow (current as of Mar 21 2026)
+The + FAB triggers a location-first logging flow. No crosshair cursor or map-click handler — replaced entirely by a draggable Mapbox marker.
+
+Step-by-step:
+1. User taps + FAB → enterTapToPlaceMode() fires
+2. mapboxgl.Marker({ draggable: true }) created with sulfur (#E5B53B) teardrop SVG + pulsing ttpGlow animation, placed at mapInstance.getCenter()
+3. Location Set card appears at BOTTOM of screen (transparent overlay so pin at map center is visible above it). Live coords update via marker.on('drag') and marker.on('dragend').
+4. User drags pin to desired location, taps Confirm → confirmTapToPlace() stops pulse, locks pin
+5. Event Type modal appears (centered) — three cards: Camera Sighting / Field Observation / Mark Feature
+6. User selects type → focused form modal opens with location pre-filled:
+   - Camera Sighting (#ttpCamModal) → submitCamSighting() → inserts to sightings with source='camera'
+   - Field Observation (#ttpObsModal) → submitObsSighting() → inserts to sightings with source='observation', obs_lat/obs_lng
+   - Mark Feature (#ttpFeatureModal) → submitFeatureMarker() → inserts to property_markers
+7. On successful save: preview marker removed, tapToPlaceLngLat cleared, form closed, map pins refreshed
+
+Key state variables: tapToPlaceActive (bool), tapToPlaceLngLat ({lat,lng}), tapToPlacePreviewMarker (Marker instance), ttpAfterConfirm (optional callback to bypass event type modal)
+cancelTapToPlace() removes the marker and clears all state. TTP_OVERLAY_SEL and the pointer-events disable/restore pattern were removed entirely — the draggable marker approach makes them unnecessary.
+
+Markers Filter Pill (Map Filter Bar)
+Three toggle pills added to filter bar for property marker visibility:
+* Stands — always visible by default (scrapeMarkersVisible / beddingMarkersVisible flags not checked for Stand type)
+* Scrape/Rub — hidden by default, toggled by scrapeMarkersVisible flag
+* Bedding — hidden by default, toggled by beddingMarkersVisible flag
+renderPropertyMarkers() and addPropertyMarker() both respect these flags. Toggling a pill calls renderPropertyMarkers() to re-render.
+
+Feature Marker Colors & Labels (FEAT_COLORS / FEAT_LABELS constants)
+Stand: #8C7355 bronze, label "S" | Scrape: #E5B53B sulfur, label "Sc" | Rub: #c07b4c copper, label "R" | Bedding: #4a7a4e green, label "Bd"
+Currently rendered as filled circles. Planned upgrade: Feather-style SVG teardrop icons matching camera pin architecture.
+
+Orphaned Code — Pending Cleanup
+#addCamModal — the original Add Camera modal (pre-Log Event rework) remains in the HTML. It is no longer reachable via any FAB or UI trigger. The new Add Camera flow goes through #ttpAddCamModal (Step 4 of the tap-to-place flow). Do not add features to #addCamModal. Schedule cleanup: remove modal HTML, associated CSS, and toggleAddCamMode() / addCamBtn references if confirmed unused.
 Architecture Principles
 1. Multi-property from day one — property_id on all tables (planned). One codebase, multiple properties.
 2. Cooley Lake = Property #1 — personal dogfood instance for all feature development
@@ -53,18 +84,21 @@ What Claude Code Should Never Do
 * Use alert(), confirm(), or prompt()
 * Deploy without running a syntax check first
 Current Build Status — What's Working ✅
-* FAB speed dial (Log Event, Add Cam, Add Stand, Scrape, Bedding)
-* Log Event sheet with Camera Sighting / Field Observation mode toggle
-* Field Observation mode — GPS blue dot + drop pin location picker, source field, obs_lat/obs_lng saved
+* + FAB tap-to-place draggable pin flow — sulfur teardrop at map center, drag to position, Location Set card at bottom, live coord updates
+* Event Type modal — Camera Sighting / Field Observation / Mark Feature selector
+* Camera Sighting form — full sighting log with camera dropdown, deer type, behavior, buck tag, weather auto-fill, photo upload
+* Field Observation form — GPS or pin-drop location, source='observation', obs_lat/obs_lng saved
+* Mark Feature form — Stand / Scrape / Rub / Bedding, saves to property_markers table (type, name, notes, lat, lng, photo_url)
+* Property markers render on map as colored circle pins; visibility controlled by Markers filter pills
+* Markers filter pills — Stands always on; Scrape/Rub and Bedding toggle independently
 * Buck tag suggestion dropdown (focus-safe, no rebuild on keystroke)
 * Hunt AI tab with placeholder
 * GPS blue dot (GeolocateControl)
 * AI buck matching — fully working end to end (92% Marsh Buck!)
 * /api/claude serverless proxy — key permanently server-side
-* Filter bar — Date pill (year + month), Movement Lines pill, Map Style dropdown
-* Buck search focus bug fixed in movement dropdown
-* All Buck Lines / No Movement Lines working
-* Add Camera as centered overlay modal
+* Filter bar — Date pill, Movement Lines pill, Map Style dropdown, Markers pills
+* All Buck Lines / No Movement Lines working; movement lines hidden on initial load
+* Add Camera via tap-to-place flow (#ttpAddCamModal)
 * View movement map + core area button working
 * Post-save closes sheet and returns to map
 * Weather auto-applies silently on date/time entry
@@ -80,12 +114,17 @@ Current Build Status — What's Working ✅
 * Faded camera pins consistent at 0.9 opacity across all 4 map styles (fixed Mar 20 2026)
 * Heatmap and dot map now work on All Lines / All Deer / No Lines filter states (fixed Mar 20 2026)
 Known Bugs / In Progress 🐛
-Bug Notes Unknown Bucks — named bucks in unknown bucket buck_name staying null after AI suggestion not confirmed/saved. Needs trace + bulk resolve. Marsh Buck confirmed still appearing in Unknown Bucks bucket. Field observation pins on map Pins now save with obs_lat/obs_lng and appear after save (post-save refreshMapPins fix Mar 20 2026) — needs production verification: confirm pins persist correctly after page reload.
+Bug | Notes
+Unknown Bucks — named bucks in unknown bucket | buck_name staying null after AI suggestion not confirmed/saved. Marsh Buck confirmed still appearing in Unknown Bucks bucket. Needs trace + bulk resolve.
+Field observation pins on map | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist after page reload.
+Feature marker pin icons | Currently plain filled circles. Planned upgrade to Feather-style SVG teardrop icons matching camera pin architecture (scheduled next session).
+Pin color customization | Not yet implemented. Planned: color swatches on feature marker tap info card, saved to property_markers.color (needs schema migration).
 
 Camera Pin Architecture Notes (for future sessions)
 * anchor: 'bottom', offset: [0, 0] — do NOT add pixel offset compensation
 * .cam-lbl sits ABOVE .cam-pin in the DOM so element bottom = teardrop tip = coordinate
 * SVG path tip is at y=44 (bottom of 36×44 viewBox) — path: M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z
 * Do NOT attempt zoom-level math or coordinate compensation — two failed attempts (fada88e, cab1934)
+* Same teardrop SVG used for tap-to-place preview pin — color #E5B53B (sulfur) while in placement mode
 Session Handoff
 See TASKS.md for current priorities. See PLANNING.md for roadmap and product decisions.
