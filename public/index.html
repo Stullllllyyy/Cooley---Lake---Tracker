@@ -2605,8 +2605,16 @@ async function showPin(camName) {
   );
   camColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(camColorRow);
+  // Save button row — added synchronously so cleanup can remove it if popup switches type during await
+  const camSaveRow = document.createElement('div');
+  camSaveRow.id = 'camSaveRow';
+  camSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
+  camSaveRow.innerHTML = `<button onclick="saveCamPinSettings('${camName}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  actions.parentNode.appendChild(camSaveRow);
   // Fetch facing direction async — insert above color row when ready
   const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
+  // Guard: bail if popup has switched to a different type while query was in flight
+  if(document.getElementById('popupTitle').textContent !== camName || !popup.classList.contains('show')) return;
   const currentFacing = camData?.data?.facing || '';
   const facingHtml = document.createElement('div');
   facingHtml.id = 'camFacingRow';
@@ -2619,13 +2627,7 @@ async function showPin(camName) {
   // Insert facing row above the color row so color row stays at bottom
   const colorEl = document.getElementById('camColorRow');
   if(colorEl) actions.parentNode.insertBefore(facingHtml, colorEl);
-  else actions.parentNode.appendChild(facingHtml);
-  // Save button row
-  const camSaveRow = document.createElement('div');
-  camSaveRow.id = 'camSaveRow';
-  camSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
-  camSaveRow.innerHTML = `<button onclick="saveCamPinSettings('${camName}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
-  actions.parentNode.appendChild(camSaveRow);
+  else actions.parentNode.insertBefore(facingHtml, document.getElementById('camSaveRow'));
 }
 
 
@@ -2688,7 +2690,7 @@ async function saveFeatPinSettings(markerId) {
     if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
     const {error} = await sb.from('property_markers').update(updates).eq('id', markerId);
     if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
-    const idx = propertyMarkers.findIndex(x => x.id === markerId);
+    const idx = propertyMarkers.findIndex(x => String(x.id) === String(markerId));
     if(idx >= 0) {
       if(updates.color) propertyMarkers[idx].color = updates.color;
       if(updates.lat !== undefined) { propertyMarkers[idx].lat = updates.lat; propertyMarkers[idx].lng = updates.lng; }
@@ -4935,7 +4937,7 @@ function showFeaturePopup(m) {
   const featSaveRow = document.createElement('div');
   featSaveRow.id = 'featSaveRow';
   featSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
-  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings(${m.id})" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings('${m.id}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
   actions.parentNode.appendChild(featSaveRow);
 }
 
