@@ -2578,28 +2578,31 @@ function stageFacing(dir, btn) {
 }
 
 async function saveCamPinSettings(camName) {
-  const updates = {};
-  if(pendingCamColor !== null) updates.color = pendingCamColor;
-  if(pendingFacing !== null) updates.facing = pendingFacing;
-  if(pendingCamLoc !== null) { updates.lat = pendingCamLoc.lat; updates.lng = pendingCamLoc.lng; }
-  if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingCamLoc, pendingCamColor, pendingFacing})); return; }
-  const {error} = await sb.from('cameras').update(updates).eq('name', camName);
-  if(error) { showToast('Save failed'); return; }
-  if(updates.color) {
-    if(camLocations[camName]) camLocations[camName].color = updates.color;
-    addCamMarkers();
-  }
-  if(updates.lat !== undefined && camLocations[camName]) {
-    camLocations[camName].lat = updates.lat;
-    camLocations[camName].lng = updates.lng;
-  }
-  const hadLocMove = pendingCamLoc !== null;
-  pendingCamColor = null;
-  pendingFacing = null;
-  pendingCamLoc = null;
-  originalCamLoc = null;
-  movePinCamActive = null;
-  if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
+  showToast('[debug] save tapped — loc=' + JSON.stringify(pendingCamLoc));
+  try {
+    const updates = {};
+    if(pendingCamColor !== null) updates.color = pendingCamColor;
+    if(pendingFacing !== null) updates.facing = pendingFacing;
+    if(pendingCamLoc !== null) { updates.lat = pendingCamLoc.lat; updates.lng = pendingCamLoc.lng; }
+    if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingCamLoc, pendingCamColor, pendingFacing})); return; }
+    const {error} = await sb.from('cameras').update(updates).eq('name', camName);
+    if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
+    if(updates.color) {
+      if(camLocations[camName]) camLocations[camName].color = updates.color;
+      addCamMarkers();
+    }
+    if(updates.lat !== undefined && camLocations[camName]) {
+      camLocations[camName].lat = updates.lat;
+      camLocations[camName].lng = updates.lng;
+    }
+    const hadLocMove = pendingCamLoc !== null;
+    pendingCamColor = null;
+    pendingFacing = null;
+    pendingCamLoc = null;
+    originalCamLoc = null;
+    movePinCamActive = null;
+    if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
+  } catch(err) { showToast('[error] ' + String(err)); }
 }
 
 async function saveFeatPinSettings(markerId) {
