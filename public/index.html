@@ -3903,7 +3903,9 @@ function renderActivityChart(filteredSightings) {
 
 // Box 3: Key Insights (wrapper around fetchAiInsights)
 function renderKeyInsights(filteredSightings) {
+  console.log('[KeyInsights] renderKeyInsights called, sightings:', filteredSightings.length);
   const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  console.log('[KeyInsights] cacheKey:', cacheKey);
   fetchAiInsights(filteredSightings, cacheKey);
 }
 
@@ -3948,8 +3950,11 @@ function renderRecentActivity(filteredSightings) {
 // Fetch AI key insights from /api/claude.js
 let aiInsightsCache = {};
 async function fetchAiInsights(filteredSightings, cacheKey) {
+  console.log('[KeyInsights] fetchAiInsights called, cacheKey:', cacheKey);
   const el = document.getElementById('intelAiInsights');
+  console.log('[KeyInsights] #intelAiInsights element found:', !!el);
   if(aiInsightsCache[cacheKey]) {
+    console.log('[KeyInsights] CACHE HIT — re-rendering cached data');
     // Re-render cached insights into fresh DOM element
     if(el) {
       el.innerHTML = aiInsightsCache[cacheKey].map(insight =>
@@ -3958,6 +3963,7 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
     }
     return aiInsightsCache[cacheKey];
   }
+  console.log('[KeyInsights] CACHE MISS — showing loading spinner');
   if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
 
   // Build a compact summary of sightings for the AI
@@ -3973,6 +3979,8 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
 
   const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
 
+  console.log('[KeyInsights] Summary built, length:', summary.length);
+  console.log('[KeyInsights] About to call /api/claude...');
   try {
     const resp = await fetch('/api/claude', {
       method: 'POST',
@@ -3986,30 +3994,38 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
         }]
       })
     });
+    console.log('[KeyInsights] fetch response status:', resp.status, resp.statusText);
     if(!resp.ok) {
-      console.error('AI insights HTTP error:', resp.status, resp.statusText);
+      console.error('[KeyInsights] HTTP error:', resp.status, resp.statusText);
       throw new Error('HTTP ' + resp.status);
     }
     const data = await resp.json();
+    console.log('[KeyInsights] Response data:', JSON.stringify(data).slice(0, 500));
     const text = data.content?.[0]?.text || '';
-    if(!text) console.warn('AI insights: empty response text', data);
+    console.log('[KeyInsights] Extracted text:', text.slice(0, 300));
+    if(!text) console.warn('[KeyInsights] Empty response text, full data:', data);
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);
     let insights = [];
     if(match) {
-      try { insights = JSON.parse(match[0]); } catch(e) { insights = [text]; }
+      console.log('[KeyInsights] JSON array matched, parsing...');
+      try { insights = JSON.parse(match[0]); } catch(e) { console.warn('[KeyInsights] JSON parse failed, using raw text:', e); insights = [text]; }
     } else {
+      console.warn('[KeyInsights] No JSON array found in response, using raw text');
       insights = [text];
     }
+    console.log('[KeyInsights] Final insights count:', insights.length, insights);
     aiInsightsCache[cacheKey] = insights;
+    console.log('[KeyInsights] About to render to DOM, el exists:', !!el);
     if(el) {
       el.innerHTML = insights.map(insight =>
         `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
       ).join('');
+      console.log('[KeyInsights] Rendered to DOM, innerHTML length:', el.innerHTML.length);
     }
     return insights;
   } catch(e) {
-    console.error('AI insights error:', e);
+    console.error('[KeyInsights] CATCH block error:', e);
     if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
     return [];
   }
