@@ -3584,6 +3584,211 @@ function toggleAllBucks() {
   }
 }
 
+// --- 4-Box Grid renderers (Stage 3) ---
+
+// Box 1: Wind Rose SVG
+function renderWindRose(filteredSightings) {
+  const el = document.getElementById('intelWindRoseBody');
+  if(!el) return;
+  const DIRS = ["N","NE","E","SE","S","SW","W","NW"];
+  const counts = {};
+  DIRS.forEach(d => counts[d] = 0);
+  filteredSightings.forEach(s => {
+    if(s.wind_dir && counts[s.wind_dir] !== undefined) counts[s.wind_dir]++;
+  });
+  const maxCount = Math.max(...Object.values(counts), 1);
+  const topDir = DIRS.reduce((a, b) => counts[a] >= counts[b] ? a : b, DIRS[0]);
+
+  const size = 100, cx = size, cy = size, maxR = size * 0.75;
+  const step = (Math.PI * 2) / 8;
+  const start = -Math.PI / 2;
+
+  let rings = '', wedges = '', labels = '';
+
+  // Guide rings
+  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
+    rings += `<circle cx="${cx}" cy="${cy}" r="${maxR * pct}" fill="none" stroke="#2a2d2e" stroke-width="0.5"/>`;
+  });
+
+  // Axis lines
+  DIRS.forEach((_, i) => {
+    const a = start + i * step;
+    wedges += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a) * maxR}" y2="${cy + Math.sin(a) * maxR}" stroke="#2a2d2e" stroke-width="0.5"/>`;
+  });
+
+  // Filled wedges
+  DIRS.forEach((d, i) => {
+    const cnt = counts[d];
+    if(!cnt) return;
+    const pct = cnt / maxCount;
+    const r = Math.max(8, maxR * pct);
+    const a1 = start + i * step - step * 0.42;
+    const a2 = start + i * step + step * 0.42;
+    const isTop = d === topDir;
+    const isHigh = counts[d] >= maxCount * 0.5;
+    const fill = isTop ? '#8C7355' : isHigh ? '#BCC6CC' : '#4A4D4E';
+    const opacity = isTop ? 1 : isHigh ? 0.7 : 0.45;
+    wedges += `<path d="M ${cx} ${cy} L ${cx + Math.cos(a1)*r} ${cy + Math.sin(a1)*r} A ${r} ${r} 0 0 1 ${cx + Math.cos(a2)*r} ${cy + Math.sin(a2)*r} Z" fill="${fill}" fill-opacity="${opacity}"/>`;
+  });
+
+  // Center dot
+  wedges += `<circle cx="${cx}" cy="${cy}" r="3" fill="#4A4D4E"/>`;
+
+  // Direction labels + counts
+  DIRS.forEach((d, i) => {
+    const a = start + i * step;
+    const lr = maxR + 14;
+    const lx = cx + Math.cos(a) * lr;
+    const ly = cy + Math.sin(a) * lr + 3.5;
+    const isTop = d === topDir;
+    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" font-family="'Roboto',sans-serif" fill="${isTop ? '#8C7355' : '#8a9199'}" font-weight="${isTop ? 'bold' : 'normal'}">${d}</text>`;
+    if(counts[d] > 0) {
+      const cr = Math.max(14, maxR * (counts[d]/maxCount) * 0.6);
+      const nx = cx + Math.cos(a) * cr;
+      const ny = cy + Math.sin(a) * cr + 3.5;
+      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="8" font-family="'Roboto',sans-serif" fill="${isTop ? '#121415' : '#BCC6CC'}" font-weight="bold">${counts[d]}</text>`;
+    }
+  });
+
+  const svgW = size * 2, svgH = size * 2 + 16;
+  el.innerHTML = `<div style="display:flex;justify-content:center">
+    <svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;max-width:${svgW}px">
+      ${rings}${wedges}${labels}
+    </svg>
+  </div>`;
+}
+
+// Box 2: Activity by Time of Day (Chart.js)
+let intelActivityChartInstance = null;
+
+function renderActivityChart(filteredSightings) {
+  const el = document.getElementById('intelActivityBody');
+  if(!el) return;
+  // Destroy old chart instance if present
+  if(intelActivityChartInstance) {
+    intelActivityChartInstance.destroy();
+    intelActivityChartInstance = null;
+  }
+
+  const buckets = {
+    'Dawn (4-7a)':  [4, 7],
+    'Morning (7-10a)': [7, 10],
+    'Midday (10a-2p)': [10, 14],
+    'Afternoon (2-5p)': [14, 17],
+    'Evening (5-8p)': [17, 20],
+    'Night (8p-4a)': [20, 4]
+  };
+  const counts = {};
+  Object.keys(buckets).forEach(k => counts[k] = 0);
+  filteredSightings.forEach(s => {
+    if(!s.time) return;
+    const h = parseInt(s.time);
+    Object.entries(buckets).forEach(([label, [start, end]]) => {
+      if(start < end ? (h >= start && h < end) : (h >= start || h < end)) counts[label]++;
+    });
+  });
+
+  // Insert canvas if not already there
+  if(!el.querySelector('canvas')) {
+    el.innerHTML = `<canvas id="intelActivityCanvas" style="width:100%;max-height:160px"></canvas>`;
+  }
+  const canvas = document.getElementById('intelActivityCanvas');
+  if(!canvas || typeof Chart === 'undefined') return;
+
+  intelActivityChartInstance = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: Object.keys(counts).map(k => k.replace(/\(.+\)/, '').trim()),
+      datasets: [{
+        data: Object.values(counts),
+        backgroundColor: '#8C7355',
+        borderRadius: 4,
+        maxBarThickness: 28
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d1e',
+          titleColor: '#BCC6CC',
+          bodyColor: '#BCC6CC',
+          borderColor: '#2a2c2e',
+          borderWidth: 1,
+          callbacks: {
+            title: (items) => Object.keys(counts)[items[0].dataIndex],
+            label: (item) => item.raw + ' sighting' + (item.raw !== 1 ? 's' : '')
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#8a9199', font: { family: "'Roboto',sans-serif", size: 9 } },
+          grid: { display: false },
+          border: { display: false }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: '#4A4D4E',
+            font: { family: "'Roboto',sans-serif", size: 9 },
+            stepSize: 1,
+            precision: 0
+          },
+          grid: { color: '#2a2d2e', drawBorder: false },
+          border: { display: false }
+        }
+      }
+    }
+  });
+}
+
+// Box 3: Key Insights (wrapper around fetchAiInsights)
+function renderKeyInsights(filteredSightings) {
+  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  fetchAiInsights(filteredSightings, cacheKey);
+}
+
+// Box 4: Recent Camera Activity
+function renderRecentActivity(filteredSightings) {
+  const el = document.getElementById('intelRecentBody');
+  if(!el) return;
+  const recent = filteredSightings
+    .filter(s => s.date)
+    .sort((a, b) => {
+      const da = a.date + (a.time || '00:00');
+      const db = b.date + (b.time || '00:00');
+      return db.localeCompare(da);
+    })
+    .slice(0, 5);
+
+  if(!recent.length) {
+    el.innerHTML = `<div style="font-size:11px;color:var(--text3);padding:8px 0">No recent activity.</div>`;
+    return;
+  }
+
+  el.innerHTML = recent.map(s => {
+    const camName = s.camera_name || 'Field obs';
+    const escapedCam = (s.camera_name || '').replace(/'/g, "\\'");
+    const deerType = s.deer_type || 'Unknown';
+    const dateStr = s.date ? fmtD(s.date) : '';
+    const timeStr = s.time ? s.time.slice(0, 5) : '';
+    const behavior = s.behavior || '';
+    return `<div class="intel-activity-row" onclick="goToCamera('${escapedCam}')">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--silver);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${camName}</div>
+        <div style="font-size:10px;color:var(--text2)">${deerType}${behavior ? ' &middot; ' + behavior : ''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0">
+        <div style="font-size:10px;color:var(--text2)">${dateStr}</div>
+        <div style="font-size:10px;color:var(--text3)">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // Fetch AI key insights from /api/claude.js
 let aiInsightsCache = {};
 async function fetchAiInsights(filteredSightings, cacheKey) {
@@ -7062,6 +7267,10 @@ function renderDash() {
 
   document.getElementById("intelContent").innerHTML = html;
   renderBuckCards(ys);
+  renderWindRose(ys);
+  renderActivityChart(ys);
+  renderKeyInsights(ys);
+  renderRecentActivity(ys);
   setTimeout(loadHuntForecast, 100);
 }
 
