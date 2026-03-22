@@ -413,9 +413,67 @@ textarea{resize:none}
 .markers-pill-active .map-select-wrap{border-color:rgba(140,115,85,0.6) !important}
 .markers-pill-active #markersLabel{color:var(--gold) !important}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+/* Auth gate */
+#authGate{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.auth-card{width:100%;max-width:360px;padding:32px 24px;text-align:center}
+.auth-logo{width:80px;height:auto;margin:0 auto 16px;display:block;filter:drop-shadow(0 2px 12px rgba(140,115,85,0.3))}
+.auth-tagline{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--bronze);font-weight:600;margin-bottom:32px}
+.auth-title{font-size:18px;font-weight:700;color:var(--silver);margin-bottom:24px}
+.auth-input{width:100%;padding:12px 16px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--silver);font-size:14px;font-family:var(--font);margin-bottom:12px;outline:none;transition:border-color 0.2s}
+.auth-input:focus{border-color:var(--bronze)}
+.auth-input::placeholder{color:var(--text3)}
+.auth-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--bronze);color:#fff;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
+.auth-btn:active{opacity:0.8}
+.auth-btn:disabled{opacity:0.5;cursor:default}
+.auth-link{font-size:12px;color:var(--text2);margin-top:16px;cursor:pointer;display:inline-block}
+.auth-link:hover{color:var(--bronze)}
+.auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:11px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+.auth-error{font-size:12px;color:var(--red);margin-bottom:12px;min-height:18px}
+.auth-magic{width:100%;padding:11px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;font-family:var(--font);cursor:pointer;transition:all 0.2s}
+.auth-magic:hover{border-color:var(--bronze);color:var(--bronze)}
+.auth-success{font-size:12px;color:var(--bronze);margin-top:8px}
+.auth-back{font-size:12px;color:var(--text3);margin-top:20px;cursor:pointer}
+.auth-back:hover{color:var(--silver)}
+/* Logout button */
+.logout-btn{pointer-events:auto;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.25);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.2s;margin-left:8px;flex-shrink:0}
+.logout-btn:active{opacity:0.7}
 </style>
 </head>
 <body>
+
+<!-- Auth Gate -->
+<div id="authGate">
+  <div class="auth-card">
+    <img src="HuginnLogo.svg" class="auth-logo" alt="Huginn"/>
+    <div class="auth-tagline">Know More. Hunt Smarter.</div>
+
+    <!-- Sign In Form (default) -->
+    <div id="authSignIn">
+      <div class="auth-title">Sign In</div>
+      <div class="auth-error" id="authSignInError"></div>
+      <input class="auth-input" id="authEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authPass" type="password" placeholder="Password" autocomplete="current-password" onkeydown="if(event.key==='Enter')handleSignIn()"/>
+      <button class="auth-btn" id="authSignInBtn" onclick="handleSignIn()">Sign In</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-magic" id="authMagicBtn" onclick="handleMagicLink()">Email me a login link</button>
+      <div id="authMagicSuccess"></div>
+      <div class="auth-link" onclick="showAuthView('signup')">Request Access</div>
+    </div>
+
+    <!-- Sign Up / Request Access Form -->
+    <div id="authSignUp" style="display:none">
+      <div class="auth-title">Request Access</div>
+      <div class="auth-error" id="authSignUpError"></div>
+      <input class="auth-input" id="authInviteCode" type="text" placeholder="Invite code" autocomplete="off"/>
+      <input class="auth-input" id="authSignUpEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authSignUpPass" type="password" placeholder="Create password" autocomplete="new-password" onkeydown="if(event.key==='Enter')handleSignUp()"/>
+      <button class="auth-btn" id="authSignUpBtn" onclick="handleSignUp()">Create Account</button>
+      <div class="auth-back" onclick="showAuthView('signin')">&larr; Back to Sign In</div>
+    </div>
+  </div>
+</div>
 
 <div id="map"></div>
 
@@ -431,12 +489,15 @@ textarea{resize:none}
       </div>
     </div>
   </div>
-  <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
-    <div>
-      <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
-      <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+  <div style="display:flex;align-items:center;pointer-events:auto">
+    <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
+      <div>
+        <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
+        <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+      </div>
+      <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
     </div>
-    <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+    <button class="logout-btn" onclick="handleLogout()" title="Sign out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
   </div>
 </div>
 
@@ -1282,6 +1343,101 @@ const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
+
+// --- Auth gate ---
+const AUTH_INVITE_CODE = 'COOLEY2025';
+let appBooted = false;
+
+function showAuthView(view) {
+  document.getElementById('authSignIn').style.display = view === 'signin' ? 'block' : 'none';
+  document.getElementById('authSignUp').style.display = view === 'signup' ? 'block' : 'none';
+  document.getElementById('authSignInError').textContent = '';
+  document.getElementById('authSignUpError').textContent = '';
+  document.getElementById('authMagicSuccess').innerHTML = '';
+}
+
+async function handleSignIn() {
+  const email = document.getElementById('authEmail').value.trim();
+  const pass = document.getElementById('authPass').value;
+  const errEl = document.getElementById('authSignInError');
+  const btn = document.getElementById('authSignInBtn');
+  errEl.textContent = '';
+  if(!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if(error) errEl.textContent = error.message;
+}
+
+async function handleSignUp() {
+  const code = document.getElementById('authInviteCode').value.trim();
+  const email = document.getElementById('authSignUpEmail').value.trim();
+  const pass = document.getElementById('authSignUpPass').value;
+  const errEl = document.getElementById('authSignUpError');
+  const btn = document.getElementById('authSignUpBtn');
+  errEl.textContent = '';
+  if(code !== AUTH_INVITE_CODE) { errEl.textContent = 'Invalid invite code.'; return; }
+  if(!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
+  if(pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  btn.disabled = true; btn.textContent = 'Creating account...';
+  const { error } = await sb.auth.signUp({ email, password: pass });
+  btn.disabled = false; btn.textContent = 'Create Account';
+  if(error) { errEl.textContent = error.message; return; }
+  errEl.textContent = '';
+  showAuthView('signin');
+  document.getElementById('authSignInError').innerHTML = '<span style="color:var(--bronze)">Check your email to confirm your account, then sign in.</span>';
+}
+
+async function handleMagicLink() {
+  const email = document.getElementById('authEmail').value.trim();
+  const errEl = document.getElementById('authSignInError');
+  const successEl = document.getElementById('authMagicSuccess');
+  const btn = document.getElementById('authMagicBtn');
+  errEl.textContent = ''; successEl.innerHTML = '';
+  if(!email) { errEl.textContent = 'Enter your email address first.'; return; }
+  btn.disabled = true; btn.textContent = 'Sending...';
+  const { error } = await sb.auth.signInWithOtp({ email });
+  btn.disabled = false; btn.textContent = 'Email me a login link';
+  if(error) { errEl.textContent = error.message; return; }
+  successEl.innerHTML = '<div class="auth-success">Login link sent — check your email.</div>';
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+}
+
+function bootApp() {
+  if(appBooted) return;
+  appBooted = true;
+  document.getElementById('authGate').style.display = 'none';
+  loadSightings();
+  updateMapWeather();
+  startMap();
+}
+
+function showAuthGate() {
+  appBooted = false;
+  document.getElementById('authGate').style.display = 'flex';
+  showAuthView('signin');
+  // Clear sensitive form fields
+  document.getElementById('authEmail').value = '';
+  document.getElementById('authPass').value = '';
+  document.getElementById('authSignUpEmail').value = '';
+  document.getElementById('authSignUpPass').value = '';
+  document.getElementById('authInviteCode').value = '';
+}
+
+// Auth state listener
+sb.auth.onAuthStateChange((event, session) => {
+  if(session) { bootApp(); }
+  else { showAuthGate(); }
+});
+
+// Initial session check
+sb.auth.getSession().then(({ data: { session } }) => {
+  if(session) bootApp();
+  // If no session, authGate is already visible (default display:flex)
+});
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -7017,10 +7173,7 @@ function renderDash() {
 }
 
 
-// --- startup
-loadSightings();
-updateMapWeather();
-
+// --- startup (gated by auth — bootApp() calls these)
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
     setTimeout(startMap, 200);
@@ -7032,7 +7185,6 @@ function startMap() {
   loadPropertyMarkers();
   setTimeout(initMap, 500);
 }
-setTimeout(startMap, 300);
 </script>
 
 <!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:'Roboto',sans-serif">Loading map...</div>
