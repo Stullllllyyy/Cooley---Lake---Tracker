@@ -6945,12 +6945,14 @@ function renderDash() {
   }
 
   // --- Section 1: Named Buck Profile Cards (top 5 + View All) ---
-  html += `<div id="intelBuckCards" class="intel-buck-cards-section" style="margin-bottom:14px">
-    <!-- Buck profile cards will be populated in Stage 2 -->
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Buck Profiles</div>`;
+  html += `<div id="intelBuckCards" class="intel-buck-cards-section" style="margin-bottom:32px">
+    <!-- Buck profile cards populated by renderBuckCards() -->
   </div>`;
 
   // --- Section 2: 4-Box Analytics Grid ---
-  html += `<div class="intel-4grid" id="intel4Grid">
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Analytics</div>`;
+  html += `<div class="intel-4grid" id="intel4Grid" style="margin-bottom:32px">
     <div class="intel-box" id="intelBoxWindRose">
       <div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div>
       <div class="intel-box-body" id="intelWindRoseBody"><!-- Wind rose SVG will render here --></div>
@@ -7275,7 +7277,7 @@ function renderDash() {
     html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
     ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
   </div>`;
-  html += `<div class="insight insight-gold">
+  html += `<div class="insight insight-gold" style="margin-bottom:32px">
     <div class="insight-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Key Insights &mdash; ${totalCount} Sightings</div>
     <div class="insight-text">
       ${topWinds.length?`<strong style="color:#E5B53B">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
@@ -7287,27 +7289,28 @@ function renderDash() {
     </div>
   </div>`;
 
-  // --- 7-day hunt forecast -
-  html += `<div class="prop-stat">
-    <div class="cond-title" style="margin-bottom:8px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>7-Day Hunt Forecast</div>
-    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
-  </div>`;
-
   // --- Conditions graph (last 7 days) ---
-  html += `<div class="intel-conditions-wrap">
+  html += `<div class="intel-conditions-wrap" style="margin-bottom:32px">
     <div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:12px">Conditions &mdash; Last 7 Days</div>
     <div style="position:relative;height:220px">
       <canvas id="intelConditionsCanvas"></canvas>
     </div>
   </div>`;
 
-  // --- Weather & movement correlation -
-  html += `<div class="prop-stat">
+  // --- Weather & movement correlation (keep exactly as-is) -
+  html += `<div class="prop-stat" style="margin-bottom:32px">
     <div class="cond-title" style="margin-bottom:10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8" y2="21"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="16" y1="16" x2="16" y2="21"/></svg>Weather Impact on Movement</div>
     ${buildWeatherCorrelation(sightings)}
   </div>`;
 
-  // Season intel
+  // --- 7-day hunt forecast -
+  html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">7-Day Forecast</div>`;
+  html += `<div class="prop-stat" style="margin-bottom:32px">
+    <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+  </div>`;
+
+  // --- Season Intel (relocated to bottom) ---
+  html += `<div class="intel-season-divider"></div>`;
   html += `<div class="card intel"><div class="stitle"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><path d="M3 12h18M3 6h18M3 18h18"/></svg>Season Intel</div>
     <p style="font-size:12px;color:#BCC6CC;line-height:1.7">December marsh buck confirmed alive. Target window: <span style="color:#E5B53B">Nov 8&ndash;18</span> on NW/W wind. Primary: <span style="color:#E5B53B">By Eric + Behind Rons</span>. Kelly Brook approach from west only.</p>
   </div>`;
