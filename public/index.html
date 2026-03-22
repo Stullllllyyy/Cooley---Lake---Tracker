@@ -368,9 +368,66 @@ textarea{resize:none}
 .markers-pill-active .map-select-wrap{border-color:rgba(140,115,85,0.6) !important}
 .markers-pill-active #markersLabel{color:var(--gold) !important}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+/* ─── Auth screen ─── */
+#authScreen{position:fixed;inset:0;z-index:10000;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;font-family:var(--font)}
+.auth-card{width:100%;max-width:360px;background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:32px 24px 24px;box-shadow:0 8px 48px rgba(0,0,0,0.7)}
+.auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px}
+.auth-wordmark{font-size:18px;font-weight:700;color:var(--gold);letter-spacing:3px;text-transform:uppercase}
+.auth-tagline{text-align:center;font-size:10px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:26px}
+.auth-tabs{display:flex;margin-bottom:22px;border:1px solid var(--border2);border-radius:10px;overflow:hidden}
+.auth-tab{flex:1;padding:9px 4px;font-size:12px;font-family:var(--font);color:var(--text3);background:transparent;border:none;cursor:pointer;transition:background 0.15s,color 0.15s}
+.auth-tab.on{background:var(--surface2);color:var(--gold);font-weight:600}
+.auth-input{width:100%;box-sizing:border-box;background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:var(--font);margin-bottom:10px;outline:none}
+.auth-input:focus{border-color:var(--gold)}
+.auth-btn{width:100%;padding:12px;border:none;border-radius:10px;background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;margin-top:4px;transition:opacity 0.15s}
+.auth-btn:active{opacity:0.8}
+.auth-err{font-size:12px;margin-top:10px;min-height:16px;text-align:center;color:var(--red)}
+.auth-err.ok{color:var(--sulfur)}
+.auth-section{display:none}
+.auth-section.on{display:block}
+/* Logout button — top-right of map header */
+#logoutBtn{pointer-events:auto;background:transparent;border:1px solid var(--border2);color:var(--text3);font-size:10px;font-family:var(--font);border-radius:6px;padding:4px 9px;cursor:pointer;letter-spacing:0.5px;white-space:nowrap}
+#logoutBtn:active{opacity:0.7}
 </style>
 </head>
 <body>
+
+<!-- ─── Auth screen — shown until user is authenticated ─── -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="/HuginnLogo.svg" style="height:36px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.9))" alt="Huginn"/>
+      <span class="auth-wordmark">HUGINN</span>
+    </div>
+    <div class="auth-tagline">Know More. Hunt Smarter.</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="showAuthTab(0)">Login</button>
+      <button class="auth-tab" onclick="showAuthTab(1)">Sign Up</button>
+      <button class="auth-tab" onclick="showAuthTab(2)">Magic Link</button>
+    </div>
+    <!-- Login -->
+    <div class="auth-section on" id="authLoginSection">
+      <input class="auth-input" id="authLoginEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authLoginPassword" type="password" placeholder="Password" autocomplete="current-password"/>
+      <button class="auth-btn" onclick="signIn()">Sign In</button>
+      <div class="auth-err" id="authLoginErr"></div>
+    </div>
+    <!-- Sign Up -->
+    <div class="auth-section" id="authSignupSection">
+      <input class="auth-input" id="authSignupEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <input class="auth-input" id="authSignupPassword" type="password" placeholder="Password" autocomplete="new-password"/>
+      <input class="auth-input" id="authSignupCode" type="text" placeholder="Invite code" autocomplete="off" style="text-transform:uppercase;letter-spacing:2px"/>
+      <button class="auth-btn" onclick="signUp()">Create Account</button>
+      <div class="auth-err" id="authSignupErr"></div>
+    </div>
+    <!-- Magic Link -->
+    <div class="auth-section" id="authMagicSection">
+      <input class="auth-input" id="authMagicEmail" type="email" placeholder="Email address" autocomplete="email"/>
+      <button class="auth-btn" onclick="sendMagicLink()">Send Magic Link</button>
+      <div class="auth-err" id="authMagicErr"></div>
+    </div>
+  </div>
+</div>
 
 <div id="map"></div>
 
@@ -386,12 +443,15 @@ textarea{resize:none}
       </div>
     </div>
   </div>
+  <div style="display:flex;align-items:center;gap:8px;pointer-events:auto">
+  <button id="logoutBtn" onclick="signOut()">Sign Out</button>
   <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
     <div>
       <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
       <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
     </div>
     <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
+  </div>
   </div>
 </div>
 
@@ -1259,6 +1319,8 @@ const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
+// Property #1: Cooley Lake — scopes all DB queries until multi-property ships
+const PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e';
 
 const CLAT = 45.0200, CLNG = -88.2756;
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
@@ -1330,6 +1392,7 @@ function syncDot(on) {
 async function loadSightings() {
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
+    .eq('property_id', PROPERTY_ID)
     .order('date', {ascending:false})
     .order('time', {ascending:false});
   syncDot(false);
@@ -1396,6 +1459,7 @@ async function submitSighting() {
       travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
       image_url: null,
       moon_phase: document.getElementById("mlbl").textContent,
+      property_id: PROPERTY_ID,
     };
   } else {
     // Field observation
@@ -1420,6 +1484,7 @@ async function submitSighting() {
       moon_phase: document.getElementById("mlbl").textContent,
       obs_lat: obsLatLng ? obsLatLng.lat : null,
       obs_lng: obsLatLng ? obsLatLng.lng : null,
+      property_id: PROPERTY_ID,
     };
   }
 
@@ -1654,7 +1719,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').order('id');
+  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
     data.forEach(c => {
@@ -4595,7 +4660,7 @@ async function confirmTtpAddCam() {
   document.getElementById('ttpAddCamModal').classList.remove('on');
   cancelTapToPlace();
   try {
-    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true });
+    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('Add camera error:', e); }
   camLocations[name] = { lng: loc.lng, lat: loc.lat };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -4706,6 +4771,7 @@ async function submitFeatureMarker() {
     lat: featFormLngLat ? featFormLngLat.lat : null,
     lng: featFormLngLat ? featFormLngLat.lng : null,
     notes: document.getElementById('ttpFeatNotes').value.trim() || null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('property_markers').insert(marker).select().single();
@@ -4743,7 +4809,7 @@ async function submitFeatureMarker() {
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*');
+    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID);
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -5527,6 +5593,7 @@ async function submitObsSighting() {
     obs_lat: obsFormLngLat ? obsFormLngLat.lat : null,
     obs_lng: obsFormLngLat ? obsFormLngLat.lng : null,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
@@ -6669,9 +6736,65 @@ function renderDash() {
 }
 
 
+// --- auth
+function showAuthTab(n) {
+  const tabs = document.querySelectorAll('.auth-tab');
+  const sections = document.querySelectorAll('.auth-section');
+  tabs.forEach((t,i) => t.classList.toggle('on', i===n));
+  sections.forEach((s,i) => s.classList.toggle('on', i===n));
+}
+
+async function signIn() {
+  const email = document.getElementById('authLoginEmail').value.trim();
+  const password = document.getElementById('authLoginPassword').value;
+  const errEl = document.getElementById('authLoginErr');
+  errEl.textContent = '';
+  errEl.className = 'auth-err';
+  if(!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if(error) { errEl.textContent = error.message; }
+}
+
+async function signUp() {
+  const email = document.getElementById('authSignupEmail').value.trim();
+  const password = document.getElementById('authSignupPassword').value;
+  const code = document.getElementById('authSignupCode').value.trim().toUpperCase();
+  const errEl = document.getElementById('authSignupErr');
+  errEl.textContent = '';
+  errEl.className = 'auth-err';
+  if(!email || !password) { errEl.textContent = 'Email and password required.'; return; }
+  if(code !== 'COOLEY2025') { errEl.textContent = 'Invalid invite code.'; return; }
+  const { error } = await sb.auth.signUp({ email, password });
+  if(error) { errEl.textContent = error.message; }
+  else { errEl.className = 'auth-err ok'; errEl.textContent = 'Check your email to confirm your account.'; }
+}
+
+async function sendMagicLink() {
+  const email = document.getElementById('authMagicEmail').value.trim();
+  const errEl = document.getElementById('authMagicErr');
+  errEl.textContent = '';
+  errEl.className = 'auth-err';
+  if(!email) { errEl.textContent = 'Email required.'; return; }
+  const { error } = await sb.auth.signInWithOtp({ email });
+  if(error) { errEl.textContent = error.message; }
+  else { errEl.className = 'auth-err ok'; errEl.textContent = 'Magic link sent! Check your email.'; }
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  location.reload();
+}
+
 // --- startup
-loadSightings();
-updateMapWeather();
+let appInitialized = false;
+
+function initApp() {
+  if(appInitialized) return;
+  appInitialized = true;
+  loadSightings();
+  updateMapWeather();
+  startMap();
+}
 
 function startMap() {
   if(typeof mapboxgl === 'undefined') {
@@ -6684,7 +6807,24 @@ function startMap() {
   loadPropertyMarkers();
   setTimeout(initMap, 500);
 }
-setTimeout(startMap, 300);
+
+sb.auth.onAuthStateChange((event, session) => {
+  const authScreen = document.getElementById('authScreen');
+  if(session) {
+    authScreen.style.display = 'none';
+    initApp();
+  } else {
+    authScreen.style.display = 'flex';
+  }
+});
+
+// Check for existing session on load
+sb.auth.getSession().then(({ data: { session } }) => {
+  if(session) {
+    document.getElementById('authScreen').style.display = 'none';
+    initApp();
+  }
+});
 </script>
 
 <!-- Map loading overlay -->  <div id="mapLoadText" style="font-size:12px;color:#606060;font-family:'Roboto',sans-serif">Loading map...</div>
