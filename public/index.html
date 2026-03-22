@@ -2520,7 +2520,7 @@ async function showPin(camName) {
       Delete
     </button>`;
   // Remove any extra rows left from a previous popup type
-  ['camColorRow','camFacingRow','camSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   // Show popup immediately
   popup.classList.add('show');
   // Color row — synchronous (camLocations already loaded), visible right away
@@ -2606,22 +2606,25 @@ async function saveCamPinSettings(camName) {
 }
 
 async function saveFeatPinSettings(markerId) {
-  const updates = {};
-  if(pendingFeatColor !== null) updates.color = pendingFeatColor;
-  if(pendingFeatLoc !== null) { updates.lat = pendingFeatLoc.lat; updates.lng = pendingFeatLoc.lng; }
-  if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
-  const {error} = await sb.from('property_markers').update(updates).eq('id', markerId);
-  if(error) { showToast('Save failed'); return; }
-  const idx = propertyMarkers.findIndex(x => x.id === markerId);
-  if(idx >= 0) {
-    if(updates.color) propertyMarkers[idx].color = updates.color;
-    if(updates.lat !== undefined) { propertyMarkers[idx].lat = updates.lat; propertyMarkers[idx].lng = updates.lng; }
-  }
-  if(updates.color || updates.lat !== undefined) renderPropertyMarkers();
-  const hadLocMove = pendingFeatLoc !== null;
-  pendingFeatColor = null;
-  pendingFeatLoc = null;
-  if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
+  showToast('[debug] feat save tapped — loc=' + JSON.stringify(pendingFeatLoc));
+  try {
+    const updates = {};
+    if(pendingFeatColor !== null) updates.color = pendingFeatColor;
+    if(pendingFeatLoc !== null) { updates.lat = pendingFeatLoc.lat; updates.lng = pendingFeatLoc.lng; }
+    if(!Object.keys(updates).length) { showToast('Nothing to save — pending: ' + JSON.stringify({pendingFeatLoc, pendingFeatColor})); return; }
+    const {error} = await sb.from('property_markers').update(updates).eq('id', markerId);
+    if(error) { showToast('Save failed: ' + JSON.stringify(error)); return; }
+    const idx = propertyMarkers.findIndex(x => x.id === markerId);
+    if(idx >= 0) {
+      if(updates.color) propertyMarkers[idx].color = updates.color;
+      if(updates.lat !== undefined) { propertyMarkers[idx].lat = updates.lat; propertyMarkers[idx].lng = updates.lng; }
+    }
+    if(updates.color || updates.lat !== undefined) renderPropertyMarkers();
+    const hadLocMove = pendingFeatLoc !== null;
+    pendingFeatColor = null;
+    pendingFeatLoc = null;
+    if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
+  } catch(err) { showToast('[error] ' + String(err)); }
 }
 
 async function setCameraColor(camName, color) {
@@ -4846,7 +4849,7 @@ function showFeaturePopup(m) {
     ' Delete</button>';
 
   pendingFeatColor = null;
-  ['camColorRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   popup.classList.add('show');
   // Color swatch row for feature marker
   const featColorRow = buildColorSwatchRow(
