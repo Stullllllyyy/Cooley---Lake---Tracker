@@ -1228,6 +1228,21 @@ function toggleMapStyle() {
 
 // cam popup helpers
 function closePopup() {
+  // Snap back pending camera pin move if user closes without saving
+  if(movePinCamActive) {
+    const m = mapMarkers[movePinCamActive];
+    if(m) {
+      m.setDraggable(false);
+      if(pendingCamLoc && originalCamLoc) m.setLngLat([originalCamLoc.lng, originalCamLoc.lat]);
+    }
+    pendingCamLoc = null; originalCamLoc = null; movePinCamActive = null;
+  }
+  // Snap back pending feature marker move if user closes without saving
+  if(pendingFeatLoc && activeFeatureMarker) {
+    const m = propertyMarkerInstances[activeFeatureMarker.id];
+    if(m) { m.setDraggable(false); m.setLngLat([activeFeatureMarker.lng, activeFeatureMarker.lat]); }
+    pendingFeatLoc = null;
+  }
   document.getElementById('camPopup').classList.remove('show');
 }
 
@@ -1860,6 +1875,7 @@ async function addCamMarkers() {
       .addTo(mapInstance);
 
     marker.on('dragend', async () => {
+      if(movePinCamActive === name) return; // move-pin mode: skip auto-save, wait for Save Changes
       const ll = marker.getLngLat();
       await saveCamLocation(name, ll.lng, ll.lat);
     });
@@ -2565,6 +2581,7 @@ async function saveCamPinSettings(camName) {
   const updates = {};
   if(pendingCamColor !== null) updates.color = pendingCamColor;
   if(pendingFacing !== null) updates.facing = pendingFacing;
+  if(pendingCamLoc !== null) { updates.lat = pendingCamLoc.lat; updates.lng = pendingCamLoc.lng; }
   if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
   const {error} = await sb.from('cameras').update(updates).eq('name', camName);
   if(error) { showToast('Save failed'); return; }
@@ -2572,20 +2589,36 @@ async function saveCamPinSettings(camName) {
     if(camLocations[camName]) camLocations[camName].color = updates.color;
     addCamMarkers();
   }
+  if(updates.lat !== undefined && camLocations[camName]) {
+    camLocations[camName].lat = updates.lat;
+    camLocations[camName].lng = updates.lng;
+  }
+  const hadLocMove = pendingCamLoc !== null;
   pendingCamColor = null;
   pendingFacing = null;
-  showToast('\u2713 Saved');
+  pendingCamLoc = null;
+  originalCamLoc = null;
+  movePinCamActive = null;
+  if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
 }
 
 async function saveFeatPinSettings(markerId) {
-  if(pendingFeatColor === null) { showToast('Nothing to save'); return; }
-  const {error} = await sb.from('property_markers').update({ color: pendingFeatColor }).eq('id', markerId);
+  const updates = {};
+  if(pendingFeatColor !== null) updates.color = pendingFeatColor;
+  if(pendingFeatLoc !== null) { updates.lat = pendingFeatLoc.lat; updates.lng = pendingFeatLoc.lng; }
+  if(!Object.keys(updates).length) { showToast('Nothing to save'); return; }
+  const {error} = await sb.from('property_markers').update(updates).eq('id', markerId);
   if(error) { showToast('Save failed'); return; }
   const idx = propertyMarkers.findIndex(x => x.id === markerId);
-  if(idx >= 0) propertyMarkers[idx].color = pendingFeatColor;
-  renderPropertyMarkers();
+  if(idx >= 0) {
+    if(updates.color) propertyMarkers[idx].color = updates.color;
+    if(updates.lat !== undefined) { propertyMarkers[idx].lat = updates.lat; propertyMarkers[idx].lng = updates.lng; }
+  }
+  if(updates.color || updates.lat !== undefined) renderPropertyMarkers();
+  const hadLocMove = pendingFeatLoc !== null;
   pendingFeatColor = null;
-  showToast('\u2713 Saved');
+  pendingFeatLoc = null;
+  if(hadLocMove) { showToast('Location saved'); closePopup(); } else { showToast('\u2713 Saved'); }
 }
 
 async function setCameraColor(camName, color) {
@@ -2636,15 +2669,21 @@ async function renameCamera(oldName) {
 }
 
 function enableDragForCamera(camName) {
+  const loc = camLocations[camName];
+  originalCamLoc = loc ? { lat: loc.lat, lng: loc.lng } : null;
+  pendingCamLoc = null;
+  movePinCamActive = camName;
   closePopup();
   const marker = mapMarkers[camName];
-  if(!marker) { showToast('Pin not found on map'); return; }
+  if(!marker) { showToast('Pin not found on map'); movePinCamActive = null; return; }
   marker.setDraggable(true);
-  showToast('Drag the ' + camName + ' pin to reposition, then release to save');
+  showToast('Drag the ' + camName + ' pin to reposition');
   const onDrop = () => {
     marker.off('dragend', onDrop);
     marker.setDraggable(false);
-    showToast(camName + ' location saved');
+    const ll = marker.getLngLat();
+    pendingCamLoc = { lat: ll.lat, lng: ll.lng };
+    showPin(camName); // reopen info card — tap Save Changes to commit
   };
   marker.on('dragend', onDrop);
 }
@@ -4739,6 +4778,10 @@ let activeFeatureMarker = null;
 let pendingCamColor = null;
 let pendingFacing = null;
 let pendingFeatColor = null;
+let pendingCamLoc = null;    // {lat,lng} after move-pin drag, before Save Changes
+let originalCamLoc = null;   // {lat,lng} for snap-back if closed without saving
+let movePinCamActive = null; // camName currently in move-pin mode
+let pendingFeatLoc = null;   // {lat,lng} after feat marker drag, before Save Changes
 
 function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
 
@@ -4867,22 +4910,18 @@ function cancelFeatEdit() {
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
   const m = activeFeatureMarker;
+  pendingFeatLoc = null;
   closePopup();
   const marker = propertyMarkerInstances[m.id];
   if(!marker) { showToast('Pin not found on map'); return; }
   marker.setDraggable(true);
-  showToast('Drag the ' + (m.name || m.type) + ' pin to reposition, then release to save');
+  showToast('Drag the ' + (m.name || m.type) + ' pin to reposition');
   const onDrop = () => {
     marker.off('dragend', onDrop);
     marker.setDraggable(false);
     const ll = marker.getLngLat();
-    sb.from('property_markers').update({ lat: ll.lat, lng: ll.lng }).eq('id', m.id).then(({error}) => {
-      if(error) { showToast('Move failed — try again'); return; }
-      const idx = propertyMarkers.findIndex(x => x.id === m.id);
-      if(idx >= 0) { propertyMarkers[idx].lat = ll.lat; propertyMarkers[idx].lng = ll.lng; }
-      showToast((m.name || m.type) + ' location saved');
-    });
-    activeFeatureMarker = null;
+    pendingFeatLoc = { lat: ll.lat, lng: ll.lng };
+    showFeaturePopup(m); // reopen info card — tap Save Changes to commit
   };
   marker.on('dragend', onDrop);
 }
