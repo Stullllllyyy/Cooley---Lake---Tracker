@@ -3792,8 +3792,16 @@ function renderRecentActivity(filteredSightings) {
 // Fetch AI key insights from /api/claude.js
 let aiInsightsCache = {};
 async function fetchAiInsights(filteredSightings, cacheKey) {
-  if(aiInsightsCache[cacheKey]) return aiInsightsCache[cacheKey];
   const el = document.getElementById('intelAiInsights');
+  if(aiInsightsCache[cacheKey]) {
+    // Re-render cached insights into fresh DOM element
+    if(el) {
+      el.innerHTML = aiInsightsCache[cacheKey].map(insight =>
+        `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+      ).join('');
+    }
+    return aiInsightsCache[cacheKey];
+  }
   if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
 
   // Build a compact summary of sightings for the AI
@@ -3822,8 +3830,13 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
         }]
       })
     });
+    if(!resp.ok) {
+      console.error('AI insights HTTP error:', resp.status, resp.statusText);
+      throw new Error('HTTP ' + resp.status);
+    }
     const data = await resp.json();
     const text = data.content?.[0]?.text || '';
+    if(!text) console.warn('AI insights: empty response text', data);
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);
     let insights = [];
@@ -6921,15 +6934,10 @@ const channel = sb.channel('sightings-changes')
 function renderDash() {
   if(!document.getElementById("intelContent")) return;
   buildIntelFilters();
-  const WINDS = ["N","NE","E","SE","S","SW","W","NW"];
-  const TIME_BUCKETS = {Dawn:[5,7],Morning:[7,10],Midday:[10,13],Afternoon:[13,16],Dusk:[16,20],Night:[20,5]};
-
   const ys = intelFiltered(sightings);
   const totalCount = ys.length;
   const buckCount = ys.filter(s => s.deer_type && s.deer_type.includes("Buck")).length;
-  const matureList = ys.filter(s => s.deer_type && s.deer_type.includes("Mature"));
-  const matureCount = matureList.length;
-  const nb = intelBuck !== 'all' ? [intelBuck] : getNamedBucks();
+  const matureCount = ys.filter(s => s.deer_type && s.deer_type.includes("Mature")).length;
 
   // Stats strip
   let html = `<div class="sgrid">
@@ -6971,323 +6979,6 @@ function renderDash() {
     </div>
   </div>`;
 
-  // --- Pre-compute all aggregates -
-  // Wind counts
-  const windCounts = {};
-  WINDS.forEach(w => windCounts[w] = 0);
-  ys.forEach(s => { if(s.wind_dir && windCounts[s.wind_dir] !== undefined) windCounts[s.wind_dir]++; });
-  const maxWind = Math.max(...Object.values(windCounts), 1);
-  const topWinds = WINDS.filter(w => windCounts[w]>0).sort((a,b) => windCounts[b]-windCounts[a]).slice(0,3);
-
-  // Time of day counts
-  const timeCounts = {};
-  Object.keys(TIME_BUCKETS).forEach(k => timeCounts[k] = 0);
-  ys.forEach(s => {
-    if(!s.time) return;
-    const h = parseInt(s.time);
-    Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
-      if(start < end ? (h>=start && h<end) : (h>=start || h<end)) timeCounts[label]++;
-    });
-  });
-  const maxTime = Math.max(...Object.values(timeCounts), 1);
-  const topTime = Object.entries(timeCounts).sort((a,b) => b[1]-a[1])[0];
-
-  // Camera counts
-  const camCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camCounts[c] = 0);
-  const camMatureCounts = {};
-  CAMNAMES.slice(0,5).forEach(c => camMatureCounts[c] = 0);
-  ys.forEach(s => {
-    if(camCounts[s.camera_name] !== undefined) {
-      camCounts[s.camera_name]++;
-      if(s.deer_type && s.deer_type.includes("Mature")) camMatureCounts[s.camera_name]++;
-    }
-  });
-  const maxCam = Math.max(...Object.values(camCounts), 1);
-  const topCam = Object.entries(camCounts).sort((a,b) => b[1]-a[1])[0];
-
-  // Mature buck conditions
-  const matureTemps = matureList.filter(s => s.temp_f).map(s => s.temp_f);
-  const avgMatureTemp = matureTemps.length ? Math.round(matureTemps.reduce((a,b)=>a+b,0)/matureTemps.length) : null;
-  const moonCounts = {};
-  matureList.forEach(s => { if(s.moon_phase) moonCounts[s.moon_phase] = (moonCounts[s.moon_phase]||0)+1; });
-  const topMoon = Object.entries(moonCounts).sort((a,b)=>b[1]-a[1])[0];
-  const highP = ys.filter(s => s.pressure && s.pressure > 1020);
-  const lowP = ys.filter(s => s.pressure && s.pressure <= 1020);
-  const highBuckPct = highP.length ? Math.round(highP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/highP.length*100) : 0;
-  const lowBuckPct = lowP.length ? Math.round(lowP.filter(s=>s.deer_type&&s.deer_type.includes("Buck")).length/lowP.length*100) : 0;
-
-  // --- Named buck cards -
-  if(nb.length > 0) {
-    html += `<div class="stitle" style="margin-bottom:10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-1px;margin-right:5px"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>Named Bucks</div>`;
-    nb.forEach(bname => {
-      const bs = ys.filter(s => s.buck_name === bname);
-      const color = '#8C7355';
-      const cameras = [...new Set(bs.map(s => s.camera_name))];
-      const dates = bs.map(s => s.date).sort();
-      const recentImg = bs.filter(s => s.image_url).sort((a,b_) => b_.date.localeCompare(a.date))[0];
-
-      // Wind aggregates
-      const bWind = {}; WINDS.forEach(w => bWind[w]=0);
-      const bTime = {}; Object.keys(TIME_BUCKETS).forEach(k => bTime[k]=0);
-      const bMoon = {}; const bBehav = {};
-      const bTemps = [], bPressures = [], bWindSpeeds = [], bHumid = [];
-      const weatherEvents = { rain:0, snow:0, postFront:0, calm:0 };
-
-      bs.forEach(s => {
-        if(s.wind_dir && bWind[s.wind_dir] !== undefined) bWind[s.wind_dir]++;
-        if(s.temp_f) bTemps.push(parseFloat(s.temp_f));
-        if(s.pressure) bPressures.push(parseFloat(s.pressure));
-        if(s.wind_speed) bWindSpeeds.push(parseFloat(s.wind_speed));
-        if(s.humidity) bHumid.push(parseFloat(s.humidity));
-        if(s.precip && parseFloat(s.precip) > 0.1) weatherEvents.rain++;
-        if(s.wind_speed && parseFloat(s.wind_speed) < 3) weatherEvents.calm++;
-        if(s.pressure && parseFloat(s.pressure) > 1020) weatherEvents.postFront++;
-        if(s.moon_phase) bMoon[s.moon_phase] = (bMoon[s.moon_phase]||0)+1;
-        if(s.behavior) bBehav[s.behavior] = (bBehav[s.behavior]||0)+1;
-        if(s.time) {
-          const h = parseInt(s.time);
-          Object.entries(TIME_BUCKETS).forEach(([label,[start,end]]) => {
-            if(start < end ? (h>=start && h<end) : (h>=start || h<end)) bTime[label]++;
-          });
-        }
-      });
-
-      const bMaxWind = Math.max(...Object.values(bWind), 1);
-      const bTopWinds = WINDS.filter(w => bWind[w]>0).sort((a,b_) => bWind[b_]-bWind[a]).slice(0,3);
-      const bTopTime = Object.entries(bTime).filter(([,c])=>c>0).sort((a,b_)=>b_[1]-a[1]);
-      const bTopMoon = Object.entries(bMoon).sort((a,b_)=>b_[1]-a[1]).slice(0,2);
-      const bTopBehav = Object.entries(bBehav).sort((a,b_)=>b_[1]-a[1]);
-      const bAvgTemp = bTemps.length ? Math.round(bTemps.reduce((a,b_)=>a+b_,0)/bTemps.length) : null;
-      const bMinTemp = bTemps.length ? Math.round(Math.min(...bTemps)) : null;
-      const bMaxTemp = bTemps.length ? Math.round(Math.max(...bTemps)) : null;
-      const bAvgPress = bPressures.length ? Math.round(bPressures.reduce((a,b_)=>a+b_,0)/bPressures.length) : null;
-      const bMinPress = bPressures.length ? Math.round(Math.min(...bPressures)) : null;
-      const bMaxPress = bPressures.length ? Math.round(Math.max(...bPressures)) : null;
-      const bAvgWind = bWindSpeeds.length ? Math.round(bWindSpeeds.reduce((a,b_)=>a+b_,0)/bWindSpeeds.length) : null;
-      const bAvgHumid = bHumid.length ? Math.round(bHumid.reduce((a,b_)=>a+b_,0)/bHumid.length) : null;
-      const camSeq = [...new Set(bs.sort((a,b_)=>new Date(a.date+'T'+(a.time||'00:00'))-new Date(b_.date+'T'+(b_.time||'00:00'))).map(s=>s.camera_name))];
-
-      // Build mini wind rose SVG for buck card
-      const miniRose = buildWindRoseSVG(bWind, bMaxWind, bTopWinds, 70);
-
-      // Build mini 24hr timeline
-      const miniTimeline = build24HrTimeline(bs, true);
-
-      html += `<div class="buck-intel">
-        <button class="bi-hdr" onclick="toggleBuckIntel(this)">
-          ${recentImg
-            ? `<img src="${recentImg.image_url}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid ${color};flex-shrink:0"/>`
-            : `<div style="width:48px;height:48px;border-radius:50%;background:#1a1a1a;border:2px solid ${color};display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
-          <div style="flex:1;min-width:0">
-            <div style="font-size:15px;font-weight:700;color:${color}">${bname}</div>
-            <div style="font-size:11px;color:var(--text2)">${bs.length} sightings &middot; ${cameras.join(', ')}</div>
-            <div style="font-size:10px;color:var(--text3)">${fmtD(dates[0])} &mdash; ${fmtD(dates[dates.length-1])}</div>
-          </div>
-          <div class="bi-arrow">&#8964;</div>
-        </button>
-        <div class="bi-body">
-
-          <!-- Wind + Time row -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
-            <div style="background:var(--bg);border-radius:10px;padding:10px">
-              <div class="cond-title">Wind Pattern</div>
-              ${miniRose}
-            </div>
-            <div style="background:var(--bg);border-radius:10px;padding:10px">
-              <div class="cond-title">Activity Hours</div>
-              ${miniTimeline}
-            </div>
-          </div>
-
-          <!-- Weather conditions grid -->
-          <div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px">
-            <div class="cond-title" style="margin-bottom:10px">Weather at Sighting</div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgTemp !== null ? bAvgTemp+'' : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Temp</div>
-                ${bMinTemp !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinTemp}F-${bMaxTemp}F</div>` : ''}
-              </div>
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgPress !== null ? bAvgPress : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Pressure</div>
-                ${bMinPress !== null ? `<div style="font-size:9px;color:var(--text3)">${bMinPress}-${bMaxPress} hPa</div>` : ''}
-              </div>
-              <div style="background:var(--surface2);border-radius:8px;padding:8px;text-align:center">
-                <div style="font-size:18px;font-weight:700;color:#a08468">${bAvgWind !== null ? bAvgWind : '--'}</div>
-                <div style="font-size:9px;color:var(--text3);margin-top:2px">Avg Wind mph</div>
-                ${bAvgHumid !== null ? `<div style="font-size:9px;color:var(--text3)">${bAvgHumid}% humid</div>` : ''}
-              </div>
-            </div>
-            <!-- Weather event tags -->
-            ${(weatherEvents.postFront > 0 || weatherEvents.calm > 0 || weatherEvents.rain > 0) ? `
-            <div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:6px">
-              ${weatherEvents.postFront > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a2535;border:1px solid #2a4060;border-radius:8px;color:#a08468">&#8679; High pressure: ${weatherEvents.postFront}x</span>` : ''}
-              ${weatherEvents.calm > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:var(--text2)">Calm wind: ${weatherEvents.calm}x</span>` : ''}
-              ${weatherEvents.rain > 0 ? `<span style="font-size:10px;padding:3px 8px;background:#151a20;border:1px solid #2a3540;border-radius:8px;color:#6090b0">Rain event: ${weatherEvents.rain}x</span>` : ''}
-            </div>` : ''}
-          </div>
-
-          <!-- Stats rows -->
-          <div style="background:var(--bg);border-radius:10px;padding:10px;margin-bottom:10px">
-            <div class="stat-row"><span class="stat-row-lbl">Top moon phases</span><span class="stat-row-val">${bTopMoon.map(([m,c])=>`${m} (${c})`).join(', ')||'--'}</span></div>
-            <div class="stat-row"><span class="stat-row-lbl">Top behaviors</span><span class="stat-row-val">${bTopBehav.slice(0,2).map(([b,c])=>`${b} (${c})`).join(', ')||'--'}</span></div>
-            <div class="stat-row"><span class="stat-row-lbl">Camera pattern</span><span class="stat-row-val" style="font-size:10px">${camSeq.join(' &rarr; ')}</span></div>
-          </div>
-
-          ${bs.length >= 3 ? `<div class="insight" style="margin-bottom:10px">
-            <div class="insight-title"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pattern Analysis</div>
-            <div class="insight-text">
-              ${bTopWinds.length ? `Most active on <strong style="color:var(--blue)">${bTopWinds[0]}${bTopWinds[1]?' / '+bTopWinds[1]:''} wind</strong>. ` : ''}
-              ${bTopTime.length ? `Peak: <strong style="color:var(--blue)">${bTopTime[0][0]}</strong>. ` : ''}
-              ${bAvgTemp !== null ? `Moves in <strong style="color:var(--blue)">${bAvgTemp < 40 ? 'cold' : bAvgTemp < 55 ? 'cool' : 'mild'} temps</strong> (avg ${bAvgTemp}F). ` : ''}
-              ${bAvgPress !== null && bAvgPress > 1018 ? `Favors <strong style="color:var(--blue)">high pressure</strong> days. ` : ''}
-              ${camSeq.length > 1 ? `Confirmed corridor: <strong style="color:var(--blue)">${camSeq.join(' &rarr; ')}</strong>.` : ''}
-            </div>
-          </div>` : `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:6px 0">Log ${3-bs.length} more sighting${3-bs.length>1?'s':''} to unlock pattern analysis.</div>`}
-
-          ${bs.length >= 4 ? (() => {
-            // Core Area Analysis
-            // Midday hits per cam (10am-4pm = near bedding)
-            const middayCams = {};
-            const dawnDuskCams = {};
-            bs.forEach(s => {
-              if(!s.time) return;
-              const h = parseInt(s.time);
-              const cam = s.camera_name;
-              if(h >= 10 && h < 16) middayCams[cam] = (middayCams[cam]||0) + 1;
-              if((h >= 5 && h < 8) || (h >= 17 && h < 20)) dawnDuskCams[cam] = (dawnDuskCams[cam]||0) + 1;
-            });
-            const topMidday = Object.entries(middayCams).sort((a,b_)=>b_[1]-a[1]);
-            const topDawnDusk = Object.entries(dawnDuskCams).sort((a,b_)=>b_[1]-a[1]);
-
-            // First/last detection sequence per camera
-            const camFirstLast = {};
-            bs.forEach(s => {
-              if(!s.date) return;
-              const cam = s.camera_name;
-              if(!camFirstLast[cam]) camFirstLast[cam] = { first: s.date, last: s.date, count: 0 };
-              if(s.date < camFirstLast[cam].first) camFirstLast[cam].first = s.date;
-              if(s.date > camFirstLast[cam].last) camFirstLast[cam].last = s.date;
-              camFirstLast[cam].count++;
-            });
-
-            // Infer travel direction: cameras with most dawn sightings = entry point from that direction
-            // cameras with most dusk sightings = exit point
-            const dawnCams = {}; const duskCams = {};
-            bs.forEach(s => {
-              if(!s.time) return;
-              const h = parseInt(s.time);
-              const cam = s.camera_name;
-              if(h >= 5 && h < 8) dawnCams[cam] = (dawnCams[cam]||0)+1;
-              if(h >= 17 && h < 20) duskCams[cam] = (duskCams[cam]||0)+1;
-            });
-            const topDawn = Object.entries(dawnCams).sort((a,b_)=>b_[1]-a[1])[0];
-            const topDusk = Object.entries(duskCams).sort((a,b_)=>b_[1]-a[1])[0];
-
-            // Weighted camera density for core area
-            const camW = {}; bs.forEach(s => {
-              const h = s.time ? parseInt(s.time) : -1;
-              const w = (h >= 10 && h < 16) ? 2 : 1;
-              camW[s.camera_name] = (camW[s.camera_name]||0) + w;
-            });
-            const sortedCams = Object.entries(camW).sort((a,b_)=>b_[1]-a[1]);
-            const coreCams = sortedCams.slice(0, Math.min(3, sortedCams.length));
-            const totalCamW = sortedCams.reduce((a,b_)=>a+b_[1],0);
-            const corePct = totalCamW > 0 ? Math.round(coreCams.reduce((a,b_)=>a+b_[1],0)/totalCamW*100) : 0;
-
-            // Plain-language summary
-            let summary = '';
-            if(coreCams.length > 0) {
-              summary += `Probable core area near <strong style="color:var(--blue)">${coreCams.map(([c])=>c).join(' / ')}</strong> (${corePct}% of weighted activity). `;
-            }
-            if(topMidday && topMidday.length > 0) {
-              summary += `<strong style="color:var(--blue)">${topMidday[0][0]}</strong> has the most midday hits (${topMidday[0][1]}) — likely closest to his bedding area. `;
-            }
-            if(topDawn && topDusk && topDawn[0] !== topDusk[0]) {
-              summary += `Likely enters at <strong style="color:var(--blue)">${topDawn[0]}</strong> (dawn) and exits toward <strong style="color:var(--blue)">${topDusk[0]}</strong> (dusk). `;
-            } else if(topDawn) {
-              summary += `Most dawn activity at <strong style="color:var(--blue)">${topDawn[0]}</strong>. `;
-            }
-
-            return `<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:10px;border:1px solid rgba(74,127,193,0.2)">
-              <div class="cond-title" style="margin-bottom:10px">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg>
-                Core Area Analysis
-              </div>
-
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
-                <div style="background:var(--surface2);border-radius:8px;padding:8px">
-                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Midday Cams (near bed)</div>
-                  ${topMidday.length
-                    ? topMidday.slice(0,3).map(([cam,cnt]) => `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
-                        <span style="color:var(--text2)">${cam}</span>
-                        <span style="color:var(--blue);font-weight:600">${cnt}</span>
-                      </div>`).join('')
-                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No midday data</div>'}
-                </div>
-                <div style="background:var(--surface2);border-radius:8px;padding:8px">
-                  <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Dawn/Dusk Travel</div>
-                  ${topDawnDusk.length
-                    ? topDawnDusk.slice(0,3).map(([cam,cnt]) => `<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0">
-                        <span style="color:var(--text2)">${cam}</span>
-                        <span style="color:var(--blue);font-weight:600">${cnt}</span>
-                      </div>`).join('')
-                    : '<div style="font-size:10px;color:var(--text3);font-style:italic">No travel data</div>'}
-                </div>
-              </div>
-
-              <div style="margin-bottom:10px">
-                <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">First → Last Detection per Camera</div>
-                ${Object.entries(camFirstLast).sort((a,b_)=>b_[1].count-a[1].count).slice(0,5).map(([cam,d]) =>
-                  `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border)">
-                    <span style="font-size:11px;color:var(--text2)">${cam}</span>
-                    <span style="font-size:10px;color:var(--text3)">${fmtD(d.first)}${d.first!==d.last?' → '+fmtD(d.last):''} &middot; <strong style="color:var(--text2)">${d.count}</strong></span>
-                  </div>`
-                ).join('')}
-              </div>
-
-              ${summary ? `<div style="font-size:11px;color:var(--text2);line-height:1.6;padding:8px;background:rgba(74,127,193,0.06);border-radius:8px;border-left:2px solid var(--blue)">${summary}</div>` : ''}
-            </div>`;
-          })() : ''}
-
-          <button onclick="goToBuck('${bname}')" style="width:100%;padding:9px;border:1px solid var(--blue);border-radius:8px;background:transparent;color:var(--blue);font-size:12px;cursor:pointer;font-family:var(--font)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> View movement map + core area</button>
-        </div>
-      </div>`;
-    });
-  }
-
-  // --- Property Intelligence -
-  html += `<div class="stitle" style="margin:16px 0 10px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Property Intelligence</div>`;
-
-  // Wind rose - radial SVG chart
-  html += `<div class="prop-stat" style="padding:0;overflow:hidden">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0">
-      <div style="padding:14px;border-right:1px solid var(--border)">
-        <div class="cond-title">Wind Direction</div>
-        ${buildWindRoseSVG(windCounts, maxWind, topWinds, 120)}
-      </div>
-      <div style="padding:14px">
-        <div class="cond-title">Activity by Time of Day</div>
-        ${build24HrTimeline(ys)}
-      </div>
-    </div>
-  </div>`;
-    html += `<div class="prop-stat"><div class="cond-title">Camera Activity</div>
-    ${buildCamGrid(CAMNAMES.slice(0,5), camCounts, camMatureCounts, maxCam, topCam)}
-  </div>`;
-  html += `<div class="insight insight-gold" style="margin-bottom:32px">
-    <div class="insight-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Key Insights &mdash; ${totalCount} Sightings</div>
-    <div class="insight-text">
-      ${topWinds.length?`<strong style="color:#E5B53B">Best winds:</strong> ${topWinds.join(", ")}.<br/>`:""}
-      ${topTime?`<strong style="color:#E5B53B">Peak window:</strong> ${topTime[0]} (${topTime[1]} sightings).<br/>`:""}
-      ${avgMatureTemp?`<strong style="color:#E5B53B">Mature buck temp:</strong> avg ${avgMatureTemp}F at sighting.<br/>`:""}
-      ${topMoon?`<strong style="color:#E5B53B">Best moon:</strong> ${topMoon[0]} &mdash; ${topMoon[1]} mature buck hit${topMoon[1]>1?"s":""}.<br/>`:""}
-      ${highP.length&&lowP.length?`<strong style="color:#E5B53B">Pressure:</strong> High &rarr; ${highBuckPct}% buck rate vs ${lowBuckPct}% low pressure.<br/>`:""}
-      ${topCam?`<strong style="color:#E5B53B">Hottest cam:</strong> ${topCam[0]} (${topCam[1]} sightings).`:""}
-    </div>
-  </div>`;
 
   // --- Conditions graph (last 7 days) ---
   html += `<div class="intel-conditions-wrap" style="margin-bottom:32px">
