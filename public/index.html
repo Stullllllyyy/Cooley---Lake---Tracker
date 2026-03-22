@@ -58,7 +58,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .layers-sub{font-size:9px;color:var(--text3)}
 
 /* camera popup */
-.cam-popup{position:fixed;bottom:calc(var(--tab-h) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
+.cam-popup{position:fixed;bottom:calc(var(--tab-h) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow-y:auto;max-height:calc(85vh - var(--tab-h));box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
 .cam-popup.show{transform:translateY(0)}
 .cam-popup.gold{border-color:rgba(140,115,85,0.45)}
 .popup-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
@@ -1821,6 +1821,8 @@ async function addCamMarkers() {
         ${ringHTML}
         <svg class="pin-bg" viewBox="0 0 36 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="position:relative;z-index:1">
           <path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"
+            fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>
+          <path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"
             fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
         </svg>
         <div class="cam-pin-content" style="position:relative;z-index:1">
@@ -1884,18 +1886,20 @@ function addObsMarkers() {
       const el = document.createElement('div');
       // Sulfur teardrop — same SVG path as cam pins, distinct fill #E5B53B vs gold #8C7355
       // anchor:'bottom' so teardrop tip aligns to coordinate (matches cam pin architecture)
-      el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;flex-shrink:0';
+      // Use cam-marker/cam-pin classes for consistent 36×44px size across all pin types
+      el.className = 'cam-marker';
       el.innerHTML =
-        '<div style="width:30px;height:37px;position:relative;display:flex;align-items:center;justify-content:center">' +
-        '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+        '<div class="cam-pin">' +
+        '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
         '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="' + pinColor + '" stroke="' + pinStroke + '" stroke-width="1.5"/>' +
         '</svg>' +
-        '<div style="position:relative;z-index:1;padding-bottom:8px">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+        '<div class="cam-pin-content">' +
+        '<div class="cam-pin-ico"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>' +
         '</div></div>';
       el.title = (s.deer_type || 'Observation') + (s.buck_name ? ' \u2014 ' + s.buck_name : '');
-      el.addEventListener('click', () => showObsPopup(s));
-      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+      el.addEventListener('click', e => { e.stopPropagation(); showObsPopup(s); });
+      const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom', offset: [0, 0] })
         .setLngLat([s.obs_lng, s.obs_lat])
         .addTo(mapInstance);
       obsMarkers.push(marker);
@@ -2500,12 +2504,18 @@ async function showPin(camName) {
   // Remove any extra rows left from a previous popup type
   const existCR = document.getElementById('camColorRow');
   if(existCR) existCR.remove();
-  // Show popup immediately — don't block on Supabase
+  // Show popup immediately
   popup.classList.add('show');
-  // Fetch facing direction async and fill in after popup is visible
+  // Color row — synchronous (camLocations already loaded), visible right away
+  const camColorRow = buildColorSwatchRow(
+    (camLocations[camName] && camLocations[camName].color) || '#8C7355',
+    c => setCameraColor(camName, c)
+  );
+  camColorRow.id = 'camColorRow';
+  actions.parentNode.appendChild(camColorRow);
+  // Fetch facing direction async — insert above color row when ready
   const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
   const currentFacing = camData?.data?.facing || '';
-  // Remove any existing facing row to prevent duplicates
   const existingFacing = document.getElementById('camFacingRow');
   if(existingFacing) existingFacing.remove();
   const facingHtml = document.createElement('div');
@@ -2516,14 +2526,10 @@ async function showPin(camName) {
       ${FACING_DIRS.map(d => `<button onclick="setCameraFacing('${camName}','${d}',this)"
         style="padding:4px 8px;border-radius:6px;border:1px solid ${currentFacing===d?'var(--blue)':'var(--border2)'};background:${currentFacing===d?'rgba(74,127,193,0.15)':'transparent'};color:${currentFacing===d?'var(--blue)':'var(--text3)'};font-size:11px;cursor:pointer;font-family:var(--font)">${d}</button>`).join('')}
     </div>`;
-  actions.parentNode.appendChild(facingHtml);
-  // Color swatch row — uses camLocations cache (populated at load)
-  const camColorRow = buildColorSwatchRow(
-    (camLocations[camName] && camLocations[camName].color) || '#8C7355',
-    c => setCameraColor(camName, c)
-  );
-  camColorRow.id = 'camColorRow';
-  actions.parentNode.appendChild(camColorRow);
+  // Insert facing row above the color row so color row stays at bottom
+  const colorEl = document.getElementById('camColorRow');
+  if(colorEl) actions.parentNode.insertBefore(facingHtml, colorEl);
+  else actions.parentNode.appendChild(facingHtml);
 }
 
 
@@ -4379,6 +4385,7 @@ function enterTapToPlaceMode() {
   el.innerHTML =
     '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite" id="ttpPinInner">' +
     '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
     '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#f0c75a" stroke-width="1.5"/>' +
     '</svg>' +
     '<div style="position:relative;z-index:1;padding-bottom:10px">' +
@@ -4669,6 +4676,8 @@ function addPropertyMarker(m) {
     '<div class="cam-pin">' +
       '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
         '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+      '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
         ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
       '</svg>' +
       '<div class="cam-pin-content"><div class="cam-pin-ico">' + icon + '</div></div>' +
