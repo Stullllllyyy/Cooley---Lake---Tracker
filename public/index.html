@@ -1500,6 +1500,7 @@ function buildChatContext() {
   const now = new Date();
   const today = now.toISOString().split('T')[0];
   const thirtyDaysAgo = new Date(now - 30 * 86400000).toISOString().split('T')[0];
+  const hourLabels = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm'];
 
   // Last 30 days sightings
   const recent = sightings.filter(s => s.date && s.date >= thirtyDaysAgo);
@@ -1516,25 +1517,80 @@ function buildChatContext() {
   const topBucks = Object.entries(buckCounts).sort((a,b) => b[1]-a[1]).slice(0,3).map(([n,c]) => n+' ('+c+')');
 
   // Peak activity hours
-  const hourCounts = new Array(24).fill(0);
-  recent.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h>=0&&h<24) hourCounts[h]++; } });
-  const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
-  const hourLabels = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm'];
+  const hourCountsAll = new Array(24).fill(0);
+  recent.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h>=0&&h<24) hourCountsAll[h]++; } });
+  const peakHour = hourCountsAll.indexOf(Math.max(...hourCountsAll));
   const peakTime = hourLabels[peakHour] || 'unknown';
 
   // Moon phase
   const moon = moonPhase(today);
 
-  // Camera names + facing
-  const camList = Object.keys(camLocations).map(name => {
-    return name;
-  });
+  // Camera names
+  const camList = Object.keys(camLocations);
 
   // Stands and markers
   const markers = typeof propertyMarkers !== 'undefined' ? propertyMarkers : [];
-  const stands = markers.filter(m => m.type === 'Stand').map(m => m.name || 'Unnamed stand');
+  const standMarkers = markers.filter(m => m.type === 'Stand');
+  const stands = standMarkers.map(m => m.name || 'Unnamed stand');
   const scrapes = markers.filter(m => m.type === 'Scrape').map(m => m.name || 'Unnamed scrape');
   const bedding = markers.filter(m => m.type === 'Bedding').map(m => m.name || 'Unnamed bedding');
+
+  // --- Per-buck detailed breakdowns (all time, not just 30 days) ---
+  const namedBuckSightings = {};
+  sightings.forEach(s => {
+    if(!s.buck_name) return;
+    if(!namedBuckSightings[s.buck_name]) namedBuckSightings[s.buck_name] = [];
+    namedBuckSightings[s.buck_name].push(s);
+  });
+
+  const buckProfiles = Object.entries(namedBuckSightings)
+    .sort((a,b) => b[1].length - a[1].length)
+    .map(([name, sigs]) => {
+      // Wind breakdown
+      const windCounts = {};
+      sigs.forEach(s => { if(s.wind_dir) windCounts[s.wind_dir] = (windCounts[s.wind_dir]||0) + 1; });
+      const winds = Object.entries(windCounts).sort((a,b) => b[1]-a[1]).map(([d,c]) => d+'('+c+')').join(', ');
+
+      // Camera breakdown
+      const camBreak = {};
+      sigs.forEach(s => { if(s.camera_name) camBreak[s.camera_name] = (camBreak[s.camera_name]||0) + 1; });
+      const cams = Object.entries(camBreak).sort((a,b) => b[1]-a[1]).map(([n,c]) => n+'('+c+')').join(', ');
+
+      // Time of day breakdown — top 3 hours
+      const hCounts = new Array(24).fill(0);
+      sigs.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h>=0&&h<24) hCounts[h]++; } });
+      const topHours = hCounts.map((c,i) => [i,c]).filter(x => x[1] > 0).sort((a,b) => b[1]-a[1]).slice(0,3)
+        .map(([h,c]) => hourLabels[h]+'('+c+')').join(', ');
+
+      return `${name}: ${sigs.length} sightings — wind: ${winds || 'none'} | cameras: ${cams || 'none'} | peak hours: ${topHours || 'none'}`;
+    });
+
+  // --- Per-stand wind data ---
+  // For each stand, find buck sightings at the nearest camera and report wind directions
+  const standWindProfiles = standMarkers.map(stand => {
+    const sName = stand.name || 'Unnamed stand';
+    const sLat = stand.lat;
+    const sLng = stand.lng;
+    if(!sLat || !sLng) return `${sName}: no location data`;
+
+    // Find nearest camera by simple distance
+    let nearestCam = null;
+    let nearestDist = Infinity;
+    Object.entries(camLocations).forEach(([cName, loc]) => {
+      const d = Math.sqrt(Math.pow(loc.lat - sLat, 2) + Math.pow(loc.lng - sLng, 2));
+      if(d < nearestDist) { nearestDist = d; nearestCam = cName; }
+    });
+
+    if(!nearestCam) return `${sName}: no nearby cameras`;
+
+    // Buck sightings at that camera
+    const camSightings = sightings.filter(s => s.camera_name === nearestCam && s.deer_type && s.deer_type.includes('Buck'));
+    const windCounts = {};
+    camSightings.forEach(s => { if(s.wind_dir) windCounts[s.wind_dir] = (windCounts[s.wind_dir]||0) + 1; });
+    const winds = Object.entries(windCounts).sort((a,b) => b[1]-a[1]).map(([d,c]) => d+'('+c+')').join(', ');
+
+    return `${sName} (nearest cam: ${nearestCam}): buck wind dirs: ${winds || 'none'}`;
+  });
 
   let ctx = `PROPERTY CONTEXT (Cooley Lake, Suring WI, ~100 acres)\n`;
   ctx += `Today: ${today}\n`;
@@ -1547,6 +1603,16 @@ function buildChatContext() {
   ctx += `STANDS: ${stands.join(', ') || 'none'}\n`;
   ctx += `SCRAPES: ${scrapes.join(', ') || 'none'}\n`;
   ctx += `BEDDING AREAS: ${bedding.join(', ') || 'none'}\n`;
+
+  if(buckProfiles.length) {
+    ctx += `\nBUCK PROFILES:\n`;
+    buckProfiles.forEach(p => { ctx += `  ${p}\n`; });
+  }
+
+  if(standWindProfiles.length) {
+    ctx += `\nSTAND WIND DATA:\n`;
+    standWindProfiles.forEach(p => { ctx += `  ${p}\n`; });
+  }
 
   // Current weather from map pill if available
   const wxPill = document.querySelector('.wx-pill');
