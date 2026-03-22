@@ -135,6 +135,14 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .chat-starter-pill{padding:8px 14px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.15s;text-align:left;line-height:1.4}
 .chat-starter-pill:active{background:rgba(140,115,85,0.15);border-color:var(--bronze);color:var(--bronze)}
 #chatMessages::-webkit-scrollbar{display:none}
+.pi-card{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--bronze);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:border-color 0.15s;display:flex;align-items:flex-start;gap:12px}
+.pi-card:active{border-color:var(--bronze)}
+.pi-card-icon{width:28px;height:28px;flex-shrink:0;color:var(--bronze);opacity:0.7}
+.pi-card-body{flex:1;min-width:0}
+.pi-card-eyebrow{font-size:9px;color:var(--bronze);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px}
+.pi-card-title{font-size:13px;font-weight:600;color:var(--silver)}
+.pi-card-preview{font-size:11px;color:var(--text3);margin-top:4px;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#chatIntelPanel::-webkit-scrollbar{display:none}
 
 /* cards */
 .card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
@@ -762,10 +770,36 @@ textarea{resize:none}
       </button>
     </div>
   </div>
-  <div id="chatIntelPanel" style="flex:1;display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:48px 24px">
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--bronze)" stroke-width="1.4" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-    <div style="font-size:14px;font-weight:600;color:var(--text)">Property Intel</div>
-    <div style="font-size:12px;color:var(--text3);max-width:260px;line-height:1.6">AI-generated property reports and analysis coming soon.</div>
+  <div id="chatIntelPanel" style="flex:1;display:none;flex-direction:column;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:14px 16px 24px">
+    <div id="propIntelCards"></div>
+    <div style="height:1px;background:var(--bronze);opacity:0.3;margin:20px 0 16px"></div>
+    <button onclick="askHuginnFromIntel()" style="width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--bronze);color:#121415;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:8px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#121415" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Ask Huginn Based on My Property
+    </button>
+  </div>
+</div>
+
+<!-- PROPERTY INTEL EDIT MODAL -->
+<div class="modal-overlay" id="propIntelEditOverlay" onclick="closePropIntelEdit()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-handle"></div>
+    <div class="modal-hdr">
+      <div class="modal-title" id="propIntelEditTitle"></div>
+      <button class="modal-x" onclick="closePropIntelEdit()">&#215;</button>
+    </div>
+    <div id="propIntelEditBody" style="padding:0 16px 24px"></div>
+  </div>
+</div>
+
+<!-- SEED PROMPT OVERLAY -->
+<div id="seedOverlay" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:9998;background:var(--bg);flex-direction:column;align-items:center;justify-content:center;gap:20px;text-align:center;padding:32px 24px">
+  <img src="HuginnLogo.svg" style="width:120px;opacity:0.9" alt="Huginn"/>
+  <div style="font-size:18px;font-weight:700;color:var(--bronze);letter-spacing:1.5px;margin-top:8px">SEED YOUR PROPERTY INTELLIGENCE</div>
+  <div style="font-size:13px;color:var(--silver);line-height:1.7;max-width:320px">Help Huginn learn your land. Add context about terrain, neighbors, bedding areas, and historical patterns to unlock smarter hunt recommendations.</div>
+  <div style="display:flex;gap:12px;margin-top:8px;width:100%;max-width:320px">
+    <button onclick="dismissSeed(false)" style="flex:1;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Maybe Later</button>
+    <button onclick="dismissSeed(true)" style="flex:1;padding:12px;border:none;border-radius:var(--radius);background:var(--bronze);color:#121415;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font)">Set Up Now</button>
   </div>
 </div>
 
@@ -1356,6 +1390,7 @@ function setChatMode(mode) {
   document.getElementById('chatToggleIntel').classList.toggle('on', mode === 'intel');
   document.getElementById('chatAssistantPanel').style.display = mode === 'assistant' ? 'flex' : 'none';
   document.getElementById('chatIntelPanel').style.display = mode === 'intel' ? 'flex' : 'none';
+  if(mode === 'intel') loadAndRenderPropIntel();
 }
 
 async function loadChatHistory() {
@@ -1614,6 +1649,17 @@ function buildChatContext() {
     standWindProfiles.forEach(p => { ctx += `  ${p}\n`; });
   }
 
+  // Property knowledge from property_context
+  const pkEntries = Object.entries(propIntelData).filter(([k, v]) => v);
+  if(pkEntries.length) {
+    ctx += `\nPROPERTY KNOWLEDGE (from hunter):\n`;
+    pkEntries.forEach(([key, content]) => {
+      const cat = PROP_INTEL_CATEGORIES.find(c => c.key === key);
+      const label = cat ? cat.name : key;
+      ctx += `  ${label}: ${content}\n`;
+    });
+  }
+
   // Current weather from map pill if available
   const wxPill = document.querySelector('.wx-pill');
   if(wxPill) ctx += `\nCURRENT CONDITIONS: ${wxPill.textContent.trim()}\n`;
@@ -1656,6 +1702,139 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 });
+
+// --- Property Intel ---
+const PROP_INTEL_CATEGORIES = [
+  { key: 'terrain_travel', name: 'Terrain & Travel Corridors', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21l4-10 4 10"/><path d="M2 21l4-10 4 10"/><path d="M14 21l4-10 4 10"/><line x1="1" y1="21" x2="23" y2="21"/></svg>' },
+  { key: 'neighbor_pressure', name: 'Neighbor Pressure', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' },
+  { key: 'bedding_areas', name: 'Bedding Areas', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' },
+  { key: 'food_sources', name: 'Food Sources', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66L8 16c4-1 7-3 9-7l-2-2z"/><path d="M15 2c0 4-3 8-3 8s-3-4-3-8 1.34-2 3-2 3-2 3 2z"/></svg>' },
+  { key: 'historical_patterns', name: 'Historical Patterns', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>' },
+  { key: 'stand_notes', name: 'Stand Notes', icon: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>' }
+];
+
+let propIntelData = {};
+
+async function loadAndRenderPropIntel() {
+  try {
+    const { data, error } = await sb.from('property_context')
+      .select('category, content')
+      .eq('property_id', CHAT_PROPERTY_ID);
+    if(!error && data) {
+      propIntelData = {};
+      data.forEach(r => { propIntelData[r.category] = r.content; });
+    }
+  } catch(e) { console.error('[PropIntel] load error:', e); }
+  renderPropIntelCards();
+}
+
+function renderPropIntelCards() {
+  const el = document.getElementById('propIntelCards');
+  if(!el) return;
+  el.innerHTML = PROP_INTEL_CATEGORIES.map(cat => {
+    const content = propIntelData[cat.key] || '';
+    const preview = content ? (content.length > 100 ? content.slice(0, 100) + '...' : content) : '';
+    return `<div class="pi-card" onclick="openPropIntelEdit('${cat.key}')">
+      <div class="pi-card-icon">${cat.icon}</div>
+      <div class="pi-card-body">
+        <div class="pi-card-eyebrow">PROPERTY INTEL</div>
+        <div class="pi-card-title">${cat.name}</div>
+        ${preview ? `<div class="pi-card-preview">${escHtml(preview)}</div>` : '<div class="pi-card-preview" style="color:var(--text3);font-style:italic">Tap to add context</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let propIntelEditKey = null;
+
+function openPropIntelEdit(key) {
+  const cat = PROP_INTEL_CATEGORIES.find(c => c.key === key);
+  if(!cat) return;
+  propIntelEditKey = key;
+  const existing = propIntelData[key] || '';
+  document.getElementById('propIntelEditTitle').textContent = cat.name;
+  let html = '';
+  if(existing) {
+    html += `<div style="background:var(--bg);border-radius:8px;padding:10px 12px;margin-bottom:12px;max-height:120px;overflow-y:auto">
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Current Context</div>
+      <div style="font-size:12px;color:var(--silver);line-height:1.5;white-space:pre-wrap">${escHtml(existing)}</div>
+    </div>`;
+  }
+  html += `<textarea id="propIntelTextarea" rows="6" placeholder="Describe what you know about ${cat.name.toLowerCase()} on your property..." style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;color:var(--text);font-size:13px;padding:10px 12px;font-family:var(--font);resize:vertical;outline:none;line-height:1.5;box-sizing:border-box">${escHtml(existing)}</textarea>`;
+  html += `<div style="display:flex;gap:8px;margin-top:12px">`;
+  html += `<button onclick="closePropIntelEdit()" style="flex:1;padding:11px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">Cancel</button>`;
+  if(existing) {
+    html += `<button onclick="deletePropIntel()" style="padding:11px 14px;border:1px solid rgba(220,80,80,0.3);border-radius:var(--radius);background:transparent;color:#dc5050;font-size:13px;cursor:pointer;font-family:var(--font)">Delete</button>`;
+  }
+  html += `<button onclick="savePropIntel()" style="flex:2;padding:11px;border:none;border-radius:var(--radius);background:var(--bronze);color:#121415;font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font)">Save</button>`;
+  html += `</div>`;
+  document.getElementById('propIntelEditBody').innerHTML = html;
+  document.getElementById('propIntelEditOverlay').classList.add('on');
+}
+
+function closePropIntelEdit() {
+  document.getElementById('propIntelEditOverlay').classList.remove('on');
+  propIntelEditKey = null;
+}
+
+async function savePropIntel() {
+  const key = propIntelEditKey;
+  if(!key) return;
+  const textarea = document.getElementById('propIntelTextarea');
+  const content = textarea ? textarea.value.trim() : '';
+  if(!content) { showToast('Enter some context first'); return; }
+  try {
+    const existing = propIntelData[key];
+    if(existing) {
+      await sb.from('property_context').update({ content }).eq('property_id', CHAT_PROPERTY_ID).eq('category', key);
+    } else {
+      await sb.from('property_context').insert({ property_id: CHAT_PROPERTY_ID, category: key, content });
+    }
+    propIntelData[key] = content;
+    renderPropIntelCards();
+    closePropIntelEdit();
+    showToast('Saved');
+  } catch(e) { console.error('[PropIntel] save error:', e); showToast('Save failed'); }
+}
+
+async function deletePropIntel() {
+  const key = propIntelEditKey;
+  if(!key) return;
+  try {
+    await sb.from('property_context').delete().eq('property_id', CHAT_PROPERTY_ID).eq('category', key);
+    delete propIntelData[key];
+    renderPropIntelCards();
+    closePropIntelEdit();
+    showToast('Deleted');
+  } catch(e) { console.error('[PropIntel] delete error:', e); showToast('Delete failed'); }
+}
+
+function askHuginnFromIntel() {
+  setChatMode('assistant');
+  sendChatWithText("Based on all the property context I've provided, what are your top recommendations for this season?");
+}
+
+// --- Seed Prompt ---
+async function checkSeedPrompt() {
+  if(localStorage.getItem('huginn_seed_prompted')) return;
+  try {
+    const { data, error } = await sb.from('property_context')
+      .select('id')
+      .eq('property_id', CHAT_PROPERTY_ID)
+      .limit(1);
+    if(error || (data && data.length > 0)) return;
+    document.getElementById('seedOverlay').style.display = 'flex';
+  } catch(e) { /* silent */ }
+}
+
+function dismissSeed(setup) {
+  localStorage.setItem('huginn_seed_prompted', 'true');
+  document.getElementById('seedOverlay').style.display = 'none';
+  if(setup) {
+    openAiChat();
+    setTimeout(() => setChatMode('intel'), 300);
+  }
+}
 
 // --- GPS Blue Dot ---
 function initGeolocate() {
@@ -1787,6 +1966,7 @@ function bootApp() {
   loadSightings();
   updateMapWeather();
   startMap();
+  checkSeedPrompt();
 }
 
 function showAuthGate() {
