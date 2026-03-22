@@ -3993,64 +3993,85 @@ function goToCamera(camName) {
 }
 
 // Render 7-day conditions chart using Chart.js
+let conditionsChartInstance = null;
+
 async function renderConditionsChart() {
-  const canvas = document.getElementById('intelConditionsChart');
+  const canvas = document.getElementById('intelConditionsCanvas');
   if(!canvas || typeof Chart === 'undefined') return;
+
+  // Destroy previous instance
+  if(conditionsChartInstance) {
+    conditionsChartInstance.destroy();
+    conditionsChartInstance = null;
+  }
+
   try {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756' +
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + CLAT + '&longitude=' + CLNG +
       '&daily=temperature_2m_max,windspeed_10m_max' +
       '&hourly=surface_pressure' +
-      '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
+      '&wind_speed_unit=mph&temperature_unit=fahrenheit' +
       '&timezone=America%2FChicago&forecast_days=7';
     const r = await fetch(url);
     const j = await r.json();
     if(!j.daily) return;
 
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     const labels = j.daily.time.map(d => {
-      const dt = new Date(d+'T12:00:00');
-      return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+      const dt = new Date(d + 'T12:00:00');
+      return dayNames[dt.getDay()];
     });
     const temps = j.daily.temperature_2m_max;
     const winds = j.daily.windspeed_10m_max;
-    // Average pressure per day from hourly data
-    const pressures = j.daily.time.map((_,i) => {
-      const dayPressures = j.hourly.surface_pressure.slice(i*24, (i+1)*24).filter(Boolean);
-      return dayPressures.length ? Math.round(dayPressures.reduce((a,b)=>a+b,0)/dayPressures.length * 10)/10 : null;
+    // Average pressure per day (hPa → inHg: divide by 33.8639)
+    const pressures = j.daily.time.map((_, i) => {
+      const dayP = j.hourly.surface_pressure.slice(i * 24, (i + 1) * 24).filter(Boolean);
+      if(!dayP.length) return null;
+      const avgHpa = dayP.reduce((a, b) => a + b, 0) / dayP.length;
+      return Math.round(avgHpa / 33.8639 * 100) / 100;
     });
 
-    new Chart(canvas, {
+    conditionsChartInstance = new Chart(canvas, {
       type: 'line',
       data: {
         labels,
         datasets: [
           {
-            label: 'Temp (F)',
+            label: 'Temperature',
             data: temps,
             borderColor: '#8C7355',
-            backgroundColor: 'rgba(140,115,85,0.1)',
-            tension: 0.3,
+            backgroundColor: 'rgba(140,115,85,0.08)',
+            fill: true,
+            tension: 0.35,
             pointRadius: 4,
+            pointBackgroundColor: '#8C7355',
             pointHoverRadius: 6,
+            borderWidth: 2,
             yAxisID: 'y'
           },
           {
-            label: 'Pressure (hPa)',
+            label: 'Pressure',
             data: pressures,
             borderColor: '#BCC6CC',
-            backgroundColor: 'rgba(188,198,204,0.1)',
-            tension: 0.3,
+            backgroundColor: 'rgba(188,198,204,0.06)',
+            fill: false,
+            tension: 0.35,
             pointRadius: 4,
+            pointBackgroundColor: '#BCC6CC',
             pointHoverRadius: 6,
+            borderWidth: 2,
             yAxisID: 'y1'
           },
           {
-            label: 'Wind (mph)',
+            label: 'Wind Speed',
             data: winds,
             borderColor: '#E5B53B',
-            backgroundColor: 'rgba(229,181,59,0.1)',
-            tension: 0.3,
+            backgroundColor: 'rgba(229,181,59,0.06)',
+            fill: false,
+            tension: 0.35,
             pointRadius: 4,
+            pointBackgroundColor: '#E5B53B',
             pointHoverRadius: 6,
+            borderWidth: 2,
             yAxisID: 'y'
           }
         ]
@@ -4062,41 +4083,59 @@ async function renderConditionsChart() {
         plugins: {
           legend: {
             display: true,
-            position: 'bottom',
+            position: 'top',
+            align: 'start',
             labels: {
               color: '#8a9199',
               font: { family: "'Roboto',sans-serif", size: 10 },
-              boxWidth: 12,
-              padding: 12,
+              boxWidth: 10,
+              boxHeight: 10,
+              padding: 14,
               usePointStyle: true,
               pointStyle: 'circle'
             }
           },
           tooltip: {
-            backgroundColor: '#1a1d1e',
+            backgroundColor: 'rgba(18,20,21,0.95)',
             titleColor: '#BCC6CC',
             bodyColor: '#BCC6CC',
             borderColor: '#2a2c2e',
             borderWidth: 1,
             padding: 10,
-            titleFont: { family: "'Roboto',sans-serif" },
-            bodyFont: { family: "'Roboto',sans-serif" }
+            titleFont: { family: "'Roboto',sans-serif", size: 11 },
+            bodyFont: { family: "'Roboto',sans-serif", size: 11 },
+            callbacks: {
+              label: function(ctx) {
+                const v = ctx.raw;
+                if(v == null) return ctx.dataset.label + ': --';
+                if(ctx.datasetIndex === 0) return 'Temp: ' + Math.round(v) + '\u00B0F';
+                if(ctx.datasetIndex === 1) return 'Pressure: ' + v.toFixed(2) + ' inHg';
+                return 'Wind: ' + Math.round(v) + ' mph';
+              }
+            }
           }
         },
         scales: {
           x: {
             ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
-            grid: { color: '#2a2d2e', drawBorder: false }
+            grid: { display: false },
+            border: { display: false }
           },
           y: {
             position: 'left',
-            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
-            grid: { color: '#2a2d2e', drawBorder: false }
+            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 9 } },
+            grid: { color: '#2a2d2e', drawBorder: false },
+            border: { display: false }
           },
           y1: {
             position: 'right',
-            ticks: { color: '#4A4D4E', font: { family: "'Roboto',sans-serif", size: 10 } },
-            grid: { display: false }
+            ticks: {
+              color: '#4A4D4E',
+              font: { family: "'Roboto',sans-serif", size: 9 },
+              callback: function(v) { return v.toFixed(1); }
+            },
+            grid: { display: false },
+            border: { display: false }
           }
         }
       }
@@ -7254,6 +7293,14 @@ function renderDash() {
     <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
   </div>`;
 
+  // --- Conditions graph (last 7 days) ---
+  html += `<div class="intel-conditions-wrap">
+    <div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:12px">Conditions &mdash; Last 7 Days</div>
+    <div style="position:relative;height:220px">
+      <canvas id="intelConditionsCanvas"></canvas>
+    </div>
+  </div>`;
+
   // --- Weather & movement correlation -
   html += `<div class="prop-stat">
     <div class="cond-title" style="margin-bottom:10px"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8" y2="21"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="16" y1="16" x2="16" y2="21"/></svg>Weather Impact on Movement</div>
@@ -7271,6 +7318,7 @@ function renderDash() {
   renderActivityChart(ys);
   renderKeyInsights(ys);
   renderRecentActivity(ys);
+  renderConditionsChart();
   setTimeout(loadHuntForecast, 100);
 }
 
