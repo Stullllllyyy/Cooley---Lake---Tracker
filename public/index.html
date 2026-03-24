@@ -31,13 +31,25 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
-/* map filter dropdown */
-.map-filter-bar{position:fixed;top:108px;left:0;right:0;z-index:50;display:flex;gap:8px;padding:0 14px;pointer-events:none;align-items:flex-start}
-.map-filter-wrap{position:relative;pointer-events:auto}
-.map-select-wrap{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:20px;background:rgba(18,20,21,0.88);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(10px);cursor:pointer;font-size:12px;color:var(--text2);white-space:nowrap;user-select:none;transition:border-color 0.2s;min-width:140px;justify-content:space-between}
-.map-select-wrap.active{border-color:var(--blue);color:var(--blue)}
-.map-select-arrow{font-size:14px;transition:transform 0.2s;line-height:1}
-.map-select-arrow.open{transform:rotate(180deg)}
+/* Filter FAB + Panel */
+.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:50%;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.filter-fab:active{transform:scale(0.9)}
+.filter-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
+.filter-fab-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
+.filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px) - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
+.filter-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.filter-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
+.filter-panel-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:600}
+.filter-panel-close{background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;padding:0;line-height:1}
+.filter-section{padding:6px 16px 10px;border-bottom:1px solid var(--border)}
+.filter-section:last-child{border-bottom:none}
+.filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
+.fp-chip{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
+.fp-chip.sel{border-color:var(--blue);background:rgba(74,127,193,0.15);color:var(--blue)}
+.fp-movement-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;background:var(--surface2);cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--font)}
+.fp-movement-chevron{font-size:14px;line-height:1;transition:transform 0.2s}
+.fp-style-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
+.fp-style-chip.sel{border-color:var(--blue);background:rgba(74,127,193,0.15);color:var(--blue)}
 .buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:120;pointer-events:none}
 .buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
 .buck-drop-item:last-child{border:none}
@@ -537,8 +549,6 @@ textarea{resize:none}
 .marker-toggle-row:last-child{border-bottom:none}
 .mfp-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--surface2);color:var(--text3);transition:background 0.15s,color 0.15s;min-width:32px;text-align:center}
 .mfp-toggle.on{background:var(--gold);color:#fff}
-.markers-pill-active .map-select-wrap{border-color:rgba(140,115,85,0.6) !important}
-.markers-pill-active #markersLabel{color:var(--gold) !important}
 @keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 /* Auth gate */
@@ -628,38 +638,41 @@ textarea{resize:none}
   </div>
 </div>
 
-<!-- Map filter bar -->
-<div class="map-filter-bar" id="mapFilters" style="top:108px">
-  <!-- Date filter (Year + Month) -->
-  <div class="map-filter-wrap">
-    <div class="map-select-wrap" onclick="toggleDateDropdown()" id="dateSelectWrap">
-      <span id="dateLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> All Dates</span>
-      <span class="map-select-arrow" id="dateArrow">&#8964;</span>
-    </div>
-    <div class="buck-dropdown" id="dateDropdown" style="display:none;top:155px;left:14px;min-width:200px">
-      <div style="padding:10px 12px;border-bottom:1px solid var(--border)">
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Year</div>
-        <div id="dateYearOptions"></div>
-        <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin:10px 0 6px">Month</div>
-        <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px"></div>
-      </div>
+<!-- Filter FAB -->
+<div class="filter-fab" id="filterFab" onclick="toggleFilterPanel()" title="Filters">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46"/></svg>
+  <div class="filter-fab-dot" id="filterFabDot" style="display:none"></div>
+</div>
+
+<!-- Filter Panel -->
+<div class="filter-panel" id="filterPanel">
+  <div class="filter-panel-hdr">
+    <span class="filter-panel-title">Filters</span>
+    <button class="filter-panel-close" onclick="closeFilterPanel()">&times;</button>
+  </div>
+  <!-- Date -->
+  <div class="filter-section">
+    <div class="filter-section-lbl">Date</div>
+    <div id="dateYearOptions" style="margin-bottom:6px"></div>
+    <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+  </div>
+  <!-- Movement Lines -->
+  <div class="filter-section">
+    <div class="filter-section-lbl">Movement Lines</div>
+    <div class="fp-movement-row" onclick="toggleBuckDropdown()">
+      <span id="filterLabel">No Movement Lines</span>
+      <span class="fp-movement-chevron" id="filterArrow">&#8964;</span>
     </div>
   </div>
-  <!-- Movement Lines dropdown -->
-  <div class="map-filter-wrap">
-    <div class="map-select-wrap" onclick="toggleBuckDropdown()">
-      <span id="filterLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M3 12 Q6 8 9 12 Q12 16 15 12 Q18 8 21 12"/></svg> Movement</span>
-      <span class="map-select-arrow" id="filterArrow">&#8964;</span>
-    </div>
-    <div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
+  <!-- Map Style -->
+  <div class="filter-section">
+    <div class="filter-section-lbl">Map Style</div>
+    <div id="fpStyleOptions" style="display:flex;flex-wrap:wrap;gap:6px"></div>
   </div>
-  <!-- Markers visibility dropdown -->
-  <div class="map-filter-wrap" id="markersFilterWrap">
-    <div class="map-select-wrap" onclick="toggleMarkersDropdown()" id="markersSelectWrap">
-      <span id="markersLabel"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Markers</span>
-      <span class="map-select-arrow" id="markersArrow">&#8964;</span>
-    </div>
-    <div class="buck-dropdown" id="markersDropdown" style="display:none;pointer-events:none;min-width:200px">
+  <!-- Markers -->
+  <div class="filter-section" style="border-bottom:none">
+    <div class="filter-section-lbl">Markers</div>
+    <div id="markersFilterWrap">
       <div class="marker-toggle-row" onclick="toggleObsMarkers();event.stopPropagation()">
         <span>Field Observations</span>
         <div class="mfp-toggle" id="mfpObsToggle">OFF</div>
@@ -674,16 +687,10 @@ textarea{resize:none}
       </div>
     </div>
   </div>
-  <!-- Map style dropdown -->
-  <div class="map-filter-wrap">
-    <div class="map-select-wrap" onclick="toggleStyleDropdown()" id="styleSelectWrap">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
-      <span id="mapStyleLabelBar">SAT</span>
-      <span class="map-select-arrow" id="styleArrow">&#8964;</span>
-    </div>
-    <div class="buck-dropdown" id="styleDropdown" style="display:none;top:155px;min-width:160px"></div>
-  </div>
 </div>
+
+<!-- Movement Lines dropdown (standalone, overlays filter panel) -->
+<div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
 <div id="mapLegend" style="display:none"></div>
 
 <div class="map-legend-panel" id="mapLegendPanel">
