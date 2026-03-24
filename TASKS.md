@@ -5,14 +5,10 @@ How To Use This File
 * After a session: Update this file with what was completed and what's next
 
 🔥 Current Priority (Next Session)
-* Property Intel notes — switch from overwrite to append model with timestamped entries
-
-
+* Production verification — deploy and test all pre-beta features end to end
 
 🐛 Active Bugs
 Bug | Severity | Notes
-Property Intel notes — overwrite model | Medium | Currently each category saves a single text block that overwrites previous content. Should switch to append model with timestamped entries so hunters can add notes over time without losing previous observations.
-Unknown Bucks — named bucks appearing in unknown bucket | Medium | Marsh Buck showing in Unknown Bucks even after AI match. buck_name likely staying null because confirmation never saved. Needs trace + bulk-resolve.
 Field observation pins on map | Low | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist correctly after full page reload.
 
 📋 Active Backlog
@@ -20,15 +16,16 @@ Tasks defined and ready to work on, in priority order:
 
 Immediate
 * [ ] Update Scrape/Rub/Bedding/Stand map pins — replace filled-circle style with Feather-style SVG teardrop icons matching camera pin shape. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e. anchor:bottom, same architecture as camera pins.
-* [ ] Unknown Bucks root cause + bulk resolve Marsh Buck null records
 
 Near Term
 * [ ] Replace confirm() calls with custom modals — 3 remaining: camera archive from popup, camera archive from pin menu, feature marker archive confirmation. CLAUDE.md prohibits confirm(). Flagged during soft delete implementation (Mar 24 2026).
 * [ ] Archived Pins UI — Settings section showing soft-deleted cameras and property_markers with restore option. Prerequisite: Settings tab must exist.
+* [ ] Trail cam photo AI 'Accept/Train' workflow — after AI identifies a buck in a trail cam photo, provide Accept (confirm ID) and Train (correct ID) buttons to feed ai_feedback table for learning loop.
+* [ ] Wind/temp auto-fill on desktop — weather auto-apply currently optimized for mobile; verify and fix for desktop browser usage.
+* [ ] Buck identity registry — centralized named buck registry with profile photo, antler description, age class, first/last seen dates. Foundation for Buck Profiles view.
 * [ ] Pin color editor — when user taps a feature marker pin, the info card should include preset color swatches (and optionally a color picker) so the user can customize pin color. Saved to property_markers.color column (needs migration).
 * [ ] Stand info card — tap stand pin on map to expand an info card showing name, notes, date placed, with Edit / Move / Delete options
 * [ ] Old addCamModal cleanup — the original #addCamModal (pre-Log Event rework) is orphaned in the HTML. Remove the modal HTML, its CSS, and any remaining JS that references it. Confirm addCamBtn and toggleAddCamMode() are also cleaned up or intentionally kept.
-* [ ] Bulk resolve Marsh Buck null records — after Unknown Bucks root cause is fixed, sweep existing records with null buck_name where AI previously suggested Marsh Buck and bulk-assign the name
 * [ ] Responsive design audit — test on multiple mobile screen sizes and on desktop/tablet. Identify layout breaks, oversized elements, and tap-target issues.
 * [ ] AI Training loop — Wrong Buck correction flow → ai_feedback table
 * [ ] Buck Profiles view — activate Profiles button, full buck dossier
@@ -106,6 +103,13 @@ Hunt AI chat sheet dvh fix | Added #sheet-chat override using dvh (dynamic viewp
 Property Intel toggle and cards | Two-tab pill row (Hunt Assistant / Property Intel) below chat header. Property Intel shows 7 category cards with SVG icons, editable via centered modal. Saves to property_context table (category/content columns). Wizard flow retained as secondary path. | Mar 24 2026
 Property Intel emoji → SVG icons | Replaced 7 HTML entity emoji icons with inline Feather-style SVGs matching app icon architecture. | Mar 24 2026
 Property Intel editor — centered modal | Changed from bottom-sheet (clipped on mobile) to centered modal overlay with scale+opacity animation and full border-radius. | Mar 24 2026
+Sightings feed fix | Sighting cards in feed link to detail sheet correctly | Mar 24 2026
+Property Intel append model | Switched from overwrite to append with timestamped entries so hunters can add notes over time without losing previous observations | Mar 24 2026
+Supabase RLS policies | Row Level Security enabled on all tables (sightings, cameras, property_markers, chat_messages, property_context) | Mar 24 2026
+property_id migration | Added property_id column to all tables; all queries scoped by property_id | Mar 24 2026
+/api/claude rate limiting | IP-based rate limiting on Vercel serverless proxy to prevent abuse | Mar 24 2026
+Image compression | Client-side image resize before Supabase Storage upload to reduce bandwidth and storage | Mar 24 2026
+Soft deletes on cameras and property_markers | DELETE→UPDATE deleted_at; all SELECTs filter .is('deleted_at', null); archive messaging replaces delete messaging; sightings preserved | Mar 24 2026
 
 Session Log
 Date | What We Did | What's Next
@@ -116,3 +120,4 @@ Mar 2026 | Fixed all three camera pin bugs: black-on-load timing (refreshMapPins
 Mar 20 2026 | Fixed new cam pins dropping black (fallback gold), field obs pins not appearing after save (updatePins→refreshMapPins), faded pin opacity (0.3→0.9 consistent across all styles). Added Log Event UX Rework and Unified Pin Management System to roadmap. | Unknown Bucks root cause trace + fix; verify Log Event in production; full planning session for Log Event UX Rework before building
 Mar 21 2026 | Completed full Log Event UX Rework (7 steps): + FAB → draggable sulfur teardrop pin at map center → Location Set card (bottom-anchored so pin visible) → event type modal → Camera Sighting form / Field Observation form / Mark Feature form, all wired to Supabase. Fixed tap-to-place crosshair→draggable marker migration (pin color, card position, drag+dragend events, dead code removal). Fixed property_markers insert (feature_type→type column, removed non-existent date+active). Added Markers filter pill. | Feather-style SVG teardrop icons for feature pins; Unknown Bucks root cause + Marsh Buck bulk resolve
 Mar 24 2026 | Hunt AI Chat full build: chat UI, system prompt with sighting data, conversations with drawer, Property Intel toggle with 7 editable category cards, iOS keyboard handling. Fixed response parser and Key Insights (root cause: wrong model ID 'claude-sonnet-4-5-20250514' → 'claude-sonnet-4-5'). Fixed chat sheet dvh for mobile. Fixed emoji icons → SVGs. Fixed editor from bottom-sheet to centered modal. | Property Intel append model with timestamps; verify chat and insights working in production
+Mar 24 2026 | Pre-beta blockers completed: sightings feed fix (card links open detail sheet), Property Intel append model with timestamped entries, Supabase RLS policies on all tables, property_id migration (all tables + queries scoped), /api/claude rate limiting (IP-based), image compression (client-side resize before upload), soft deletes on cameras and property_markers (deleted_at column, UPDATE instead of DELETE, SELECT filters). | Production verification; deploy and test end to end
