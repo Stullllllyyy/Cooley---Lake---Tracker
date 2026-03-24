@@ -222,6 +222,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .intel-edit-footer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--border);flex-shrink:0}
 .intel-edit-btn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .intel-edit-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.intel-edit-entry{padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.intel-edit-entry-date{font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:500}
+.intel-edit-entry-text{font-size:12px;color:var(--text2);line-height:1.5}
+.intel-edit-add-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:0.3px}
 .intel-cards-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .intel-cards-header h4{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin:0}
 .intel-cards-header span{font-size:11px;color:var(--text3)}
@@ -892,8 +896,9 @@ textarea{resize:none}
       <h3 id="intelEditTitle">Edit</h3>
       <button class="chat-header-btn" onclick="closeIntelEdit()">&#215;</button>
     </div>
-    <div class="intel-edit-body">
+    <div class="intel-edit-body" id="intelEditBody">
       <div class="intel-edit-hint" id="intelEditHint"></div>
+      <div id="intelEditHistory"></div>
       <textarea class="intel-edit-textarea" id="intelEditTextarea" placeholder=""></textarea>
     </div>
     <div class="intel-edit-footer">
@@ -1583,13 +1588,19 @@ function buildChatSystemPrompt() {
     return parts.join(' | ');
   }).join('\n');
 
-  // Property context from guided wizard
+  // Property context from guided wizard — send only 2-3 most recent entries per category
   let contextSection = '';
   if (propertyContextCache) {
     const labels = { terrain: 'Terrain', food_sources: 'Food Sources', bedding_areas: 'Bedding Areas', water_sources: 'Water Sources', access_routes: 'Access Routes', hunting_pressure: 'Hunting Pressure', additional_notes: 'Additional Notes' };
     const parts = Object.entries(propertyContextCache)
       .filter(([_, v]) => v)
-      .map(([k, v]) => `${labels[k] || k}: ${v}`);
+      .map(([k, v]) => {
+        const entries = parseIntelEntries(v).slice(-3);
+        if (!entries.length) return null;
+        const lines = entries.map(e => (e.date ? `[${e.date}] ` : '') + e.text).join(' | ');
+        return `${labels[k] || k}: ${lines}`;
+      })
+      .filter(Boolean);
     if (parts.length) contextSection = '\n\nPROPERTY CONTEXT (from the hunter):\n' + parts.join('\n');
   }
 
@@ -1741,7 +1752,8 @@ async function persistChatMessage(role, content) {
       conversation_id: chatConversationId,
       role: role,
       content: content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      property_id: PROPERTY_ID
     });
   } catch (e) {
     console.warn('Failed to persist chat message:', e);
@@ -1753,6 +1765,7 @@ async function loadChatConversations() {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('conversation_id, content, created_at, role')
+      .eq('property_id', PROPERTY_ID)
       .order('created_at', { ascending: true });
     if (error || !data || !data.length) return;
 
@@ -1804,6 +1817,7 @@ async function loadConversation(convId) {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('role, content, created_at')
+      .eq('property_id', PROPERTY_ID)
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
 
@@ -1942,11 +1956,14 @@ async function renderIntelCards() {
             <div class="intel-card-icon" style="background:${bgColor}">${icon}</div>
             ${INTEL_CARD_LABELS[step.key] || step.key}
           </div>
-          <div class="intel-card-status${content ? ' filled' : ''}">${content ? 'Saved' : 'Empty'}</div>
+          <div class="intel-card-status${content ? ' filled' : ''}">${(() => { const n = parseIntelEntries(content).length; return n ? n + (n===1?' entry':' entries') : 'Empty'; })()}</div>
         </div>
-        ${content
-          ? `<div class="intel-card-preview">${content.replace(/</g, '&lt;')}</div>`
-          : `<div class="intel-card-empty">Tap to add</div>`}
+        ${(() => {
+          const entries = parseIntelEntries(content);
+          if (!entries.length) return `<div class="intel-card-empty">Tap to add</div>`;
+          const recent = entries.slice(-3);
+          return recent.map(e => `<div class="intel-card-preview">${e.date ? `<span style="font-size:10px;color:var(--text3);margin-right:6px">${e.date}</span>` : ''}${(e.text||'').replace(/</g, '&lt;')}</div>`).join('');
+        })()}
       </div>`;
     }).join('')}
   `;
@@ -1957,11 +1974,25 @@ function openIntelEdit(category) {
   if (!step) return;
 
   intelEditCategory = category;
-  document.getElementById('intelEditTitle').textContent = step.question;
+  document.getElementById('intelEditTitle').textContent = INTEL_CARD_LABELS[category] || step.question;
   document.getElementById('intelEditHint').textContent = step.hint;
 
+  // Render existing entries
+  const entries = parseIntelEntries(propertyContextCache?.[category]);
+  const historyEl = document.getElementById('intelEditHistory');
+  if (entries.length) {
+    historyEl.innerHTML = entries.map(e =>
+      `<div class="intel-edit-entry">
+        <div class="intel-edit-entry-date">${e.date || 'Earlier note'}</div>
+        <div class="intel-edit-entry-text">${(e.text||'').replace(/</g, '&lt;')}</div>
+      </div>`
+    ).join('') + `<div class="intel-edit-add-label">Add new note</div>`;
+  } else {
+    historyEl.innerHTML = '';
+  }
+
   const textarea = document.getElementById('intelEditTextarea');
-  textarea.value = propertyContextCache?.[category] || '';
+  textarea.value = '';
   textarea.placeholder = step.placeholder;
 
   document.getElementById('intelEditOverlay').classList.add('on');
@@ -1975,19 +2006,25 @@ function closeIntelEdit() {
 
 async function saveIntelEdit() {
   if (!intelEditCategory) return;
-  const content = document.getElementById('intelEditTextarea').value.trim();
+  const newText = document.getElementById('intelEditTextarea').value.trim();
+  if (!newText) { showToast('Nothing to save'); return; }
 
   try {
+    // Parse existing entries, append new one
+    const existing = parseIntelEntries(propertyContextCache?.[intelEditCategory]);
+    existing.push({ text: newText, date: new Date().toISOString().slice(0, 10) });
+    const serialized = serializeIntelEntries(existing);
+
     await sb.from('property_context').upsert(
-      { category: intelEditCategory, content: content, updated_at: new Date().toISOString() },
+      { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
       { onConflict: 'category' }
     );
 
     // Update cache
     if (!propertyContextCache) propertyContextCache = {};
-    propertyContextCache[intelEditCategory] = content;
+    propertyContextCache[intelEditCategory] = serialized;
 
-    showToast(content ? 'Saved' : 'Cleared');
+    showToast('Entry added');
     closeIntelEdit();
     renderIntelCards();
   } catch (e) {
@@ -2049,16 +2086,7 @@ async function openIntelWizard() {
   intelWizardStep = 0;
   intelWizardData = {};
 
-  // Load existing property_context data
-  try {
-    const { data } = await sb.from('property_context').select('category, content');
-    if (data) {
-      data.forEach(row => { intelWizardData[row.category] = row.content; });
-    }
-  } catch (e) {
-    console.warn('Could not load property context:', e);
-  }
-
+  // Wizard always starts with empty fields for new entries
   document.getElementById('intelWizardOverlay').classList.add('on');
   renderIntelWizardStep();
 }
@@ -2136,19 +2164,25 @@ function skipIntelStep() {
 async function finishIntelWizard() {
   saveCurrentIntelStep();
 
-  // Save each key-value to property_context (upsert)
-  const entries = Object.entries(intelWizardData).filter(([_, v]) => v);
-  if (!entries.length) {
+  // Save each key-value to property_context (append model)
+  const wizEntries = Object.entries(intelWizardData).filter(([_, v]) => v);
+  if (!wizEntries.length) {
     closeIntelWizard();
     return;
   }
 
   try {
-    for (const [key, value] of entries) {
+    await loadPropertyContext();
+    for (const [key, value] of wizEntries) {
+      const existing = parseIntelEntries(propertyContextCache?.[key]);
+      existing.push({ text: value, date: new Date().toISOString().slice(0, 10) });
+      const serialized = serializeIntelEntries(existing);
       await sb.from('property_context').upsert(
-        { category: key, content: value, updated_at: new Date().toISOString() },
+        { category: key, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
         { onConflict: 'category' }
       );
+      if (!propertyContextCache) propertyContextCache = {};
+      propertyContextCache[key] = serialized;
     }
     showToast('Property intel saved');
   } catch (e) {
@@ -2161,9 +2195,26 @@ async function finishIntelWizard() {
 
 // Load property context into system prompt
 let propertyContextCache = null;
+
+// Parse property_context content: returns array of {text, date} entries
+// Handles legacy plain-text content (pre-append model) as a single entry
+function parseIntelEntries(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (_) {}
+  // Legacy plain text — wrap as single undated entry
+  return [{ text: raw, date: null }];
+}
+
+function serializeIntelEntries(entries) {
+  return JSON.stringify(entries);
+}
+
 async function loadPropertyContext() {
   try {
-    const { data } = await sb.from('property_context').select('category, content');
+    const { data } = await sb.from('property_context').select('category, content').eq('property_id', PROPERTY_ID);
     if (data && data.length) {
       propertyContextCache = {};
       data.forEach(row => { propertyContextCache[row.category] = row.content; });
@@ -2330,6 +2381,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 });
 
 const CLAT = 45.0200, CLNG = -88.2756;
+const PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
 const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
@@ -2399,6 +2451,7 @@ function syncDot(on) {
 async function loadSightings() {
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
+    .eq('property_id', PROPERTY_ID)
     .order('date', {ascending:false})
     .order('time', {ascending:false});
   syncDot(false);
@@ -2465,6 +2518,7 @@ async function submitSighting() {
       travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
       image_url: null,
       moon_phase: document.getElementById("mlbl").textContent,
+      property_id: PROPERTY_ID,
     };
   } else {
     // Field observation
@@ -2489,6 +2543,7 @@ async function submitSighting() {
       moon_phase: document.getElementById("mlbl").textContent,
       obs_lat: obsLatLng ? obsLatLng.lat : null,
       obs_lng: obsLatLng ? obsLatLng.lng : null,
+      property_id: PROPERTY_ID,
     };
   }
 
@@ -2723,7 +2778,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').order('id');
+  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
     data.forEach(c => {
@@ -6315,7 +6370,7 @@ async function confirmTtpAddCam() {
   document.getElementById('ttpAddCamModal').classList.remove('on');
   cancelTapToPlace();
   try {
-    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true });
+    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('Add camera error:', e); }
   camLocations[name] = { lng: loc.lng, lat: loc.lat };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -6426,6 +6481,7 @@ async function submitFeatureMarker() {
     lat: featFormLngLat ? featFormLngLat.lat : null,
     lng: featFormLngLat ? featFormLngLat.lng : null,
     notes: document.getElementById('ttpFeatNotes').value.trim() || null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('property_markers').insert(marker).select().single();
@@ -6463,7 +6519,7 @@ async function submitFeatureMarker() {
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*');
+    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID);
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -7198,6 +7254,7 @@ async function submitObsSighting() {
     obs_lat: obsFormLngLat ? obsFormLngLat.lat : null,
     obs_lng: obsFormLngLat ? obsFormLngLat.lng : null,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
@@ -7364,7 +7421,7 @@ async function tcamSaveNewCam() {
   const name = document.getElementById('tcamNewCamName').value.trim();
   if(!name) { showToast('Camera name is required', 2000); return; }
   try {
-    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true });
+    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('tcamSaveNewCam:', e); }
   camLocations[name] = { lng: CLNG, lat: CLAT };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -7579,6 +7636,7 @@ async function submitTrailCamSighting() {
     travel_dir: tdir ? tdir.dataset.v : null,
     moon_phase: document.getElementById('tcamMoonLbl').textContent,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
