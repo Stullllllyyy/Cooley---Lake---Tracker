@@ -303,4 +303,56 @@ Trail cam photo storage follows a model hunters already understand — like Goog
 
 ---
 
+## 11. When Auth Ships — Migration Steps
+
+When Supabase Auth is configured and users authenticate via email/password or magic link, the following migration must be executed to transition from the temporary anon bridge to proper authenticated RLS.
+
+### 11.1 Drop Anon Bridge Policies
+
+These 7 policies grant the `anon` role full access to all tables. They were added as a transitional measure when RLS was enabled (March 2026) before Auth existed. **Drop all of them once Auth is live and the app uses authenticated sessions.**
+
+```sql
+DROP POLICY "anon_bridge_sightings" ON sightings;
+DROP POLICY "anon_bridge_cameras" ON cameras;
+DROP POLICY "anon_bridge_property_markers" ON property_markers;
+DROP POLICY "anon_bridge_property_context" ON property_context;
+DROP POLICY "anon_bridge_chat_messages" ON chat_messages;
+DROP POLICY "anon_bridge_properties" ON properties;
+DROP POLICY "anon_bridge_property_members" ON property_members;
+```
+
+### 11.2 Populate `property_members`
+
+The `property_members` table exists but is empty until Auth ships. When Auth goes live:
+
+1. Create the owner's Supabase Auth account (your account)
+2. Insert the owner membership row:
+   ```sql
+   INSERT INTO property_members (property_id, user_id, role)
+   VALUES ('403a9c61-4b6a-4bd1-81a3-a82054a4ce5e', '<your-auth-uid>', 'owner');
+   ```
+3. For each invited user (Dan, Andy), after they accept their invite:
+   ```sql
+   INSERT INTO property_members (property_id, user_id, role)
+   VALUES ('403a9c61-4b6a-4bd1-81a3-a82054a4ce5e', '<their-auth-uid>', 'co-hunter');
+   ```
+4. The existing `auth_select_*`, `auth_insert_*`, `auth_update_*`, `auth_delete_*` RLS policies will automatically take effect for authenticated users — they check `auth.uid()` against `property_members.user_id`.
+
+### 11.3 Replace Anon Key with Authenticated Sessions
+
+The current app uses the Supabase anon key directly in `index.html`:
+```js
+const SUPABASE_KEY = 'eyJ...'; // anon key
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+```
+
+When Auth ships, replace this with:
+1. Keep the anon key for initial client creation (Supabase Auth requires it)
+2. Add `supabase.auth.signInWithPassword()` or `supabase.auth.signInWithOtp()` login flow
+3. The Supabase client automatically attaches the authenticated session JWT to all requests after sign-in
+4. RLS policies using `auth.uid()` will then resolve to the logged-in user's ID
+5. Add `user_id` column to data tables and populate on insert: `user_id: (await sb.auth.getUser()).data.user.id`
+
+---
+
 *Huginn Architectural Spec | Confidential | March 2026*
