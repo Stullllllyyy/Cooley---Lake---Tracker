@@ -11,7 +11,7 @@ Tech Stack
 * Deployment: Vercel — cooley-lake-tracker.vercel.app
 * Version Control: GitHub — github.com/Stullllllyyy/Cooley---Lake---Tracker
 Repository Structure
-/ (root)   /api     claude.js         ← Vercel serverless proxy for Anthropic API   /public     index.html        ← Entire application (HTML + CSS + JS)     HuginnLogo.svg     HuginnFavicon.svg     HuginnRaven.png     map.jpg   CLAUDE.md           ← This file   PLANNING.md         ← Roadmap and product decisions   TASKS.md            ← Session tasks and backlog   DECISIONS.md        ← Architectural and product decision log
+/ (root)   /api     claude.js         ← Vercel serverless proxy for Anthropic API   /public     index.html        ← Entire application (HTML + CSS + JS)     HuginnLogo.svg     HuginnFavicon.svg     HuginnRaven.png     map.jpg   CLAUDE.md           ← This file   PLANNING.md         ← Roadmap and product decisions   TASKS.md            ← Session tasks and backlog   DECISIONS.md        ← Architectural and product decision log   ARCHITECTURE.md     ← Architectural & product specification — read every session
 Brand
 * Colors: Obsidian #121415, Bronze/Gold #8C7355, Tungsten #4A4D4E, Silver #BCC6CC, Sulfur #E5B53B
 * Tagline: "Know More. Hunt Smarter."
@@ -65,6 +65,7 @@ Architecture Principles
 5. logged_by attribution — added when Auth goes live
 6. data_source flag — 'seeded' for synthetic baseline sightings
 Development Rules — ALWAYS FOLLOW THESE
+* Read CLAUDE.md, PLANNING.md, TASKS.md, and ARCHITECTURE.md at the start of every session before touching any code
 * Read code before writing — never assume file state, always read first
 * Syntax check before every delivery — run Node.js syntax check on extracted JS
 * No alert() / confirm() / prompt() — use showToast() or custom modals
@@ -92,7 +93,7 @@ Current Build Status — What's Working ✅
 * Property markers render on map as colored circle pins; visibility controlled by Markers filter pills
 * Markers filter pills — Stands always on; Scrape/Rub and Bedding toggle independently
 * Buck tag suggestion dropdown (focus-safe, no rebuild on keystroke)
-* Hunt AI tab with placeholder
+* Hunt AI tab — full chat with Hunt Assistant and Property Intel modes, conversations drawer, conversation history persisted in Supabase
 * GPS blue dot (GeolocateControl)
 * AI buck matching — fully working end to end (92% Marsh Buck!)
 * /api/claude serverless proxy — key permanently server-side
@@ -113,10 +114,13 @@ Current Build Status — What's Working ✅
 * Field observation pins appear on map after save (fixed Mar 20 2026)
 * Faded camera pins consistent at 0.9 opacity across all 4 map styles (fixed Mar 20 2026)
 * Heatmap and dot map now work on All Lines / All Deer / No Lines filter states (fixed Mar 20 2026)
+* Mobile safe area insets fixed across all sheets and FABs (fixed Mar 23 2026)
+* Touch targets raised to 44px standard across all interactive elements (fixed Mar 23 2026)
+* Sightings header, filter bar, and event type modal reflowed for mobile (fixed Mar 23 2026)
 Known Bugs / In Progress 🐛
 Bug | Notes
-Unknown Bucks — named bucks in unknown bucket | buck_name staying null after AI suggestion not confirmed/saved. Marsh Buck confirmed still appearing in Unknown Bucks bucket. Needs trace + bulk resolve.
 Field observation pins on map | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist after page reload.
+Key Insights on Intelligence tab | Showing "Insights unavailable" — fetchAiInsights() hitting catch block. API error diagnosis needed.
 Feature marker pin icons | Currently plain filled circles. Planned upgrade to Feather-style SVG teardrop icons matching camera pin architecture (scheduled next session).
 Pin color customization | Not yet implemented. Planned: color swatches on feature marker tap info card, saved to property_markers.color (needs schema migration).
 
@@ -127,4 +131,4 @@ Camera Pin Architecture Notes (for future sessions)
 * Do NOT attempt zoom-level math or coordinate compensation — two failed attempts (fada88e, cab1934)
 * Same teardrop SVG used for tap-to-place preview pin — color #E5B53B (sulfur) while in placement mode
 Session Handoff
-See TASKS.md for current priorities. See PLANNING.md for roadmap and product decisions.
+See TASKS.md for current priorities. See PLANNING.md for roadmap and product decisions. See ARCHITECTURE.md for full architectural specification and pre-beta checklist.
