@@ -1752,7 +1752,8 @@ async function persistChatMessage(role, content) {
       conversation_id: chatConversationId,
       role: role,
       content: content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      property_id: PROPERTY_ID
     });
   } catch (e) {
     console.warn('Failed to persist chat message:', e);
@@ -1764,6 +1765,7 @@ async function loadChatConversations() {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('conversation_id, content, created_at, role')
+      .eq('property_id', PROPERTY_ID)
       .order('created_at', { ascending: true });
     if (error || !data || !data.length) return;
 
@@ -1815,6 +1817,7 @@ async function loadConversation(convId) {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('role, content, created_at')
+      .eq('property_id', PROPERTY_ID)
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
 
@@ -2013,7 +2016,7 @@ async function saveIntelEdit() {
     const serialized = serializeIntelEntries(existing);
 
     await sb.from('property_context').upsert(
-      { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString() },
+      { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
       { onConflict: 'category' }
     );
 
@@ -2175,7 +2178,7 @@ async function finishIntelWizard() {
       existing.push({ text: value, date: new Date().toISOString().slice(0, 10) });
       const serialized = serializeIntelEntries(existing);
       await sb.from('property_context').upsert(
-        { category: key, content: serialized, updated_at: new Date().toISOString() },
+        { category: key, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
         { onConflict: 'category' }
       );
       if (!propertyContextCache) propertyContextCache = {};
@@ -2211,7 +2214,7 @@ function serializeIntelEntries(entries) {
 
 async function loadPropertyContext() {
   try {
-    const { data } = await sb.from('property_context').select('category, content');
+    const { data } = await sb.from('property_context').select('category, content').eq('property_id', PROPERTY_ID);
     if (data && data.length) {
       propertyContextCache = {};
       data.forEach(row => { propertyContextCache[row.category] = row.content; });
@@ -2378,6 +2381,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 });
 
 const CLAT = 45.0200, CLNG = -88.2756;
+const PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
 const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
@@ -2447,6 +2451,7 @@ function syncDot(on) {
 async function loadSightings() {
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
+    .eq('property_id', PROPERTY_ID)
     .order('date', {ascending:false})
     .order('time', {ascending:false});
   syncDot(false);
@@ -2513,6 +2518,7 @@ async function submitSighting() {
       travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
       image_url: null,
       moon_phase: document.getElementById("mlbl").textContent,
+      property_id: PROPERTY_ID,
     };
   } else {
     // Field observation
@@ -2537,6 +2543,7 @@ async function submitSighting() {
       moon_phase: document.getElementById("mlbl").textContent,
       obs_lat: obsLatLng ? obsLatLng.lat : null,
       obs_lng: obsLatLng ? obsLatLng.lng : null,
+      property_id: PROPERTY_ID,
     };
   }
 
@@ -2771,7 +2778,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').order('id');
+  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
     data.forEach(c => {
@@ -6363,7 +6370,7 @@ async function confirmTtpAddCam() {
   document.getElementById('ttpAddCamModal').classList.remove('on');
   cancelTapToPlace();
   try {
-    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true });
+    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('Add camera error:', e); }
   camLocations[name] = { lng: loc.lng, lat: loc.lat };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -6474,6 +6481,7 @@ async function submitFeatureMarker() {
     lat: featFormLngLat ? featFormLngLat.lat : null,
     lng: featFormLngLat ? featFormLngLat.lng : null,
     notes: document.getElementById('ttpFeatNotes').value.trim() || null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('property_markers').insert(marker).select().single();
@@ -6511,7 +6519,7 @@ async function submitFeatureMarker() {
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*');
+    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID);
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -7246,6 +7254,7 @@ async function submitObsSighting() {
     obs_lat: obsFormLngLat ? obsFormLngLat.lat : null,
     obs_lng: obsFormLngLat ? obsFormLngLat.lng : null,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
@@ -7412,7 +7421,7 @@ async function tcamSaveNewCam() {
   const name = document.getElementById('tcamNewCamName').value.trim();
   if(!name) { showToast('Camera name is required', 2000); return; }
   try {
-    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true });
+    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('tcamSaveNewCam:', e); }
   camLocations[name] = { lng: CLNG, lat: CLAT };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -7627,6 +7636,7 @@ async function submitTrailCamSighting() {
     travel_dir: tdir ? tdir.dataset.v : null,
     moon_phase: document.getElementById('tcamMoonLbl').textContent,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
