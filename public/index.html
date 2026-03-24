@@ -1676,15 +1676,11 @@ async function sendChatMessage() {
       role: m.role, content: m.content
     }));
 
-    const res = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 1024,
         system: buildChatSystemPrompt(),
         messages: msgs
-      })
     });
 
     const data = await res.json();
@@ -2404,6 +2400,20 @@ function showToast(msg, duration = 2500) {
   t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), duration);
+}
+
+// Wrapper for /api/claude fetch — handles 429 rate limit with toast
+async function claudeFetch(body) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (res.status === 429) {
+    showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
+    throw new Error('RATE_LIMITED');
+  }
+  return res;
 }
 
 // --- utils -
@@ -4918,17 +4928,13 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
   const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
 
   try {
-    const resp = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const resp = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 400,
         messages: [{
           role: 'user',
           content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
         }]
-      })
     });
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
@@ -5862,10 +5868,7 @@ async function runBulkAi(s) {
     const b64data = base64.split(',')[1];
     const mediaType = base64.split(';')[0].split(':')[1];
 
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{
@@ -5875,7 +5878,6 @@ async function runBulkAi(s) {
             { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks from this property:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
           ]
         }]
-      })
     });
 
     const data = await response.json();
@@ -6080,10 +6082,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
     });
     const mediaType = blob.type || "image/jpeg";
 
-    const response = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: "claude-sonnet-4-5",
         max_tokens: 500,
         messages: [{
@@ -6100,7 +6099,6 @@ Respond in JSON only:
 {"match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences describing specific antler traits observed and how they match or don't match the known bucks", "antler_desc": "one sentence describing this buck's rack"}` }
           ]
         }]
-      })
     });
 
     if(!response.ok) {
@@ -7139,17 +7137,13 @@ async function obsRunAiHint(base64DataUrl) {
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
           { type: 'text', text: `You are analyzing a photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
-      })
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
@@ -7552,17 +7546,13 @@ async function tcamRunAiHint(base64DataUrl) {
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
           { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
-      })
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
@@ -7953,10 +7943,7 @@ async function runAiHint(base64DataUrl) {
     const base64 = base64DataUrl.split(",")[1];
     const mediaType = base64DataUrl.split(";")[0].split(":")[1];
 
-    const response = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: "claude-sonnet-4-5",
         max_tokens: 300,
         messages: [{
@@ -7977,7 +7964,6 @@ Respond in JSON only, no other text:
             }
           ]
         }]
-      })
     });
 
     const data = await response.json();
