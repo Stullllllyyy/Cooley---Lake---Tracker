@@ -1662,50 +1662,25 @@ async function sendChatMessage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 1024,
         system: buildChatSystemPrompt(),
         messages: msgs
       })
     });
 
-    const rawText = await res.text();
-    console.log('[HuntAI] Raw response status:', res.status);
-    console.log('[HuntAI] Raw response body:', rawText.slice(0, 800));
+    const data = await res.json();
     typing.remove();
 
-    let data;
-    try { data = JSON.parse(rawText); } catch(e) {
-      console.error('[HuntAI] JSON parse failed:', e);
-      appendChatBubble('ai', 'Failed to parse AI response.');
-      chatStreaming = false;
-      return;
-    }
-
-    // Anthropic error responses have type: "error"
     if (!res.ok || data.type === 'error') {
       const errMsg = (data.error && data.error.message) ? data.error.message : 'Something went wrong. Try again.';
-      console.error('[HuntAI] Error path:', data);
+      console.error('[HuntAI] API error:', errMsg);
       appendChatBubble('ai', errMsg);
       chatStreaming = false;
       return;
     }
 
-    // Anthropic success: { content: [{ type: "text", text: "..." }], model: "...", ... }
-    let aiText = '';
-    if (data.content && Array.isArray(data.content)) {
-      for (let i = 0; i < data.content.length; i++) {
-        if (data.content[i] && data.content[i].type === 'text' && typeof data.content[i].text === 'string') {
-          aiText = data.content[i].text;
-          break;
-        }
-      }
-    }
-    if (!aiText) {
-      console.error('[HuntAI] Could not extract text from response:', JSON.stringify(data).slice(0, 500));
-      aiText = 'No response received.';
-    }
-    console.log('[HuntAI] Extracted aiText:', aiText.slice(0, 200));
+    const aiText = data.content?.[0]?.text || 'No response received.';
     appendChatBubble('ai', aiText);
     chatHistory.push({ role: 'assistant', content: aiText });
     persistChatMessage('assistant', aiText);
@@ -4811,9 +4786,7 @@ function renderActivityChart(filteredSightings) {
 
 // Box 3: Key Insights (wrapper around fetchAiInsights)
 function renderKeyInsights(filteredSightings) {
-  console.log('[KeyInsights] renderKeyInsights called, sightings:', filteredSightings.length);
   const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
-  console.log('[KeyInsights] cacheKey:', cacheKey);
   fetchAiInsights(filteredSightings, cacheKey);
 }
 
@@ -4858,12 +4831,8 @@ function renderRecentActivity(filteredSightings) {
 // Fetch AI key insights from /api/claude.js
 let aiInsightsCache = {};
 async function fetchAiInsights(filteredSightings, cacheKey) {
-  console.log('[KeyInsights] fetchAiInsights called, cacheKey:', cacheKey);
   const el = document.getElementById('intelAiInsights');
-  console.log('[KeyInsights] #intelAiInsights element found:', !!el);
   if(aiInsightsCache[cacheKey]) {
-    console.log('[KeyInsights] CACHE HIT — re-rendering cached data');
-    // Re-render cached insights into fresh DOM element
     if(el) {
       el.innerHTML = aiInsightsCache[cacheKey].map(insight =>
         `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
@@ -4871,7 +4840,6 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
     }
     return aiInsightsCache[cacheKey];
   }
-  console.log('[KeyInsights] CACHE MISS — showing loading spinner');
   if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
 
   // Build a compact summary of sightings for the AI
@@ -4887,14 +4855,12 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
 
   const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
 
-  console.log('[KeyInsights] Summary built, length:', summary.length);
-  console.log('[KeyInsights] About to call /api/claude...');
   try {
     const resp = await fetch('/api/claude', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 400,
         messages: [{
           role: 'user',
@@ -4902,53 +4868,26 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
         }]
       })
     });
-    console.log('[KeyInsights] fetch response status:', resp.status, resp.statusText);
-    if(!resp.ok) {
-      console.error('[KeyInsights] HTTP error:', resp.status, resp.statusText);
-      throw new Error('HTTP ' + resp.status);
-    }
-    const rawText = await resp.text();
-    console.log('[KeyInsights] Raw response body:', rawText.slice(0, 500));
-    let data;
-    try { data = JSON.parse(rawText); } catch(parseErr) {
-      console.error('[KeyInsights] JSON parse failed:', parseErr);
-      throw new Error('JSON parse failed');
-    }
-    console.log('[KeyInsights] Parsed data keys:', Object.keys(data));
-    // Extract text from Anthropic response: content[].type === "text"
-    let text = '';
-    if (data.content && Array.isArray(data.content)) {
-      for (let i = 0; i < data.content.length; i++) {
-        if (data.content[i] && data.content[i].type === 'text' && typeof data.content[i].text === 'string') {
-          text = data.content[i].text;
-          break;
-        }
-      }
-    }
-    console.log('[KeyInsights] Extracted text:', text.slice(0, 300));
-    if(!text) console.warn('[KeyInsights] Empty response text, full data:', JSON.stringify(data).slice(0, 500));
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);
     let insights = [];
     if(match) {
-      console.log('[KeyInsights] JSON array matched, parsing...');
-      try { insights = JSON.parse(match[0]); } catch(e) { console.warn('[KeyInsights] JSON parse failed, using raw text:', e); insights = [text]; }
-    } else {
-      console.warn('[KeyInsights] No JSON array found in response, using raw text');
+      try { insights = JSON.parse(match[0]); } catch(e) { insights = [text]; }
+    } else if(text) {
       insights = [text];
     }
-    console.log('[KeyInsights] Final insights count:', insights.length, insights);
     aiInsightsCache[cacheKey] = insights;
-    console.log('[KeyInsights] About to render to DOM, el exists:', !!el);
     if(el) {
       el.innerHTML = insights.map(insight =>
         `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
       ).join('');
-      console.log('[KeyInsights] Rendered to DOM, innerHTML length:', el.innerHTML.length);
     }
     return insights;
   } catch(e) {
-    console.error('[KeyInsights] CATCH block error:', e);
+    console.error('[KeyInsights] Error:', e);
     if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
     return [];
   }
