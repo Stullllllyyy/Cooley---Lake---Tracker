@@ -110,6 +110,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
 .sheet{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h) + env(safe-area-inset-bottom,0px)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
 .sheet.open{transform:translateY(0) !important}
+#sheet-chat{max-height:calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92dvh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+@supports not (height: 100dvh) {
+  #sheet-chat{max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+}
 
 /* Hunt AI Chat */
 .chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
@@ -185,6 +189,42 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .intel-wizard-btn.primary:active{opacity:0.85}
 .chat-setup-btn{padding:10px 18px;border-radius:12px;border:1px solid rgba(140,115,85,0.35);background:rgba(140,115,85,0.1);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;margin-top:4px;transition:background 0.15s}
 .chat-setup-btn:active{background:rgba(140,115,85,0.2)}
+
+/* Chat tab toggle */
+.chat-tab-row{display:flex;gap:0;padding:0 18px;flex-shrink:0;border-bottom:1px solid var(--border);background:var(--surface)}
+.chat-tab-pill{flex:1;padding:10px 0;background:none;border:none;border-bottom:2px solid transparent;color:var(--text3);font-size:12.5px;font-weight:600;letter-spacing:0.5px;cursor:pointer;font-family:var(--font);transition:color 0.15s,border-color 0.15s;text-align:center}
+.chat-tab-pill.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* Property Intel cards view */
+.intel-cards-view{flex:1;overflow-y:auto;padding:16px 14px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:10px}
+.intel-cards-view::-webkit-scrollbar{display:none}
+.intel-card{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:14px 16px;cursor:pointer;transition:border-color 0.15s}
+.intel-card:active{border-color:var(--gold)}
+.intel-card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.intel-card-title{font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
+.intel-card-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+.intel-card-status{font-size:10px;color:var(--text3);font-style:italic}
+.intel-card-status.filled{color:var(--gold);font-style:normal;font-weight:600}
+.intel-card-preview{font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.intel-card-empty{font-size:12px;color:var(--text3);margin-top:4px;font-style:italic}
+
+/* Intel card edit modal */
+.intel-edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s;display:flex;align-items:flex-end;justify-content:center}
+.intel-edit-overlay.on{opacity:1;pointer-events:auto}
+.intel-edit-modal{width:100%;max-width:480px;max-height:75vh;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
+.intel-edit-overlay.on .intel-edit-modal{transform:translateY(0)}
+.intel-edit-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
+.intel-edit-hdr h3{font-size:15px;font-weight:700;color:var(--text);margin:0}
+.intel-edit-body{flex:1;overflow-y:auto;padding:16px 18px;-webkit-overflow-scrolling:touch}
+.intel-edit-hint{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
+.intel-edit-textarea{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:12px;color:var(--text);font-size:13px;font-family:var(--font);line-height:1.6;resize:vertical;outline:none}
+.intel-edit-textarea:focus{border-color:var(--gold)}
+.intel-edit-footer{display:flex;gap:8px;padding:12px 18px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);flex-shrink:0}
+.intel-edit-btn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.intel-edit-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.intel-cards-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.intel-cards-header h4{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin:0}
+.intel-cards-header span{font-size:11px;color:var(--text3)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
 .sheet-title{font-size:16px;font-weight:700;color:var(--text)}
@@ -793,32 +833,65 @@ textarea{resize:none}
       </div>
     </div>
 
-    <div class="chat-messages" id="chatMessages">
-      <div class="chat-welcome" id="chatWelcome">
-        <div class="chat-welcome-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    <!-- Tab toggle -->
+    <div class="chat-tab-row">
+      <button class="chat-tab-pill active" id="chatTabAssistant" onclick="switchChatTab('assistant')">Hunt Assistant</button>
+      <button class="chat-tab-pill" id="chatTabIntel" onclick="switchChatTab('intel')">Property Intel</button>
+    </div>
+
+    <!-- Hunt Assistant view -->
+    <div id="chatAssistantView" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-welcome" id="chatWelcome">
+          <div class="chat-welcome-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3>Hunt Planner AI</h3>
+          <p>I know your property, your bucks, your cameras, and the forecast. Ask me anything about your next hunt.</p>
+          <div class="chat-suggestions" id="chatSuggestions">
+            <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Where should I sit tomorrow morning?</button>
+            <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">What patterns has Marsh Buck shown this season?</button>
+            <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Which cameras have the most mature buck activity?</button>
+          </div>
+          <button class="chat-setup-btn" onclick="switchChatTab('intel')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Teach Huginn about your property
+          </button>
         </div>
-        <h3>Hunt Planner AI</h3>
-        <p>I know your property, your bucks, your cameras, and the forecast. Ask me anything about your next hunt.</p>
-        <div class="chat-suggestions" id="chatSuggestions">
-          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Where should I sit tomorrow morning?</button>
-          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">What patterns has Marsh Buck shown this season?</button>
-          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Which cameras have the most mature buck activity?</button>
+      </div>
+
+      <div class="chat-input-bar" id="chatInputBar">
+        <div class="chat-input-wrap">
+          <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about your property..." oninput="autoGrowChatInput(this)"></textarea>
         </div>
-        <button class="chat-setup-btn" onclick="openIntelWizard()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Teach Huginn about your property
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
         </button>
       </div>
     </div>
 
-    <div class="chat-input-bar" id="chatInputBar">
-      <div class="chat-input-wrap">
-        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about your property..." oninput="autoGrowChatInput(this)"></textarea>
-      </div>
-      <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" disabled>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      </button>
+    <!-- Property Intel view -->
+    <div id="chatIntelView" style="display:none;flex:1;overflow:hidden">
+      <div class="intel-cards-view" id="intelCardsView"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Intel Card Edit Modal -->
+<div class="intel-edit-overlay" id="intelEditOverlay" onclick="closeIntelEdit()">
+  <div class="intel-edit-modal" onclick="event.stopPropagation()">
+    <div class="intel-edit-hdr">
+      <h3 id="intelEditTitle">Edit</h3>
+      <button class="chat-header-btn" onclick="closeIntelEdit()">&#215;</button>
+    </div>
+    <div class="intel-edit-body">
+      <div class="intel-edit-hint" id="intelEditHint"></div>
+      <textarea class="intel-edit-textarea" id="intelEditTextarea" placeholder=""></textarea>
+    </div>
+    <div class="intel-edit-footer">
+      <button class="intel-edit-btn" onclick="closeIntelEdit()">Cancel</button>
+      <button class="intel-edit-btn primary" onclick="saveIntelEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -1599,14 +1672,16 @@ async function sendChatMessage() {
     const data = await res.json();
     typing.remove();
 
-    if (!res.ok || data.error) {
-      const errMsg = data.error?.message || data.error || 'Something went wrong. Try again.';
+    if (!res.ok || data.type === 'error') {
+      const errMsg = data.error?.message || 'Something went wrong. Try again.';
       appendChatBubble('ai', errMsg);
       chatStreaming = false;
       return;
     }
 
-    const aiText = data.content?.[0]?.text || 'No response received.';
+    const aiText = (data.content && data.content[0] && data.content[0].text)
+      ? data.content[0].text
+      : 'No response received.';
     appendChatBubble('ai', aiText);
     chatHistory.push({ role: 'assistant', content: aiText });
     persistChatMessage('assistant', aiText);
@@ -1751,6 +1826,8 @@ async function loadConversation(convId) {
 function startNewConversation() {
   chatConversationId = null;
   chatHistory = [];
+  // Switch to assistant tab if on intel
+  switchChatTab('assistant');
   const mc = document.getElementById('chatMessages');
   mc.innerHTML = `<div class="chat-welcome" id="chatWelcome">
     <div class="chat-welcome-icon">
@@ -1763,7 +1840,7 @@ function startNewConversation() {
       <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">What patterns has Marsh Buck shown this season?</button>
       <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Which cameras have the most mature buck activity?</button>
     </div>
-    <button class="chat-setup-btn" onclick="openIntelWizard()">
+    <button class="chat-setup-btn" onclick="switchChatTab('intel')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Teach Huginn about your property
     </button>
@@ -1781,6 +1858,135 @@ function toggleChatDrawer() {
     loadChatConversations();
     drawer.classList.add('open');
     overlay.classList.add('on');
+  }
+}
+
+// --- Chat Tab Toggle ---
+function switchChatTab(tab) {
+  const assistantView = document.getElementById('chatAssistantView');
+  const intelView = document.getElementById('chatIntelView');
+  const tabA = document.getElementById('chatTabAssistant');
+  const tabI = document.getElementById('chatTabIntel');
+
+  if (tab === 'intel') {
+    assistantView.style.display = 'none';
+    intelView.style.display = 'flex';
+    tabA.classList.remove('active');
+    tabI.classList.add('active');
+    renderIntelCards();
+  } else {
+    assistantView.style.display = 'flex';
+    intelView.style.display = 'none';
+    tabA.classList.add('active');
+    tabI.classList.remove('active');
+  }
+}
+
+// --- Intel Cards ---
+const INTEL_CARD_LABELS = {
+  terrain: 'Terrain & Layout',
+  food_sources: 'Food Sources',
+  bedding_areas: 'Bedding Areas',
+  water_sources: 'Water Sources',
+  access_routes: 'Access Routes',
+  hunting_pressure: 'Hunting Pressure',
+  additional_notes: 'Additional Notes'
+};
+const INTEL_CARD_ICONS = {
+  terrain: '&#9968;',
+  food_sources: '&#127805;',
+  bedding_areas: '&#128716;',
+  water_sources: '&#128167;',
+  access_routes: '&#128694;',
+  hunting_pressure: '&#127919;',
+  additional_notes: '&#128221;'
+};
+const INTEL_CARD_COLORS = {
+  terrain: 'rgba(140,115,85,0.15)',
+  food_sources: 'rgba(76,140,60,0.15)',
+  bedding_areas: 'rgba(100,80,150,0.15)',
+  water_sources: 'rgba(60,120,180,0.15)',
+  access_routes: 'rgba(180,140,60,0.15)',
+  hunting_pressure: 'rgba(180,70,70,0.15)',
+  additional_notes: 'rgba(140,140,140,0.15)'
+};
+
+let intelEditCategory = null;
+
+async function renderIntelCards() {
+  // Always reload fresh data
+  await loadPropertyContext();
+
+  const container = document.getElementById('intelCardsView');
+  const filled = propertyContextCache ? Object.keys(propertyContextCache).filter(k => propertyContextCache[k]) : [];
+
+  container.innerHTML = `
+    <div class="intel-cards-header">
+      <h4>Property Knowledge</h4>
+      <span>${filled.length} of ${INTEL_STEPS.length} filled</span>
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:4px">Tap a card to add or edit. The more Huginn knows, the better its recommendations.</div>
+    ${INTEL_STEPS.map(step => {
+      const content = propertyContextCache?.[step.key] || '';
+      const icon = INTEL_CARD_ICONS[step.key] || '&#128221;';
+      const bgColor = INTEL_CARD_COLORS[step.key] || 'rgba(140,140,140,0.15)';
+      return `<div class="intel-card" onclick="openIntelEdit('${step.key}')">
+        <div class="intel-card-hdr">
+          <div class="intel-card-title">
+            <div class="intel-card-icon" style="background:${bgColor}">${icon}</div>
+            ${INTEL_CARD_LABELS[step.key] || step.key}
+          </div>
+          <div class="intel-card-status${content ? ' filled' : ''}">${content ? 'Saved' : 'Empty'}</div>
+        </div>
+        ${content
+          ? `<div class="intel-card-preview">${content.replace(/</g, '&lt;')}</div>`
+          : `<div class="intel-card-empty">Tap to add</div>`}
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function openIntelEdit(category) {
+  const step = INTEL_STEPS.find(s => s.key === category);
+  if (!step) return;
+
+  intelEditCategory = category;
+  document.getElementById('intelEditTitle').textContent = step.question;
+  document.getElementById('intelEditHint').textContent = step.hint;
+
+  const textarea = document.getElementById('intelEditTextarea');
+  textarea.value = propertyContextCache?.[category] || '';
+  textarea.placeholder = step.placeholder;
+
+  document.getElementById('intelEditOverlay').classList.add('on');
+  setTimeout(() => textarea.focus(), 300);
+}
+
+function closeIntelEdit() {
+  document.getElementById('intelEditOverlay').classList.remove('on');
+  intelEditCategory = null;
+}
+
+async function saveIntelEdit() {
+  if (!intelEditCategory) return;
+  const content = document.getElementById('intelEditTextarea').value.trim();
+
+  try {
+    await sb.from('property_context').upsert(
+      { category: intelEditCategory, content: content, updated_at: new Date().toISOString() },
+      { onConflict: 'category' }
+    );
+
+    // Update cache
+    if (!propertyContextCache) propertyContextCache = {};
+    propertyContextCache[intelEditCategory] = content;
+
+    showToast(content ? 'Saved' : 'Cleared');
+    closeIntelEdit();
+    renderIntelCards();
+  } catch (e) {
+    console.warn('Failed to save intel:', e);
+    showToast('Failed to save');
   }
 }
 
@@ -1839,9 +2045,9 @@ async function openIntelWizard() {
 
   // Load existing property_context data
   try {
-    const { data } = await sb.from('property_context').select('key, value');
+    const { data } = await sb.from('property_context').select('category, content');
     if (data) {
-      data.forEach(row => { intelWizardData[row.key] = row.value; });
+      data.forEach(row => { intelWizardData[row.category] = row.content; });
     }
   } catch (e) {
     console.warn('Could not load property context:', e);
@@ -1934,8 +2140,8 @@ async function finishIntelWizard() {
   try {
     for (const [key, value] of entries) {
       await sb.from('property_context').upsert(
-        { key, value, updated_at: new Date().toISOString() },
-        { onConflict: 'key' }
+        { category: key, content: value, updated_at: new Date().toISOString() },
+        { onConflict: 'category' }
       );
     }
     showToast('Property intel saved');
@@ -1951,10 +2157,10 @@ async function finishIntelWizard() {
 let propertyContextCache = null;
 async function loadPropertyContext() {
   try {
-    const { data } = await sb.from('property_context').select('key, value');
+    const { data } = await sb.from('property_context').select('category, content');
     if (data && data.length) {
       propertyContextCache = {};
-      data.forEach(row => { propertyContextCache[row.key] = row.value; });
+      data.forEach(row => { propertyContextCache[row.category] = row.content; });
     }
   } catch (e) {
     console.warn('Could not load property context:', e);
