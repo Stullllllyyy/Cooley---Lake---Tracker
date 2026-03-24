@@ -5,12 +5,13 @@ How To Use This File
 * After a session: Update this file with what was completed and what's next
 
 🔥 Current Priority (Next Session)
-* (awaiting new priorities)
+* Property Intel notes — switch from overwrite to append model with timestamped entries
 
 
 
 🐛 Active Bugs
 Bug | Severity | Notes
+Property Intel notes — overwrite model | Medium | Currently each category saves a single text block that overwrites previous content. Should switch to append model with timestamped entries so hunters can add notes over time without losing previous observations.
 Unknown Bucks — named bucks appearing in unknown bucket | Medium | Marsh Buck showing in Unknown Bucks even after AI match. buck_name likely staying null because confirmation never saved. Needs trace + bulk-resolve.
 Field observation pins on map | Low | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist correctly after full page reload.
 
@@ -34,7 +35,7 @@ Near Term
 * [ ] Stand Intel AI card — nearby cameras (PostGIS radius), movement patterns, peak times, best wind, AI "Hunt this stand when..." recommendation. Prerequisite: property_markers live with precise lat/lng (done) + PostGIS enabled.
 
 Medium Term
-* [ ] Hunt Planner AI Chat tab
+* [x] Hunt Planner AI Chat tab — DONE Mar 24 2026
 * [ ] Historical harvest log
 * [ ] Season Planner / Vacation Day Optimizer
 * [ ] Personal rut calendar
@@ -96,6 +97,13 @@ property_markers schema fix | Fixed column mismatch: feature_type→type, remove
 Field obs pin shape fix | Field observation pins use distinct shape (circle with crosshair) instead of camera teardrop | Mar 21 2026
 Movement lines hidden on load fix | Movement lines no longer visible on initial map load — respect default filter state | Mar 21 2026
 TTP_OVERLAY_SEL dead code removed | Removed pointer-events disable/restore approach entirely — draggable marker replaces it | Mar 21 2026
+Hunt AI Chat — full rebuild | Chat UI with message bubbles, typing indicator, auto-grow input, Enter-to-send. buildChatSystemPrompt() pulls sightings (capped 150), cameras, markers, named bucks, property context. Messages persisted to chat_messages table with conversation_id. Conversations drawer with first-user-message previews. | Mar 24 2026
+Hunt AI response parser fix | Root cause: model ID 'claude-sonnet-4-5-20250514' invalid with proxy's anthropic-version 2023-06-01. Changed to 'claude-sonnet-4-5' matching all 5 working callers. | Mar 24 2026
+Key Insights fix | Same root cause as chat — wrong model ID. Changed to 'claude-sonnet-4-5'. Cleaned up verbose debug logging. | Mar 24 2026
+Hunt AI chat sheet dvh fix | Added #sheet-chat override using dvh (dynamic viewport height) units so chat sheet top isn't clipped by mobile browser URL bar. @supports fallback to vh. | Mar 24 2026
+Property Intel toggle and cards | Two-tab pill row (Hunt Assistant / Property Intel) below chat header. Property Intel shows 7 category cards with SVG icons, editable via centered modal. Saves to property_context table (category/content columns). Wizard flow retained as secondary path. | Mar 24 2026
+Property Intel emoji → SVG icons | Replaced 7 HTML entity emoji icons with inline Feather-style SVGs matching app icon architecture. | Mar 24 2026
+Property Intel editor — centered modal | Changed from bottom-sheet (clipped on mobile) to centered modal overlay with scale+opacity animation and full border-radius. | Mar 24 2026
 
 Session Log
 Date | What We Did | What's Next
@@ -105,3 +113,4 @@ Mar 2026 | Log Event rebuild (camera + observation modes), buck tag dropdown fix
 Mar 2026 | Fixed all three camera pin bugs: black-on-load timing (refreshMapPins in loadSightings), alignment drift (label above pin, SVG tip at y=44, offset:[0,0]), INP touch performance (passive listeners, popup shows before Supabase fetch). Commit: 97b3bbf | Unknown Bucks root cause trace + fix, verify Log Event features in production
 Mar 20 2026 | Fixed new cam pins dropping black (fallback gold), field obs pins not appearing after save (updatePins→refreshMapPins), faded pin opacity (0.3→0.9 consistent across all styles). Added Log Event UX Rework and Unified Pin Management System to roadmap. | Unknown Bucks root cause trace + fix; verify Log Event in production; full planning session for Log Event UX Rework before building
 Mar 21 2026 | Completed full Log Event UX Rework (7 steps): + FAB → draggable sulfur teardrop pin at map center → Location Set card (bottom-anchored so pin visible) → event type modal → Camera Sighting form / Field Observation form / Mark Feature form, all wired to Supabase. Fixed tap-to-place crosshair→draggable marker migration (pin color, card position, drag+dragend events, dead code removal). Fixed property_markers insert (feature_type→type column, removed non-existent date+active). Added Markers filter pill. | Feather-style SVG teardrop icons for feature pins; Unknown Bucks root cause + Marsh Buck bulk resolve
+Mar 24 2026 | Hunt AI Chat full build: chat UI, system prompt with sighting data, conversations with drawer, Property Intel toggle with 7 editable category cards, iOS keyboard handling. Fixed response parser and Key Insights (root cause: wrong model ID 'claude-sonnet-4-5-20250514' → 'claude-sonnet-4-5'). Fixed chat sheet dvh for mobile. Fixed emoji icons → SVGs. Fixed editor from bottom-sheet to centered modal. | Property Intel append model with timestamps; verify chat and insights working in production
