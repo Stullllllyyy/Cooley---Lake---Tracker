@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>Huginn — Know More. Hunt Smarter.</title>
 <link rel="icon" type="image/svg+xml" href="HuginnFavicon.svg"/>
 <link rel="apple-touch-icon" href="HuginnFavicon.svg"/>
@@ -49,7 +49,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
 .map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
 
-.map-fabs{position:fixed;bottom:calc(var(--tab-h) + 16px);right:14px;z-index:50;display:flex;flex-direction:column;gap:8px}
+.map-fabs{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);right:14px;z-index:50;display:flex;flex-direction:column;gap:8px}
 .map-fab{width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:19px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s}
 .map-fab:active{transform:scale(0.9)}
 .map-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
@@ -58,7 +58,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .layers-sub{font-size:9px;color:var(--text3)}
 
 /* camera popup */
-.cam-popup{position:fixed;bottom:calc(var(--tab-h) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow-y:auto;max-height:calc(85vh - var(--tab-h));box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
+.cam-popup{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 10px);left:12px;right:12px;z-index:80;background:var(--surface);border:1px solid var(--border2);border-radius:16px;overflow-y:auto;max-height:calc(85vh - var(--tab-h));box-shadow:0 8px 40px rgba(0,0,0,0.7);transform:translateY(calc(100% + 90px));transition:transform 0.32s cubic-bezier(0.32,0.72,0,1)}
 .cam-popup.show{transform:translateY(0)}
 .cam-popup.gold{border-color:rgba(140,115,85,0.45)}
 .popup-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px}
@@ -92,7 +92,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .fab-speed-dial.open{pointer-events:auto;opacity:1;transform:translateY(0)}
 .fab-option{display:flex;align-items:center;gap:8px;justify-content:flex-end}
 .fab-option-lbl{font-size:11px;font-weight:600;color:var(--text);background:rgba(18,20,21,0.92);border:1px solid var(--border2);padding:5px 10px;border-radius:20px;white-space:nowrap;backdrop-filter:blur(10px);letter-spacing:0.3px}
-.fab-option-btn{width:40px;height:40px;border-radius:12px;background:rgba(18,20,21,0.92);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);transition:all 0.15s;flex-shrink:0}
+.fab-option-btn{width:44px;height:44px;border-radius:12px;background:rgba(18,20,21,0.92);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);transition:all 0.15s;flex-shrink:0}
 .fab-option:active .fab-option-btn{background:rgba(140,115,85,0.2);border-color:var(--gold);color:var(--gold)}
 .map-fab-main{background:var(--gold) !important;border-color:var(--gold) !important;color:var(--bg) !important;transition:transform 0.25s,background 0.2s !important}
 .map-fab-main.open{transform:rotate(45deg) !important}
@@ -108,12 +108,87 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* sheets */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,0);z-index:350;pointer-events:none;transition:background 0.3s}
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
-.sheet{position:fixed;bottom:var(--tab-h);left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h));height:calc(92vh - var(--tab-h));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
+.sheet{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h) + env(safe-area-inset-bottom,0px)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
 .sheet.open{transform:translateY(0) !important}
+
+/* Hunt AI Chat */
+.chat-container{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.chat-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
+.chat-header-left{display:flex;align-items:center;gap:10px}
+.chat-header-title{font-size:16px;font-weight:700;color:var(--text)}
+.chat-header-btn{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background 0.15s}
+.chat-header-btn:active{background:var(--border)}
+.chat-messages{flex:1;overflow-y:auto;padding:16px 14px 8px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:12px}
+.chat-messages::-webkit-scrollbar{display:none}
+.chat-bubble{max-width:88%;padding:10px 14px;border-radius:16px;font-size:13.5px;line-height:1.6;word-wrap:break-word;white-space:pre-wrap}
+.chat-bubble.user{align-self:flex-end;background:var(--gold);color:var(--bg);border-bottom-right-radius:4px}
+.chat-bubble.ai{align-self:flex-start;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px}
+.chat-bubble.ai .ai-label{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:4px;font-weight:600}
+.chat-typing{align-self:flex-start;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:16px;border-bottom-left-radius:4px;display:flex;gap:5px;align-items:center}
+.chat-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:chatDot 1.4s infinite}
+.chat-typing span:nth-child(2){animation-delay:0.2s}
+.chat-typing span:nth-child(3){animation-delay:0.4s}
+@keyframes chatDot{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1.1)}}
+.chat-welcome{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:32px 20px;flex:1;justify-content:center}
+.chat-welcome-icon{width:48px;height:48px;border-radius:16px;background:rgba(140,115,85,0.15);border:1px solid rgba(140,115,85,0.3);display:flex;align-items:center;justify-content:center}
+.chat-welcome h3{font-size:16px;font-weight:700;color:var(--text);margin:0}
+.chat-welcome p{font-size:13px;color:var(--text2);line-height:1.6;max-width:280px;margin:0}
+.chat-suggestions{display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px}
+.chat-suggest-btn{padding:10px 14px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:12.5px;line-height:1.4;cursor:pointer;text-align:left;font-family:var(--font);transition:border-color 0.15s,background 0.15s}
+.chat-suggest-btn:active{border-color:var(--gold);background:rgba(140,115,85,0.1)}
+.chat-input-bar{flex-shrink:0;padding:8px 12px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);background:var(--surface);display:flex;gap:8px;align-items:flex-end;transition:transform 0.15s}
+.chat-input-wrap{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:20px;display:flex;align-items:flex-end;padding:4px 4px 4px 14px;min-height:40px;transition:border-color 0.15s}
+.chat-input-wrap:focus-within{border-color:var(--gold)}
+.chat-input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:14px;font-family:var(--font);line-height:1.4;resize:none;max-height:100px;padding:6px 0;overflow-y:auto}
+.chat-input::placeholder{color:var(--text3)}
+.chat-send-btn{width:32px;height:32px;border-radius:50%;background:var(--gold);border:none;color:var(--bg);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:opacity 0.15s,transform 0.1s}
+.chat-send-btn:disabled{opacity:0.3;cursor:default}
+.chat-send-btn:active:not(:disabled){transform:scale(0.9)}
+
+/* Conversations drawer */
+.chat-drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:450;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.chat-drawer-overlay.on{opacity:1;pointer-events:auto}
+.chat-drawer{position:fixed;top:0;left:0;bottom:0;width:300px;max-width:85vw;z-index:460;background:var(--surface);border-right:1px solid var(--border2);transform:translateX(-100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);display:flex;flex-direction:column}
+.chat-drawer.open{transform:translateX(0)}
+.chat-drawer-hdr{display:flex;align-items:center;justify-content:space-between;padding:54px 16px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.chat-drawer-hdr h3{font-size:15px;font-weight:700;color:var(--text);margin:0}
+.chat-drawer-new{padding:7px 14px;border-radius:20px;background:var(--gold);border:none;color:var(--bg);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.chat-drawer-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:8px 0}
+.chat-drawer-list::-webkit-scrollbar{display:none}
+.chat-drawer-item{display:flex;flex-direction:column;gap:3px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
+.chat-drawer-item:active{background:var(--surface2)}
+.chat-drawer-item.active{background:rgba(140,115,85,0.1);border-left:3px solid var(--gold)}
+.chat-drawer-item-title{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-drawer-item-date{font-size:10px;color:var(--text3)}
+.chat-drawer-empty{padding:24px 16px;text-align:center;font-size:13px;color:var(--text3);line-height:1.6}
+
+/* Property Intel Wizard */
+.intel-wizard-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s;display:flex;align-items:center;justify-content:center}
+.intel-wizard-overlay.on{opacity:1;pointer-events:auto}
+.intel-wizard{width:calc(100vw - 32px);max-width:400px;max-height:80vh;background:var(--surface);border:1px solid var(--border2);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+.intel-wizard-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.intel-wizard-hdr h3{font-size:15px;font-weight:700;color:var(--text);margin:0}
+.intel-wizard-progress{display:flex;gap:4px;padding:0 18px 12px}
+.intel-wizard-dot{flex:1;height:3px;border-radius:2px;background:var(--border2);transition:background 0.2s}
+.intel-wizard-dot.done{background:var(--gold)}
+.intel-wizard-dot.active{background:var(--gold)}
+.intel-wizard-body{flex:1;overflow-y:auto;padding:18px;-webkit-overflow-scrolling:touch}
+.intel-wizard-body::-webkit-scrollbar{display:none}
+.intel-wizard-q{font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px}
+.intel-wizard-hint{font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.5}
+.intel-wizard-textarea{width:100%;min-height:100px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:12px;color:var(--text);font-size:13px;font-family:var(--font);line-height:1.6;resize:vertical;outline:none}
+.intel-wizard-textarea:focus{border-color:var(--gold)}
+.intel-wizard-footer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--border)}
+.intel-wizard-btn{flex:1;padding:10px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s}
+.intel-wizard-btn:active{background:var(--border)}
+.intel-wizard-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.intel-wizard-btn.primary:active{opacity:0.85}
+.chat-setup-btn{padding:10px 18px;border-radius:12px;border:1px solid rgba(140,115,85,0.35);background:rgba(140,115,85,0.1);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:6px;margin-top:4px;transition:background 0.15s}
+.chat-setup-btn:active{background:rgba(140,115,85,0.2)}
 .sheet-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0;flex-shrink:0}
 .sheet-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;flex-shrink:0;border-bottom:1px solid var(--border)}
 .sheet-title{font-size:16px;font-weight:700;color:var(--text)}
-.sheet-x{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.sheet-x{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .sheet-body{overflow-y:auto;padding:16px 16px 48px;flex:1;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .sheet-body::-webkit-scrollbar{display:none}
 
@@ -241,7 +316,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .sc-action-item:last-child{border-bottom:none}
 .sc-action-item:active{background:var(--surface2)}
 .sc-action-item.danger{color:var(--red)}
-.sight-filters{display:flex;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.sight-filters{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.sight-filters .sight-select:last-child{flex-basis:100%}
 .sight-select{flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;color:var(--text2);font-size:11px;padding:6px 8px;font-family:var(--font);cursor:pointer;min-width:0}
 .sight-select:focus{outline:none;border-color:var(--bronze)}
 .view-toggle{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:8px;overflow:hidden}
@@ -298,7 +374,7 @@ textarea{resize:none}
 .d-cell-val{font-size:13px;color:var(--text)}
 
 /* edit modal */
-.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:var(--tab-h);background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:flex-end;justify-content:center}
 .modal-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:16px 18px 32px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .modal-overlay.on{display:flex}
 .modal{background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);padding:0 16px 24px;width:100%;max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch}
@@ -306,8 +382,8 @@ textarea{resize:none}
 .modal-handle{width:36px;height:4px;background:var(--border2);border-radius:2px;margin:12px auto 0}
 .modal-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 0 12px}
 .modal-title{font-size:16px;font-weight:700;color:var(--text)}
-.modal-x{width:30px;height:30px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.save-btn{width:100%;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
+.modal-x{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.save-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
 .del-btn{width:100%;padding:11px;border:1px solid rgba(224,85,85,0.3);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px}
 
 /* mapbox overrides */
@@ -335,7 +411,7 @@ textarea{resize:none}
 .pin-menu-item:active{background:var(--surface2)}
 .pin-menu-item.danger{color:var(--red)}
 /* conditions overlay */
-.map-conditions{position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
+.map-conditions{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
 .map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
 .map-cond-sep{width:1px;height:12px;background:var(--border2)}
 
@@ -350,7 +426,7 @@ textarea{resize:none}
 .movement-legend{display:none}
 .map-legend-btn{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
 .map-legend-btn.visible{display:flex}
-.map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);right:14px;left:auto;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
 .map-legend-panel.visible{display:block}
 @keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -387,13 +463,13 @@ textarea{resize:none}
 .ttp-form-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 18px 20px;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - var(--tab-h) - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.8)}
 /* Event type card */
 .ttp-type-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 16px 16px;width:min(360px,calc(100vw - 32px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
-.ttp-type-opts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0 12px}
-.ttp-type-opt{background:var(--surface2);border:2px solid var(--border2);border-radius:12px;padding:14px 6px;display:flex;flex-direction:column;align-items:center;gap:8px;min-height:80px;cursor:pointer;font-size:11px;color:var(--text2);text-align:center;line-height:1.35;user-select:none;transition:border-color 0.15s,background 0.15s;font-family:var(--font)}
+.ttp-type-opts{display:flex;flex-direction:column;gap:8px;margin:14px 0 12px}
+.ttp-type-opt{background:var(--surface2);border:2px solid var(--border2);border-radius:12px;padding:14px 16px;display:flex;flex-direction:row;align-items:center;gap:12px;cursor:pointer;font-size:13px;color:var(--text2);line-height:1.35;user-select:none;transition:border-color 0.15s,background 0.15s;font-family:var(--font)}
 .ttp-type-opt:active{transform:scale(0.96)}
 .ttp-type-opt.sel{border-color:var(--gold);background:rgba(140,115,85,0.12);color:var(--text)}
 /* Shared modal action buttons */
-.ttp-mbtn-cancel{flex:1;padding:11px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}
-.ttp-mbtn-confirm{flex:1;padding:11px;border:none;border-radius:10px;background:var(--gold);color:#fff;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
+.ttp-mbtn-cancel{flex:1;padding:14px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}
+.ttp-mbtn-confirm{flex:1;padding:14px;border:none;border-radius:10px;background:var(--gold);color:#fff;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
 /* Trail cam sheet — searchable camera dropdown */
 .tcam-cam-sel{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text3);transition:border-color 0.2s;user-select:none}
 .tcam-cam-sel.has-val{color:var(--text);border-color:var(--gold)}
@@ -423,7 +499,7 @@ textarea{resize:none}
 .auth-input{width:100%;padding:12px 16px;border:1px solid var(--border2);border-radius:10px;background:var(--surface);color:var(--silver);font-size:14px;font-family:var(--font);margin-bottom:12px;outline:none;transition:border-color 0.2s}
 .auth-input:focus{border-color:var(--bronze)}
 .auth-input::placeholder{color:var(--text3)}
-.auth-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--bronze);color:#fff;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
+.auth-btn{width:100%;padding:15px;border:none;border-radius:10px;background:var(--bronze);color:#fff;font-size:14px;font-weight:600;font-family:var(--font);cursor:pointer;transition:opacity 0.2s;letter-spacing:0.5px}
 .auth-btn:active{opacity:0.8}
 .auth-btn:disabled{opacity:0.5;cursor:default}
 .auth-link{font-size:12px;color:var(--text2);margin-top:16px;cursor:pointer;display:inline-block}
@@ -431,7 +507,7 @@ textarea{resize:none}
 .auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--text3);font-size:11px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border)}
 .auth-error{font-size:12px;color:var(--red);margin-bottom:12px;min-height:18px}
-.auth-magic{width:100%;padding:11px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;font-family:var(--font);cursor:pointer;transition:all 0.2s}
+.auth-magic{width:100%;padding:14px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;font-family:var(--font);cursor:pointer;transition:all 0.2s}
 .auth-magic:hover{border-color:var(--bronze);color:var(--bronze)}
 .auth-success{font-size:12px;color:var(--bronze);margin-top:8px}
 .auth-back{font-size:12px;color:var(--text3);margin-top:20px;cursor:pointer}
@@ -482,7 +558,7 @@ textarea{resize:none}
 <div class="map-hdr">
   <div>
     <div style="display:flex;align-items:center;gap:8px">
-      <img src="/huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95))" alt="Huginn" onerror="console.error('logo failed to load:', this.src)"/>
+      <img src="huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95))" alt="Huginn" onerror="console.error('logo failed to load:', this.src)"/>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">HUGINN <span class="sync-dot" id="syncDot"></span></div>
         <div style="font-size:9px;color:rgba(220,210,190,0.85);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">Know More. Hunt Smarter.</div>
@@ -590,15 +666,15 @@ textarea{resize:none}
     <div class="ttp-type-opts">
       <div class="ttp-type-opt" id="ttpOptCam" onclick="selectEventType('camera')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <span>Add<br>Camera</span>
+        <span>Add Camera</span>
       </div>
       <div class="ttp-type-opt" id="ttpOptObs" onclick="selectEventType('observation')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-        <span>Field<br>Observation</span>
+        <span>Field Observation</span>
       </div>
       <div class="ttp-type-opt" id="ttpOptMark" onclick="selectEventType('feature')">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
-        <span>Mark<br>Feature</span>
+        <span>Mark Feature</span>
       </div>
     </div>
     <button class="ttp-mbtn-cancel" style="width:100%" onclick="cancelTapToPlace()">Cancel</button>
@@ -699,23 +775,76 @@ textarea{resize:none}
 </div>
 
 <!-- AI CHAT SHEET -->
-<div class="overlay" id="overlay-chat" onclick="closeSheet('chat')"></div>
+<div class="overlay" id="overlay-chat" onclick="closeAiChat()"></div>
 <div class="sheet" id="sheet-chat">
-  <div class="sheet-handle"></div>
-  <div class="sheet-hdr">
-    <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Hunt AI
+  <div class="chat-container">
+    <div class="chat-header">
+      <div class="chat-header-left">
+        <button class="chat-header-btn" id="chatDrawerBtn" onclick="toggleChatDrawer()" title="Conversations">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <div class="chat-header-title">Hunt AI</div>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="chat-header-btn" id="chatNewBtn" onclick="startNewConversation()" title="New chat">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="chat-header-btn" onclick="closeAiChat()">&#215;</button>
+      </div>
     </div>
-    <button class="sheet-x" onclick="closeSheet('chat')">&#215;</button>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-welcome" id="chatWelcome">
+        <div class="chat-welcome-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>Hunt Planner AI</h3>
+        <p>I know your property, your bucks, your cameras, and the forecast. Ask me anything about your next hunt.</p>
+        <div class="chat-suggestions" id="chatSuggestions">
+          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Where should I sit tomorrow morning?</button>
+          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">What patterns has Marsh Buck shown this season?</button>
+          <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Which cameras have the most mature buck activity?</button>
+        </div>
+        <button class="chat-setup-btn" onclick="openIntelWizard()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Teach Huginn about your property
+        </button>
+      </div>
+    </div>
+
+    <div class="chat-input-bar" id="chatInputBar">
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatInput" rows="1" placeholder="Ask about your property..." oninput="autoGrowChatInput(this)"></textarea>
+      </div>
+      <button class="chat-send-btn" id="chatSendBtn" onclick="sendChatMessage()" disabled>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
   </div>
-  <div class="sheet-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;padding:48px 24px">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
-    <div style="font-size:16px;font-weight:700;color:var(--text)">Hunt Planner AI</div>
-    <div style="font-size:13px;color:var(--text2);line-height:1.7;max-width:280px">Your personal hunting intelligence assistant. Analyzes your property data, buck patterns, and weather to give you personalized hunt recommendations.</div>
-    <div style="font-size:11px;color:var(--text3);padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);max-width:280px;line-height:1.6">
-      <strong style="color:var(--gold)">Coming soon</strong> — Hunt AI will know your property, your named bucks, your stand locations, and tomorrow's forecast. Ask it anything.
+</div>
+
+<!-- Conversations Drawer -->
+<div class="chat-drawer-overlay" id="chatDrawerOverlay" onclick="toggleChatDrawer()"></div>
+<div class="chat-drawer" id="chatDrawer">
+  <div class="chat-drawer-hdr">
+    <h3>Conversations</h3>
+    <button class="chat-drawer-new" onclick="startNewConversation();toggleChatDrawer()">+ New</button>
+  </div>
+  <div class="chat-drawer-list" id="chatDrawerList">
+    <div class="chat-drawer-empty">No conversations yet.<br/>Start chatting to create one.</div>
+  </div>
+</div>
+
+<!-- Property Intel Wizard -->
+<div class="intel-wizard-overlay" id="intelWizardOverlay" onclick="closeIntelWizard()">
+  <div class="intel-wizard" onclick="event.stopPropagation()">
+    <div class="intel-wizard-hdr">
+      <h3 id="intelWizardTitle">Property Intel</h3>
+      <button class="chat-header-btn" onclick="closeIntelWizard()">&#215;</button>
     </div>
+    <div class="intel-wizard-progress" id="intelWizardProgress"></div>
+    <div class="intel-wizard-body" id="intelWizardBody"></div>
+    <div class="intel-wizard-footer" id="intelWizardFooter"></div>
   </div>
 </div>
 
@@ -771,12 +900,14 @@ textarea{resize:none}
       Sightings
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <div class="view-toggle">
-        <button id="toggleFeed" class="vtoggle on" onclick="setSightView('feed')">Feed</button>
-        <button id="toggleProfiles" class="vtoggle" onclick="setSightView('profiles')">Profiles</button>
-      </div>
-      <button onclick="openTrailCamSheet()" title="Log trail cam sighting" style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:18px;cursor:pointer;line-height:1;flex-shrink:0">+</button>
+      <button onclick="openTrailCamSheet()" title="Log trail cam sighting" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:18px;cursor:pointer;line-height:1;flex-shrink:0">+</button>
       <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
+    </div>
+  </div>
+  <div style="padding:0 18px 10px;flex-shrink:0">
+    <div class="view-toggle" style="width:100%">
+      <button id="toggleFeed" class="vtoggle on" style="flex:1" onclick="setSightView('feed')">Feed</button>
+      <button id="toggleProfiles" class="vtoggle" style="flex:1" onclick="setSightView('profiles')">Profiles</button>
     </div>
   </div>
   <!-- Filter bar -->
@@ -832,8 +963,8 @@ textarea{resize:none}
           <div style="font-size:12px;color:var(--text)" id="tcamAiText">Analyzing...</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="tcamAcceptAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
-          <button onclick="tcamDismissAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
+          <button onclick="tcamAcceptAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
+          <button onclick="tcamDismissAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
         </div>
       </div>
       <div id="tcamAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
@@ -962,15 +1093,15 @@ textarea{resize:none}
     <div class="field-grp">
       <span class="field-lbl">Photo</span>
       <div id="ePhotoWrap" style="margin-bottom:8px"></div>
-      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:7px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">
+      <button onclick="document.getElementById('ePhotoinput').click()" style="padding:12px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font)">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
         Change photo
       </button>
       <input type="file" id="ePhotoinput" accept="image/*" style="display:none" onchange="handleEditPhoto(this)"/>
     </div>
     <div style="display:flex;gap:8px;margin-top:8px;padding-bottom:8px">
-      <button onclick="saveEdit()" style="flex:1;padding:13px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:0.5px">Save Changes</button>
-      <button onclick="deleteSighting()" style="padding:13px 16px;border:1px solid rgba(192,82,74,0.4);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">
+      <button onclick="saveEdit()" style="flex:1;padding:15px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);letter-spacing:0.5px">Save Changes</button>
+      <button onclick="deleteSighting()" style="padding:15px 16px;border:1px solid rgba(192,82,74,0.4);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
     </div>
@@ -1009,8 +1140,8 @@ textarea{resize:none}
           <div style="font-size:12px;color:var(--text)" id="ttpObsAiText">Analyzing...</div>
         </div>
         <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="obsAcceptAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
-          <button onclick="obsDismissAiHint()" style="padding:5px 10px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
+          <button onclick="obsAcceptAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
+          <button onclick="obsDismissAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
         </div>
       </div>
       <div id="ttpObsAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
@@ -1269,18 +1400,565 @@ function toggleFabDial() {
 function closeFabDial() { /* speed dial removed — kept for call-site compatibility */ }
 
 // --- AI Chat ---
+let chatConversationId = null;
+let chatHistory = []; // {role, content} for current conversation
+let chatStreaming = false;
+let chatVvListener = null;
+
 function openAiChat() {
   closeFabDial();
-  // Add chat to SHEETS and open it
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
   document.getElementById('tab-chat')?.classList.add('on');
-  // Close other sheets
   ['intel','sightings','detail'].forEach(s => {
     document.getElementById('sheet-'+s)?.classList.remove('open');
     document.getElementById('overlay-'+s)?.classList.remove('on');
   });
   document.getElementById('sheet-chat')?.classList.add('open');
   document.getElementById('overlay-chat')?.classList.add('on');
+
+  // iOS keyboard handling via visualViewport
+  if (window.visualViewport && !chatVvListener) {
+    chatVvListener = () => {
+      const bar = document.getElementById('chatInputBar');
+      if (!bar) return;
+      const offset = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      bar.style.transform = offset > 0 ? `translateY(-${offset}px)` : '';
+      if (offset > 0) scrollChatToBottom();
+    };
+    window.visualViewport.addEventListener('resize', chatVvListener);
+    window.visualViewport.addEventListener('scroll', chatVvListener);
+  }
+
+  // Enable send button based on input
+  const inp = document.getElementById('chatInput');
+  if (inp && !inp._chatListenerAdded) {
+    inp.addEventListener('input', () => {
+      document.getElementById('chatSendBtn').disabled = !inp.value.trim();
+    });
+    inp.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        if (inp.value.trim()) sendChatMessage();
+      }
+    });
+    inp._chatListenerAdded = true;
+  }
+
+  // Load conversations list and property context
+  if (!chatConversationId) loadChatConversations();
+  if (!propertyContextCache) loadPropertyContext();
+}
+
+function closeAiChat() {
+  document.getElementById('sheet-chat')?.classList.remove('open');
+  document.getElementById('overlay-chat')?.classList.remove('on');
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-map')?.classList.add('on');
+  // Close drawer if open
+  document.getElementById('chatDrawer')?.classList.remove('open');
+  document.getElementById('chatDrawerOverlay')?.classList.remove('on');
+}
+
+function autoGrowChatInput(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+}
+
+function scrollChatToBottom() {
+  const mc = document.getElementById('chatMessages');
+  if (mc) mc.scrollTop = mc.scrollHeight;
+}
+
+// --- Build system prompt with property data ---
+function buildChatSystemPrompt() {
+  const namedBucks = getNamedBucks();
+  const camList = Object.entries(camLocations).map(([name, loc]) =>
+    `${name}: lat ${loc.lat?.toFixed(4)}, lng ${loc.lng?.toFixed(4)}`
+  ).join('\n');
+
+  // Property markers summary
+  const markerSummary = propertyMarkers.map(m =>
+    `${m.type}: ${m.name || 'Unnamed'} (${m.lat?.toFixed(4)}, ${m.lng?.toFixed(4)})${m.notes ? ' - ' + m.notes : ''}`
+  ).join('\n');
+
+  // Per-buck summary (compressed)
+  const buckSummaries = namedBucks.map(name => {
+    const bs = sightings.filter(s => s.buck_name === name);
+    if (!bs.length) return null;
+    const cameras = [...new Set(bs.map(s => s.camera_name))];
+    const behaviors = [...new Set(bs.filter(s=>s.behavior).map(s => s.behavior))];
+    const dates = bs.map(s => s.date).sort();
+    return `${name}: ${bs.length} sightings, cameras [${cameras.join(', ')}], behaviors [${behaviors.join(', ')}], date range ${dates[0]} to ${dates[dates.length-1]}`;
+  }).filter(Boolean).join('\n');
+
+  // Recent sightings (last 150, slimmed)
+  const recentSlim = sightings.slice(0, 150).map(s => {
+    const parts = [s.date, s.time || '', s.camera_name || '', s.deer_type || ''];
+    if (s.buck_name) parts.push(s.buck_name);
+    if (s.behavior) parts.push(s.behavior);
+    if (s.wind_dir) parts.push('wind:' + s.wind_dir);
+    if (s.temp_f) parts.push(s.temp_f + 'F');
+    if (s.moon_phase) parts.push('moon:' + s.moon_phase);
+    if (s.travel_dir) parts.push('travel:' + s.travel_dir);
+    return parts.join(' | ');
+  }).join('\n');
+
+  // Property context from guided wizard
+  let contextSection = '';
+  if (propertyContextCache) {
+    const labels = { terrain: 'Terrain', food_sources: 'Food Sources', bedding_areas: 'Bedding Areas', water_sources: 'Water Sources', access_routes: 'Access Routes', hunting_pressure: 'Hunting Pressure', additional_notes: 'Additional Notes' };
+    const parts = Object.entries(propertyContextCache)
+      .filter(([_, v]) => v)
+      .map(([k, v]) => `${labels[k] || k}: ${v}`);
+    if (parts.length) contextSection = '\n\nPROPERTY CONTEXT (from the hunter):\n' + parts.join('\n');
+  }
+
+  return `You are Huginn, an expert whitetail deer hunting advisor for a property called Cooley Lake in Suring, Wisconsin (center: ${CLAT}, ${CLNG}).
+Your job: analyze the hunter's trail camera data, property features, and weather to give specific, actionable hunting advice. Be concise and direct. Use the data — don't guess.
+
+PROPERTY CAMERAS:
+${camList || 'No cameras configured.'}
+
+PROPERTY FEATURES (stands, scrapes, rubs, bedding):
+${markerSummary || 'No features marked yet.'}
+
+NAMED BUCKS (${namedBucks.length} total):
+${buckSummaries || 'No named bucks yet.'}
+
+RECENT SIGHTINGS (${Math.min(sightings.length, 150)} of ${sightings.length} total):
+date | time | camera | type | buck | behavior | wind | temp | moon | travel
+${recentSlim || 'No sightings logged yet.'}
+
+TODAY: ${new Date().toLocaleDateString('en-US', {weekday:'long', year:'numeric', month:'long', day:'numeric'})}
+TOTAL SIGHTINGS: ${sightings.length}${contextSection}
+
+Guidelines:
+- Reference specific cameras, bucks, and dates from the data
+- When recommending stands, cite which bucks/deer have been seen nearby and wind direction considerations
+- For pattern analysis, look at time-of-day clusters, camera frequency, and behavioral trends
+- Keep responses focused and practical — this is a hunter in the field
+- If asked about a buck with no data, say so honestly
+- Format responses with clear sections when appropriate`;
+}
+
+// --- Send message ---
+async function sendChatMessage() {
+  const inp = document.getElementById('chatInput');
+  const text = inp.value.trim();
+  if (!text || chatStreaming) return;
+
+  // Hide welcome, show message
+  const welcome = document.getElementById('chatWelcome');
+  if (welcome) welcome.style.display = 'none';
+
+  // Create conversation if needed
+  if (!chatConversationId) {
+    chatConversationId = crypto.randomUUID();
+  }
+
+  // Add user bubble
+  appendChatBubble('user', text);
+  chatHistory.push({ role: 'user', content: text });
+
+  // Persist user message
+  persistChatMessage('user', text);
+
+  // Clear input
+  inp.value = '';
+  inp.style.height = 'auto';
+  document.getElementById('chatSendBtn').disabled = true;
+  scrollChatToBottom();
+
+  // Show typing indicator
+  const typing = document.createElement('div');
+  typing.className = 'chat-typing';
+  typing.id = 'chatTyping';
+  typing.innerHTML = '<span></span><span></span><span></span>';
+  document.getElementById('chatMessages').appendChild(typing);
+  scrollChatToBottom();
+
+  chatStreaming = true;
+
+  try {
+    // Build messages array (last 20 messages for context)
+    const msgs = chatHistory.slice(-20).map(m => ({
+      role: m.role, content: m.content
+    }));
+
+    const res = await fetch('/api/claude', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-5-20250514',
+        max_tokens: 1024,
+        system: buildChatSystemPrompt(),
+        messages: msgs
+      })
+    });
+
+    const data = await res.json();
+    typing.remove();
+
+    if (!res.ok || data.error) {
+      const errMsg = data.error?.message || data.error || 'Something went wrong. Try again.';
+      appendChatBubble('ai', errMsg);
+      chatStreaming = false;
+      return;
+    }
+
+    const aiText = data.content?.[0]?.text || 'No response received.';
+    appendChatBubble('ai', aiText);
+    chatHistory.push({ role: 'assistant', content: aiText });
+    persistChatMessage('assistant', aiText);
+    scrollChatToBottom();
+  } catch (err) {
+    typing.remove();
+    appendChatBubble('ai', 'Network error. Check your connection and try again.');
+    console.error('Chat error:', err);
+  }
+
+  chatStreaming = false;
+}
+
+function sendChatSuggestion(btn) {
+  const inp = document.getElementById('chatInput');
+  inp.value = btn.textContent;
+  document.getElementById('chatSendBtn').disabled = false;
+  sendChatMessage();
+}
+
+function appendChatBubble(role, text) {
+  const mc = document.getElementById('chatMessages');
+  const bubble = document.createElement('div');
+  bubble.className = `chat-bubble ${role === 'user' ? 'user' : 'ai'}`;
+  if (role !== 'user') {
+    const label = document.createElement('div');
+    label.className = 'ai-label';
+    label.textContent = 'Huginn';
+    bubble.appendChild(label);
+    // Parse basic markdown: **bold**, bullet lists
+    const content = document.createElement('div');
+    content.innerHTML = formatAiText(text);
+    bubble.appendChild(content);
+  } else {
+    bubble.textContent = text;
+  }
+  mc.appendChild(bubble);
+}
+
+function formatAiText(text) {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
+// --- Persistence ---
+async function persistChatMessage(role, content) {
+  try {
+    await sb.from('chat_messages').insert({
+      conversation_id: chatConversationId,
+      role: role,
+      content: content,
+      created_at: new Date().toISOString()
+    });
+  } catch (e) {
+    console.warn('Failed to persist chat message:', e);
+  }
+}
+
+// --- Conversations ---
+async function loadChatConversations() {
+  try {
+    const { data, error } = await sb.from('chat_messages')
+      .select('conversation_id, content, created_at, role')
+      .order('created_at', { ascending: true });
+    if (error || !data || !data.length) return;
+
+    // Group by conversation_id, take first USER message as preview
+    const convos = {};
+    data.forEach(msg => {
+      if (!convos[msg.conversation_id]) {
+        convos[msg.conversation_id] = { id: msg.conversation_id, preview: null, date: msg.created_at };
+      }
+      if (msg.role === 'user' && !convos[msg.conversation_id].preview) {
+        convos[msg.conversation_id].preview = msg.content;
+        convos[msg.conversation_id].date = msg.created_at;
+      }
+    });
+
+    const sorted = Object.values(convos).sort((a, b) => b.date.localeCompare(a.date));
+    renderChatDrawer(sorted);
+  } catch (e) {
+    console.warn('Failed to load conversations:', e);
+  }
+}
+
+function renderChatDrawer(convos) {
+  const list = document.getElementById('chatDrawerList');
+  if (!convos.length) {
+    list.innerHTML = '<div class="chat-drawer-empty">No conversations yet.<br/>Start chatting to create one.</div>';
+    return;
+  }
+  list.innerHTML = convos.map(c => {
+    const preview = (c.preview || 'New conversation').slice(0, 60) + (c.preview && c.preview.length > 60 ? '...' : '');
+    const d = new Date(c.date);
+    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const active = c.id === chatConversationId ? ' active' : '';
+    return `<div class="chat-drawer-item${active}" onclick="loadConversation('${c.id}')">
+      <div class="chat-drawer-item-title">${preview.replace(/</g,'&lt;')}</div>
+      <div class="chat-drawer-item-date">${dateStr}</div>
+    </div>`;
+  }).join('');
+}
+
+async function loadConversation(convId) {
+  chatConversationId = convId;
+  chatHistory = [];
+
+  const mc = document.getElementById('chatMessages');
+  mc.innerHTML = '';
+  const welcome = document.getElementById('chatWelcome');
+
+  try {
+    const { data, error } = await sb.from('chat_messages')
+      .select('role, content, created_at')
+      .eq('conversation_id', convId)
+      .order('created_at', { ascending: true });
+
+    if (error || !data || !data.length) {
+      // Empty conversation
+      if (!welcome) {
+        // Re-create welcome
+      }
+      return;
+    }
+
+    data.forEach(msg => {
+      appendChatBubble(msg.role === 'assistant' ? 'ai' : 'user', msg.content);
+      chatHistory.push({ role: msg.role, content: msg.content });
+    });
+
+    scrollChatToBottom();
+  } catch (e) {
+    console.warn('Failed to load conversation:', e);
+  }
+
+  toggleChatDrawer(); // close drawer
+  loadChatConversations(); // refresh active state
+}
+
+function startNewConversation() {
+  chatConversationId = null;
+  chatHistory = [];
+  const mc = document.getElementById('chatMessages');
+  mc.innerHTML = `<div class="chat-welcome" id="chatWelcome">
+    <div class="chat-welcome-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <h3>Hunt Planner AI</h3>
+    <p>I know your property, your bucks, your cameras, and the forecast. Ask me anything about your next hunt.</p>
+    <div class="chat-suggestions" id="chatSuggestions">
+      <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Where should I sit tomorrow morning?</button>
+      <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">What patterns has Marsh Buck shown this season?</button>
+      <button class="chat-suggest-btn" onclick="sendChatSuggestion(this)">Which cameras have the most mature buck activity?</button>
+    </div>
+    <button class="chat-setup-btn" onclick="openIntelWizard()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Teach Huginn about your property
+    </button>
+  </div>`;
+}
+
+function toggleChatDrawer() {
+  const drawer = document.getElementById('chatDrawer');
+  const overlay = document.getElementById('chatDrawerOverlay');
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) {
+    drawer.classList.remove('open');
+    overlay.classList.remove('on');
+  } else {
+    loadChatConversations();
+    drawer.classList.add('open');
+    overlay.classList.add('on');
+  }
+}
+
+// --- Property Intel Wizard ---
+const INTEL_STEPS = [
+  {
+    key: 'terrain',
+    question: 'Describe your property terrain',
+    hint: 'Hills, ridges, valleys, swamps, creek bottoms, flat hardwoods, etc. The more detail, the better Huginn understands your land.',
+    placeholder: 'e.g., Rolling hardwood ridges with a creek bottom running NE to SW. Thick swamp on the east side, open ag fields to the north...'
+  },
+  {
+    key: 'food_sources',
+    question: 'What food sources are on or near the property?',
+    hint: 'Ag fields (corn, beans, alfalfa), food plots, oak flats, apple trees, browse areas, etc.',
+    placeholder: 'e.g., Standing corn on the north field through November. White oak flat on the ridge drops acorns early October...'
+  },
+  {
+    key: 'bedding_areas',
+    question: 'Where do deer bed on your property?',
+    hint: 'Known bedding areas, thermal cover, thick cover, south-facing slopes in winter, etc.',
+    placeholder: 'e.g., Does bed in the cattail swamp on the east side. Mature bucks stage in the thick brush along the creek...'
+  },
+  {
+    key: 'water_sources',
+    question: 'What water sources are available?',
+    hint: 'Creeks, ponds, springs, ditches, water holes, etc.',
+    placeholder: 'e.g., Year-round creek runs NE to SW through the middle. Small spring seep on the south ridge...'
+  },
+  {
+    key: 'access_routes',
+    question: 'How do you access your stands?',
+    hint: 'Entry/exit routes, parking spots, wind-dependent access, problem areas where you bump deer.',
+    placeholder: 'e.g., Park at the NW gate. Walk the creek bed south to the Ridge stand on SW winds. Avoid walking past the swamp on east wind mornings...'
+  },
+  {
+    key: 'hunting_pressure',
+    question: 'What does hunting pressure look like?',
+    hint: 'Neighbors hunting, public land nearby, gun season pressure, how pressured are the deer?',
+    placeholder: 'e.g., Light pressure — only 2-3 hunters on the property. Public land borders the south side. Heavy pressure during gun season pushes deer onto our land...'
+  },
+  {
+    key: 'additional_notes',
+    question: 'Anything else Huginn should know?',
+    hint: 'Season goals, target bucks, property history, special areas, anything that helps the AI give better advice.',
+    placeholder: 'e.g., Targeting Marsh Buck this season — he tends to move between Dan cam and Colin cam. Property has been managed for 8 years, no does shot in 3 years...'
+  }
+];
+
+let intelWizardStep = 0;
+let intelWizardData = {};
+
+async function openIntelWizard() {
+  intelWizardStep = 0;
+  intelWizardData = {};
+
+  // Load existing property_context data
+  try {
+    const { data } = await sb.from('property_context').select('key, value');
+    if (data) {
+      data.forEach(row => { intelWizardData[row.key] = row.value; });
+    }
+  } catch (e) {
+    console.warn('Could not load property context:', e);
+  }
+
+  document.getElementById('intelWizardOverlay').classList.add('on');
+  renderIntelWizardStep();
+}
+
+function closeIntelWizard() {
+  document.getElementById('intelWizardOverlay').classList.remove('on');
+}
+
+function renderIntelWizardStep() {
+  const step = INTEL_STEPS[intelWizardStep];
+  const total = INTEL_STEPS.length;
+
+  // Progress dots
+  const progress = document.getElementById('intelWizardProgress');
+  progress.innerHTML = INTEL_STEPS.map((_, i) => {
+    let cls = 'intel-wizard-dot';
+    if (i < intelWizardStep) cls += ' done';
+    if (i === intelWizardStep) cls += ' active';
+    return `<div class="${cls}"></div>`;
+  }).join('');
+
+  // Title
+  document.getElementById('intelWizardTitle').textContent = `Property Intel (${intelWizardStep + 1}/${total})`;
+
+  // Body
+  const existing = intelWizardData[step.key] || '';
+  document.getElementById('intelWizardBody').innerHTML = `
+    <div class="intel-wizard-q">${step.question}</div>
+    <div class="intel-wizard-hint">${step.hint}</div>
+    <textarea class="intel-wizard-textarea" id="intelWizardInput" placeholder="${step.placeholder}">${existing}</textarea>
+  `;
+
+  // Footer
+  const isFirst = intelWizardStep === 0;
+  const isLast = intelWizardStep === total - 1;
+  document.getElementById('intelWizardFooter').innerHTML = `
+    <button class="intel-wizard-btn" onclick="${isFirst ? 'closeIntelWizard()' : 'prevIntelStep()'}" style="flex:0.6">${isFirst ? 'Cancel' : 'Back'}</button>
+    <button class="intel-wizard-btn" onclick="skipIntelStep()" style="flex:0.5;font-size:12px;color:var(--text3)">Skip</button>
+    <button class="intel-wizard-btn primary" onclick="${isLast ? 'finishIntelWizard()' : 'nextIntelStep()'}">${isLast ? 'Save' : 'Next'}</button>
+  `;
+}
+
+function saveCurrentIntelStep() {
+  const input = document.getElementById('intelWizardInput');
+  if (input && input.value.trim()) {
+    intelWizardData[INTEL_STEPS[intelWizardStep].key] = input.value.trim();
+  }
+}
+
+function nextIntelStep() {
+  saveCurrentIntelStep();
+  if (intelWizardStep < INTEL_STEPS.length - 1) {
+    intelWizardStep++;
+    renderIntelWizardStep();
+  }
+}
+
+function prevIntelStep() {
+  saveCurrentIntelStep();
+  if (intelWizardStep > 0) {
+    intelWizardStep--;
+    renderIntelWizardStep();
+  }
+}
+
+function skipIntelStep() {
+  if (intelWizardStep < INTEL_STEPS.length - 1) {
+    intelWizardStep++;
+    renderIntelWizardStep();
+  } else {
+    finishIntelWizard();
+  }
+}
+
+async function finishIntelWizard() {
+  saveCurrentIntelStep();
+
+  // Save each key-value to property_context (upsert)
+  const entries = Object.entries(intelWizardData).filter(([_, v]) => v);
+  if (!entries.length) {
+    closeIntelWizard();
+    return;
+  }
+
+  try {
+    for (const [key, value] of entries) {
+      await sb.from('property_context').upsert(
+        { key, value, updated_at: new Date().toISOString() },
+        { onConflict: 'key' }
+      );
+    }
+    showToast('Property intel saved');
+  } catch (e) {
+    console.warn('Failed to save property context:', e);
+    showToast('Some intel may not have saved');
+  }
+
+  closeIntelWizard();
+}
+
+// Load property context into system prompt
+let propertyContextCache = null;
+async function loadPropertyContext() {
+  try {
+    const { data } = await sb.from('property_context').select('key, value');
+    if (data && data.length) {
+      propertyContextCache = {};
+      data.forEach(row => { propertyContextCache[row.key] = row.value; });
+    }
+  } catch (e) {
+    console.warn('Could not load property context:', e);
+  }
 }
 
 // --- GPS Blue Dot ---
@@ -1459,7 +2137,7 @@ let editId = null, editImgFile = null, editImgChanged = false;
 function showToast(msg, duration = 2500) {
   const t = document.createElement('div');
   t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
+  t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), duration);
 }

@@ -5,8 +5,9 @@ How To Use This File
 * After a session: Update this file with what was completed and what's next
 
 🔥 Current Priority (Next Session)
-* [ ] Update Scrape/Rub/Bedding/Stand map pins to use Feather-style SVG teardrop icons matching camera pin style, with correct brand colors per type
-* [ ] Unknown Bucks root cause — trace AI hint → accept → save flow, find where buck_name is dropped and not persisted; bulk resolve Marsh Buck null records
+* (awaiting new priorities)
+
+
 
 🐛 Active Bugs
 Bug | Severity | Notes
@@ -60,6 +61,8 @@ Camera pin colors on initial load | Confirm pins render correct mature/non-matur
 
 ✅ Completed
 Feature/Fix | Notes | Date
+Feather-style SVG teardrop icons for feature pins | Replaced filled circles with teardrop SVG icons matching camera pin architecture. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e | Mar 23 2026
+Unknown Bucks root cause + Marsh Buck bulk resolve | Fixed buck_name drop in AI hint → accept → save flow; bulk resolved Marsh Buck null records | Mar 23 2026
 GitHub + Claude Code integration | Connected to Vercel + GitHub | Mar 2026
 Supabase backend | Auth + DB + Storage configured | 2025
 Satellite base map | Mapbox GL JS v3.3.0 | 2025
