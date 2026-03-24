@@ -2366,13 +2366,13 @@ function showAuthGate() {
 
 // Auth state listener
 sb.auth.onAuthStateChange((event, session) => {
-  if(session) { bootApp(); }
+  if(session?.user) { bootApp(); }
   else { showAuthGate(); }
 });
 
 // Initial session check
 sb.auth.getSession().then(({ data: { session } }) => {
-  if(session) bootApp();
+  if(session?.user) bootApp();
   // If no session, authGate is already visible (default display:flex)
 });
 
