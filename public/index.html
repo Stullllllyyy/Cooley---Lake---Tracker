@@ -32,10 +32,12 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* Filter FAB + Panel */
-.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:50%;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(140,115,85,0.25);border:1px solid rgba(140,115,85,0.5);color:#8C7355;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
 .filter-fab:active{transform:scale(0.9)}
-.filter-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
-.filter-fab-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
+.filter-fab.active{background:rgba(140,115,85,0.35);border-color:#8C7355;color:#8C7355}
+.filter-fab.active svg{transform:rotate(45deg)}
+.filter-fab svg{transition:transform 0.2s ease}
+.filter-fab-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
 .filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px) - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
 .filter-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
 .filter-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
