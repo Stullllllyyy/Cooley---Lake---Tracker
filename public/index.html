@@ -2476,12 +2476,40 @@ async function loadSightings() {
   refreshMapPins();
 }
 
+// Client-side image compression via Canvas API
+// Resizes to max 1200px on longest edge, JPEG quality 0.82, targets ~300KB
+function compressImage(file) {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w <= MAX && h <= MAX && file.size <= 300000) { resolve(file); return; }
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob((blob) => {
+        if (!blob) { resolve(file); return; }
+        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+        resolve(compressed);
+      }, 'image/jpeg', 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadPhoto(file, sightingId) {
   if(!file) return null;
   try {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = 'sightings/' + sightingId + '.' + ext;
-    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: file.type || 'image/jpeg'});
+    file = await compressImage(file);
+    const path = 'sightings/' + sightingId + '.jpg';
+    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: 'image/jpeg'});
     if(error) { console.error('Upload error:', error); return null; }
     const {data} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
     return data.publicUrl;
@@ -6493,10 +6521,10 @@ async function submitFeatureMarker() {
   // Upload photo if present
   if(featFormImgFile && data.id) {
     try {
-      const ext = (featFormImgFile.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = 'markers/' + data.id + '.' + ext;
+      featFormImgFile = await compressImage(featFormImgFile);
+      const path = 'markers/' + data.id + '.jpg';
       syncDot(true);
-      const {error: upErr} = await sb.storage.from('trail-cam-photos').upload(path, featFormImgFile, {upsert:true, contentType: featFormImgFile.type || 'image/jpeg'});
+      const {error: upErr} = await sb.storage.from('trail-cam-photos').upload(path, featFormImgFile, {upsert:true, contentType: 'image/jpeg'});
       syncDot(false);
       if(!upErr) {
         const {data: urlData} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
