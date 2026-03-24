@@ -2816,7 +2816,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).order('id');
+  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).is('deleted_at', null).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
     data.forEach(c => {
@@ -3700,7 +3700,7 @@ async function showPin(camName) {
   camColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(camColorRow);
   // Fetch facing direction async — insert above color row when ready
-  const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
+  const camData = await sb.from('cameras').select('facing').eq('name', camName).is('deleted_at', null).single();
   const currentFacing = camData?.data?.facing || '';
   const facingHtml = document.createElement('div');
   facingHtml.id = 'camFacingRow';
@@ -3835,10 +3835,10 @@ function enableDragForCamera(camName) {
 async function confirmDeleteCamera(camName) {
   const cs = sightings.filter(s => s.camera_name === camName).length;
   const msg = cs > 0
-    ? 'Delete camera "' + camName + '"? It has ' + cs + ' sightings. The sightings will be kept but unlinked from this camera.'
-    : 'Delete camera "' + camName + '"? This cannot be undone.';
+    ? 'Archive camera "' + camName + '"? It has ' + cs + ' sightings. Your sighting history will be preserved.'
+    : 'Archive camera "' + camName + '"? You can restore it later.';
   if(!confirm(msg)) return;
-  await sb.from('cameras').delete().eq('name', camName);
+  await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', camName);
   delete camLocations[camName];
   closePopup();
   await loadCamLocations();
@@ -5320,9 +5320,9 @@ async function renameCameraFromMenu() {
 async function deleteCameraFromMenu() {
   if(!menuTargetCam) return;
   closePinMenu();
-  if(!confirm(`Delete camera "${menuTargetCam}"? Sightings will not be deleted.`)) return;
+  if(!confirm(`Archive camera "${menuTargetCam}"? Your sighting history will be preserved.`)) return;
   try {
-    await sb.from('cameras').delete().eq('name', menuTargetCam);
+    await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', menuTargetCam);
   } catch(e) { console.error(e); }
   delete camLocations[menuTargetCam];
   const idx = CAMNAMES.indexOf(menuTargetCam);
@@ -6545,7 +6545,7 @@ async function submitFeatureMarker() {
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID);
+    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID).is('deleted_at', null);
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -6744,11 +6744,11 @@ function deleteFeatMarker(btnEl) {
   if(btnEl.dataset.pending === '1') {
     const m = activeFeatureMarker;
     closePopup();
-    sb.from('property_markers').delete().eq('id', m.id).then(({error}) => {
-      if(error) { showToast('Delete failed — try again'); return; }
+    sb.from('property_markers').update({ deleted_at: new Date().toISOString() }).eq('id', m.id).then(({error}) => {
+      if(error) { showToast('Archive failed — try again'); return; }
       propertyMarkers = propertyMarkers.filter(x => x.id !== m.id);
       renderPropertyMarkers();
-      showToast((m.name || m.type) + ' removed');
+      showToast((m.name || m.type) + ' archived');
     });
     activeFeatureMarker = null;
   } else {

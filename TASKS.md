@@ -23,6 +23,8 @@ Immediate
 * [ ] Unknown Bucks root cause + bulk resolve Marsh Buck null records
 
 Near Term
+* [ ] Replace confirm() calls with custom modals — 3 remaining: camera archive from popup, camera archive from pin menu, feature marker archive confirmation. CLAUDE.md prohibits confirm(). Flagged during soft delete implementation (Mar 24 2026).
+* [ ] Archived Pins UI — Settings section showing soft-deleted cameras and property_markers with restore option. Prerequisite: Settings tab must exist.
 * [ ] Pin color editor — when user taps a feature marker pin, the info card should include preset color swatches (and optionally a color picker) so the user can customize pin color. Saved to property_markers.color column (needs migration).
 * [ ] Stand info card — tap stand pin on map to expand an info card showing name, notes, date placed, with Edit / Move / Delete options
 * [ ] Old addCamModal cleanup — the original #addCamModal (pre-Log Event rework) is orphaned in the HTML. Remove the modal HTML, its CSS, and any remaining JS that references it. Confirm addCamBtn and toggleAddCamMode() are also cleaned up or intentionally kept.
