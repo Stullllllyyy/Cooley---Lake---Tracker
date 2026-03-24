@@ -208,18 +208,18 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .intel-card-preview{font-size:12px;color:var(--text2);line-height:1.5;margin-top:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .intel-card-empty{font-size:12px;color:var(--text3);margin-top:4px;font-style:italic}
 
-/* Intel card edit modal */
-.intel-edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s;display:flex;align-items:flex-end;justify-content:center}
+/* Intel card edit modal — centered overlay */
+.intel-edit-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;opacity:0;pointer-events:none;transition:opacity 0.25s;display:flex;align-items:center;justify-content:center;padding:24px 16px}
 .intel-edit-overlay.on{opacity:1;pointer-events:auto}
-.intel-edit-modal{width:100%;max-width:480px;max-height:75vh;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);display:flex;flex-direction:column;transform:translateY(100%);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1)}
-.intel-edit-overlay.on .intel-edit-modal{transform:translateY(0)}
-.intel-edit-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 10px;border-bottom:1px solid var(--border);flex-shrink:0}
-.intel-edit-hdr h3{font-size:15px;font-weight:700;color:var(--text);margin:0}
+.intel-edit-modal{width:100%;max-width:420px;max-height:80vh;background:var(--surface);border-radius:16px;border:1px solid var(--border2);display:flex;flex-direction:column;transform:scale(0.95);opacity:0;transition:transform 0.25s cubic-bezier(0.32,0.72,0,1),opacity 0.2s;box-shadow:0 12px 48px rgba(0,0,0,0.6)}
+.intel-edit-overlay.on .intel-edit-modal{transform:scale(1);opacity:1}
+.intel-edit-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.intel-edit-hdr h3{font-size:15px;font-weight:700;color:var(--text);margin:0;padding-right:8px;line-height:1.3}
 .intel-edit-body{flex:1;overflow-y:auto;padding:16px 18px;-webkit-overflow-scrolling:touch}
 .intel-edit-hint{font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5}
 .intel-edit-textarea{width:100%;min-height:140px;background:var(--bg);border:1px solid var(--border2);border-radius:12px;padding:12px;color:var(--text);font-size:13px;font-family:var(--font);line-height:1.6;resize:vertical;outline:none}
 .intel-edit-textarea:focus{border-color:var(--gold)}
-.intel-edit-footer{display:flex;gap:8px;padding:12px 18px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);flex-shrink:0}
+.intel-edit-footer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--border);flex-shrink:0}
 .intel-edit-btn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .intel-edit-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg)}
 .intel-cards-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
@@ -1669,19 +1669,43 @@ async function sendChatMessage() {
       })
     });
 
-    const data = await res.json();
+    const rawText = await res.text();
+    console.log('[HuntAI] Raw response status:', res.status);
+    console.log('[HuntAI] Raw response body:', rawText.slice(0, 800));
     typing.remove();
 
+    let data;
+    try { data = JSON.parse(rawText); } catch(e) {
+      console.error('[HuntAI] JSON parse failed:', e);
+      appendChatBubble('ai', 'Failed to parse AI response.');
+      chatStreaming = false;
+      return;
+    }
+
+    // Anthropic error responses have type: "error"
     if (!res.ok || data.type === 'error') {
-      const errMsg = data.error?.message || 'Something went wrong. Try again.';
+      const errMsg = (data.error && data.error.message) ? data.error.message : 'Something went wrong. Try again.';
+      console.error('[HuntAI] Error path:', data);
       appendChatBubble('ai', errMsg);
       chatStreaming = false;
       return;
     }
 
-    const aiText = (data.content && data.content[0] && data.content[0].text)
-      ? data.content[0].text
-      : 'No response received.';
+    // Anthropic success: { content: [{ type: "text", text: "..." }], model: "...", ... }
+    let aiText = '';
+    if (data.content && Array.isArray(data.content)) {
+      for (let i = 0; i < data.content.length; i++) {
+        if (data.content[i] && data.content[i].type === 'text' && typeof data.content[i].text === 'string') {
+          aiText = data.content[i].text;
+          break;
+        }
+      }
+    }
+    if (!aiText) {
+      console.error('[HuntAI] Could not extract text from response:', JSON.stringify(data).slice(0, 500));
+      aiText = 'No response received.';
+    }
+    console.log('[HuntAI] Extracted aiText:', aiText.slice(0, 200));
     appendChatBubble('ai', aiText);
     chatHistory.push({ role: 'assistant', content: aiText });
     persistChatMessage('assistant', aiText);
@@ -1893,13 +1917,13 @@ const INTEL_CARD_LABELS = {
   additional_notes: 'Additional Notes'
 };
 const INTEL_CARD_ICONS = {
-  terrain: '&#9968;',
-  food_sources: '&#127805;',
-  bedding_areas: '&#128716;',
-  water_sources: '&#128167;',
-  access_routes: '&#128694;',
-  hunting_pressure: '&#127919;',
-  additional_notes: '&#128221;'
+  terrain: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3l4 8 5-5 2 4"/><path d="M2 21h20"/><path d="M4 21l4-12 5 7 3-4 4 9"/></svg>',
+  food_sources: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 11 7 11s7-6 7-11a7 7 0 0 0-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  bedding_areas: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v11"/><path d="M3 18h18"/><path d="M3 11h18a2 2 0 0 1 2 2v5"/><path d="M7 11V7a4 4 0 0 1 8 0v4"/></svg>',
+  water_sources: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>',
+  access_routes: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+  hunting_pressure: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+  additional_notes: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'
 };
 const INTEL_CARD_COLORS = {
   terrain: 'rgba(140,115,85,0.15)',
@@ -4883,11 +4907,26 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
       console.error('[KeyInsights] HTTP error:', resp.status, resp.statusText);
       throw new Error('HTTP ' + resp.status);
     }
-    const data = await resp.json();
-    console.log('[KeyInsights] Response data:', JSON.stringify(data).slice(0, 500));
-    const text = data.content?.[0]?.text || '';
+    const rawText = await resp.text();
+    console.log('[KeyInsights] Raw response body:', rawText.slice(0, 500));
+    let data;
+    try { data = JSON.parse(rawText); } catch(parseErr) {
+      console.error('[KeyInsights] JSON parse failed:', parseErr);
+      throw new Error('JSON parse failed');
+    }
+    console.log('[KeyInsights] Parsed data keys:', Object.keys(data));
+    // Extract text from Anthropic response: content[].type === "text"
+    let text = '';
+    if (data.content && Array.isArray(data.content)) {
+      for (let i = 0; i < data.content.length; i++) {
+        if (data.content[i] && data.content[i].type === 'text' && typeof data.content[i].text === 'string') {
+          text = data.content[i].text;
+          break;
+        }
+      }
+    }
     console.log('[KeyInsights] Extracted text:', text.slice(0, 300));
-    if(!text) console.warn('[KeyInsights] Empty response text, full data:', data);
+    if(!text) console.warn('[KeyInsights] Empty response text, full data:', JSON.stringify(data).slice(0, 500));
     // Parse JSON array from response
     const match = text.match(/\[[\s\S]*\]/);
     let insights = [];
