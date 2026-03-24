@@ -38,7 +38,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-fab.active svg{transform:rotate(45deg)}
 .filter-fab svg{transition:transform 0.2s ease}
 .filter-fab-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
-.filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px) - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
+.filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
 .filter-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
 .filter-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
 .filter-panel-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:600}
@@ -3429,6 +3429,10 @@ function toggleFilterPanel() {
 function openFilterPanel() {
   const panel = document.getElementById('filterPanel');
   const fab = document.getElementById('filterFab');
+  // Compute max-height so panel stays within viewport (20px top margin)
+  const fabRect = fab.getBoundingClientRect();
+  const available = fabRect.top - 20 - 10; // 20px top margin, 10px gap above fab
+  panel.style.maxHeight = Math.max(200, available) + 'px';
   panel.classList.add('open');
   fab.classList.add('active');
   buildDateDropdown();
