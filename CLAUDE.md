@@ -117,11 +117,16 @@ Current Build Status — What's Working ✅
 * Mobile safe area insets fixed across all sheets and FABs (fixed Mar 23 2026)
 * Touch targets raised to 44px standard across all interactive elements (fixed Mar 23 2026)
 * Sightings header, filter bar, and event type modal reflowed for mobile (fixed Mar 23 2026)
+* Sightings feed card links open detail sheet correctly (fixed Mar 24 2026)
+* Property Intel append model — timestamped entries preserve previous notes (fixed Mar 24 2026)
+* Supabase RLS policies enabled on all tables (Mar 24 2026)
+* property_id scoping on all tables and queries (Mar 24 2026)
+* /api/claude rate limiting — IP-based abuse prevention (Mar 24 2026)
+* Client-side image compression before upload (Mar 24 2026)
+* Soft deletes on cameras and property_markers — archive instead of destroy, sightings preserved (Mar 24 2026)
 Known Bugs / In Progress 🐛
 Bug | Notes
 Field observation pins on map | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist after page reload.
-Key Insights on Intelligence tab | Showing "Insights unavailable" — fetchAiInsights() hitting catch block. API error diagnosis needed.
-Feature marker pin icons | Currently plain filled circles. Planned upgrade to Feather-style SVG teardrop icons matching camera pin architecture (scheduled next session).
 Pin color customization | Not yet implemented. Planned: color swatches on feature marker tap info card, saved to property_markers.color (needs schema migration).
 
 Camera Pin Architecture Notes (for future sessions)

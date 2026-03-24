@@ -222,6 +222,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .intel-edit-footer{display:flex;gap:8px;padding:12px 18px 16px;border-top:1px solid var(--border);flex-shrink:0}
 .intel-edit-btn{flex:1;padding:11px;border-radius:12px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .intel-edit-btn.primary{background:var(--gold);border-color:var(--gold);color:var(--bg)}
+.intel-edit-entry{padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:10px;margin-bottom:8px}
+.intel-edit-entry-date{font-size:10px;color:var(--text3);margin-bottom:4px;font-weight:500}
+.intel-edit-entry-text{font-size:12px;color:var(--text2);line-height:1.5}
+.intel-edit-add-label{font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:600;letter-spacing:0.3px}
 .intel-cards-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 .intel-cards-header h4{font-size:11px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin:0}
 .intel-cards-header span{font-size:11px;color:var(--text3)}
@@ -892,8 +896,9 @@ textarea{resize:none}
       <h3 id="intelEditTitle">Edit</h3>
       <button class="chat-header-btn" onclick="closeIntelEdit()">&#215;</button>
     </div>
-    <div class="intel-edit-body">
+    <div class="intel-edit-body" id="intelEditBody">
       <div class="intel-edit-hint" id="intelEditHint"></div>
+      <div id="intelEditHistory"></div>
       <textarea class="intel-edit-textarea" id="intelEditTextarea" placeholder=""></textarea>
     </div>
     <div class="intel-edit-footer">
@@ -1583,13 +1588,19 @@ function buildChatSystemPrompt() {
     return parts.join(' | ');
   }).join('\n');
 
-  // Property context from guided wizard
+  // Property context from guided wizard — send only 2-3 most recent entries per category
   let contextSection = '';
   if (propertyContextCache) {
     const labels = { terrain: 'Terrain', food_sources: 'Food Sources', bedding_areas: 'Bedding Areas', water_sources: 'Water Sources', access_routes: 'Access Routes', hunting_pressure: 'Hunting Pressure', additional_notes: 'Additional Notes' };
     const parts = Object.entries(propertyContextCache)
       .filter(([_, v]) => v)
-      .map(([k, v]) => `${labels[k] || k}: ${v}`);
+      .map(([k, v]) => {
+        const entries = parseIntelEntries(v).slice(-3);
+        if (!entries.length) return null;
+        const lines = entries.map(e => (e.date ? `[${e.date}] ` : '') + e.text).join(' | ');
+        return `${labels[k] || k}: ${lines}`;
+      })
+      .filter(Boolean);
     if (parts.length) contextSection = '\n\nPROPERTY CONTEXT (from the hunter):\n' + parts.join('\n');
   }
 
@@ -1665,15 +1676,11 @@ async function sendChatMessage() {
       role: m.role, content: m.content
     }));
 
-    const res = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const res = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 1024,
         system: buildChatSystemPrompt(),
         messages: msgs
-      })
     });
 
     const data = await res.json();
@@ -1741,7 +1748,8 @@ async function persistChatMessage(role, content) {
       conversation_id: chatConversationId,
       role: role,
       content: content,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      property_id: PROPERTY_ID
     });
   } catch (e) {
     console.warn('Failed to persist chat message:', e);
@@ -1753,6 +1761,7 @@ async function loadChatConversations() {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('conversation_id, content, created_at, role')
+      .eq('property_id', PROPERTY_ID)
       .order('created_at', { ascending: true });
     if (error || !data || !data.length) return;
 
@@ -1804,6 +1813,7 @@ async function loadConversation(convId) {
   try {
     const { data, error } = await sb.from('chat_messages')
       .select('role, content, created_at')
+      .eq('property_id', PROPERTY_ID)
       .eq('conversation_id', convId)
       .order('created_at', { ascending: true });
 
@@ -1942,11 +1952,14 @@ async function renderIntelCards() {
             <div class="intel-card-icon" style="background:${bgColor}">${icon}</div>
             ${INTEL_CARD_LABELS[step.key] || step.key}
           </div>
-          <div class="intel-card-status${content ? ' filled' : ''}">${content ? 'Saved' : 'Empty'}</div>
+          <div class="intel-card-status${content ? ' filled' : ''}">${(() => { const n = parseIntelEntries(content).length; return n ? n + (n===1?' entry':' entries') : 'Empty'; })()}</div>
         </div>
-        ${content
-          ? `<div class="intel-card-preview">${content.replace(/</g, '&lt;')}</div>`
-          : `<div class="intel-card-empty">Tap to add</div>`}
+        ${(() => {
+          const entries = parseIntelEntries(content);
+          if (!entries.length) return `<div class="intel-card-empty">Tap to add</div>`;
+          const recent = entries.slice(-3);
+          return recent.map(e => `<div class="intel-card-preview">${e.date ? `<span style="font-size:10px;color:var(--text3);margin-right:6px">${e.date}</span>` : ''}${(e.text||'').replace(/</g, '&lt;')}</div>`).join('');
+        })()}
       </div>`;
     }).join('')}
   `;
@@ -1957,11 +1970,25 @@ function openIntelEdit(category) {
   if (!step) return;
 
   intelEditCategory = category;
-  document.getElementById('intelEditTitle').textContent = step.question;
+  document.getElementById('intelEditTitle').textContent = INTEL_CARD_LABELS[category] || step.question;
   document.getElementById('intelEditHint').textContent = step.hint;
 
+  // Render existing entries
+  const entries = parseIntelEntries(propertyContextCache?.[category]);
+  const historyEl = document.getElementById('intelEditHistory');
+  if (entries.length) {
+    historyEl.innerHTML = entries.map(e =>
+      `<div class="intel-edit-entry">
+        <div class="intel-edit-entry-date">${e.date || 'Earlier note'}</div>
+        <div class="intel-edit-entry-text">${(e.text||'').replace(/</g, '&lt;')}</div>
+      </div>`
+    ).join('') + `<div class="intel-edit-add-label">Add new note</div>`;
+  } else {
+    historyEl.innerHTML = '';
+  }
+
   const textarea = document.getElementById('intelEditTextarea');
-  textarea.value = propertyContextCache?.[category] || '';
+  textarea.value = '';
   textarea.placeholder = step.placeholder;
 
   document.getElementById('intelEditOverlay').classList.add('on');
@@ -1975,19 +2002,25 @@ function closeIntelEdit() {
 
 async function saveIntelEdit() {
   if (!intelEditCategory) return;
-  const content = document.getElementById('intelEditTextarea').value.trim();
+  const newText = document.getElementById('intelEditTextarea').value.trim();
+  if (!newText) { showToast('Nothing to save'); return; }
 
   try {
+    // Parse existing entries, append new one
+    const existing = parseIntelEntries(propertyContextCache?.[intelEditCategory]);
+    existing.push({ text: newText, date: new Date().toISOString().slice(0, 10) });
+    const serialized = serializeIntelEntries(existing);
+
     await sb.from('property_context').upsert(
-      { category: intelEditCategory, content: content, updated_at: new Date().toISOString() },
+      { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
       { onConflict: 'category' }
     );
 
     // Update cache
     if (!propertyContextCache) propertyContextCache = {};
-    propertyContextCache[intelEditCategory] = content;
+    propertyContextCache[intelEditCategory] = serialized;
 
-    showToast(content ? 'Saved' : 'Cleared');
+    showToast('Entry added');
     closeIntelEdit();
     renderIntelCards();
   } catch (e) {
@@ -2049,16 +2082,7 @@ async function openIntelWizard() {
   intelWizardStep = 0;
   intelWizardData = {};
 
-  // Load existing property_context data
-  try {
-    const { data } = await sb.from('property_context').select('category, content');
-    if (data) {
-      data.forEach(row => { intelWizardData[row.category] = row.content; });
-    }
-  } catch (e) {
-    console.warn('Could not load property context:', e);
-  }
-
+  // Wizard always starts with empty fields for new entries
   document.getElementById('intelWizardOverlay').classList.add('on');
   renderIntelWizardStep();
 }
@@ -2136,19 +2160,25 @@ function skipIntelStep() {
 async function finishIntelWizard() {
   saveCurrentIntelStep();
 
-  // Save each key-value to property_context (upsert)
-  const entries = Object.entries(intelWizardData).filter(([_, v]) => v);
-  if (!entries.length) {
+  // Save each key-value to property_context (append model)
+  const wizEntries = Object.entries(intelWizardData).filter(([_, v]) => v);
+  if (!wizEntries.length) {
     closeIntelWizard();
     return;
   }
 
   try {
-    for (const [key, value] of entries) {
+    await loadPropertyContext();
+    for (const [key, value] of wizEntries) {
+      const existing = parseIntelEntries(propertyContextCache?.[key]);
+      existing.push({ text: value, date: new Date().toISOString().slice(0, 10) });
+      const serialized = serializeIntelEntries(existing);
       await sb.from('property_context').upsert(
-        { category: key, content: value, updated_at: new Date().toISOString() },
+        { category: key, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
         { onConflict: 'category' }
       );
+      if (!propertyContextCache) propertyContextCache = {};
+      propertyContextCache[key] = serialized;
     }
     showToast('Property intel saved');
   } catch (e) {
@@ -2161,9 +2191,26 @@ async function finishIntelWizard() {
 
 // Load property context into system prompt
 let propertyContextCache = null;
+
+// Parse property_context content: returns array of {text, date} entries
+// Handles legacy plain-text content (pre-append model) as a single entry
+function parseIntelEntries(raw) {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+  } catch (_) {}
+  // Legacy plain text — wrap as single undated entry
+  return [{ text: raw, date: null }];
+}
+
+function serializeIntelEntries(entries) {
+  return JSON.stringify(entries);
+}
+
 async function loadPropertyContext() {
   try {
-    const { data } = await sb.from('property_context').select('category, content');
+    const { data } = await sb.from('property_context').select('category, content').eq('property_id', PROPERTY_ID);
     if (data && data.length) {
       propertyContextCache = {};
       data.forEach(row => { propertyContextCache[row.category] = row.content; });
@@ -2330,6 +2377,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 });
 
 const CLAT = 45.0200, CLNG = -88.2756;
+const PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
 const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
@@ -2352,6 +2400,20 @@ function showToast(msg, duration = 2500) {
   t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), duration);
+}
+
+// Wrapper for /api/claude fetch — handles 429 rate limit with toast
+async function claudeFetch(body) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (res.status === 429) {
+    showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
+    throw new Error('RATE_LIMITED');
+  }
+  return res;
 }
 
 // --- utils -
@@ -2399,6 +2461,7 @@ function syncDot(on) {
 async function loadSightings() {
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
+    .eq('property_id', PROPERTY_ID)
     .order('date', {ascending:false})
     .order('time', {ascending:false});
   syncDot(false);
@@ -2413,12 +2476,40 @@ async function loadSightings() {
   refreshMapPins();
 }
 
+// Client-side image compression via Canvas API
+// Resizes to max 1200px on longest edge, JPEG quality 0.82, targets ~300KB
+function compressImage(file) {
+  return new Promise((resolve) => {
+    if (!file || !file.type.startsWith('image/')) { resolve(file); return; }
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 1200;
+      let w = img.width, h = img.height;
+      if (w <= MAX && h <= MAX && file.size <= 300000) { resolve(file); return; }
+      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
+      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      c.toBlob((blob) => {
+        if (!blob) { resolve(file); return; }
+        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
+        resolve(compressed);
+      }, 'image/jpeg', 0.82);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
+    img.src = url;
+  });
+}
+
 async function uploadPhoto(file, sightingId) {
   if(!file) return null;
   try {
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const path = 'sightings/' + sightingId + '.' + ext;
-    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: file.type || 'image/jpeg'});
+    file = await compressImage(file);
+    const path = 'sightings/' + sightingId + '.jpg';
+    const {error} = await sb.storage.from('trail-cam-photos').upload(path, file, {upsert:true, contentType: 'image/jpeg'});
     if(error) { console.error('Upload error:', error); return null; }
     const {data} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
     return data.publicUrl;
@@ -2465,6 +2556,7 @@ async function submitSighting() {
       travel_dir: (() => { const t = document.querySelector(".chip[data-k='tdir'].on"); return t ? t.dataset.v : null; })(),
       image_url: null,
       moon_phase: document.getElementById("mlbl").textContent,
+      property_id: PROPERTY_ID,
     };
   } else {
     // Field observation
@@ -2489,6 +2581,7 @@ async function submitSighting() {
       moon_phase: document.getElementById("mlbl").textContent,
       obs_lat: obsLatLng ? obsLatLng.lat : null,
       obs_lng: obsLatLng ? obsLatLng.lng : null,
+      property_id: PROPERTY_ID,
     };
   }
 
@@ -2723,7 +2816,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
-  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').order('id');
+  const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).is('deleted_at', null).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
     data.forEach(c => {
@@ -3607,7 +3700,7 @@ async function showPin(camName) {
   camColorRow.id = 'camColorRow';
   actions.parentNode.appendChild(camColorRow);
   // Fetch facing direction async — insert above color row when ready
-  const camData = await sb.from('cameras').select('facing').eq('name', camName).single();
+  const camData = await sb.from('cameras').select('facing').eq('name', camName).is('deleted_at', null).single();
   const currentFacing = camData?.data?.facing || '';
   const facingHtml = document.createElement('div');
   facingHtml.id = 'camFacingRow';
@@ -3742,10 +3835,10 @@ function enableDragForCamera(camName) {
 async function confirmDeleteCamera(camName) {
   const cs = sightings.filter(s => s.camera_name === camName).length;
   const msg = cs > 0
-    ? 'Delete camera "' + camName + '"? It has ' + cs + ' sightings. The sightings will be kept but unlinked from this camera.'
-    : 'Delete camera "' + camName + '"? This cannot be undone.';
+    ? 'Archive camera "' + camName + '"? It has ' + cs + ' sightings. Your sighting history will be preserved.'
+    : 'Archive camera "' + camName + '"? You can restore it later.';
   if(!confirm(msg)) return;
-  await sb.from('cameras').delete().eq('name', camName);
+  await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', camName);
   delete camLocations[camName];
   closePopup();
   await loadCamLocations();
@@ -4863,17 +4956,13 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
   const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
 
   try {
-    const resp = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const resp = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 400,
         messages: [{
           role: 'user',
           content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
         }]
-      })
     });
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
     const data = await resp.json();
@@ -5231,9 +5320,9 @@ async function renameCameraFromMenu() {
 async function deleteCameraFromMenu() {
   if(!menuTargetCam) return;
   closePinMenu();
-  if(!confirm(`Delete camera "${menuTargetCam}"? Sightings will not be deleted.`)) return;
+  if(!confirm(`Archive camera "${menuTargetCam}"? Your sighting history will be preserved.`)) return;
   try {
-    await sb.from('cameras').delete().eq('name', menuTargetCam);
+    await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', menuTargetCam);
   } catch(e) { console.error(e); }
   delete camLocations[menuTargetCam];
   const idx = CAMNAMES.indexOf(menuTargetCam);
@@ -5807,10 +5896,7 @@ async function runBulkAi(s) {
     const b64data = base64.split(',')[1];
     const mediaType = base64.split(';')[0].split(':')[1];
 
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{
@@ -5820,7 +5906,6 @@ async function runBulkAi(s) {
             { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks from this property:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
           ]
         }]
-      })
     });
 
     const data = await response.json();
@@ -6025,10 +6110,7 @@ async function runFullAiMatch(sightingId, imageUrl) {
     });
     const mediaType = blob.type || "image/jpeg";
 
-    const response = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: "claude-sonnet-4-5",
         max_tokens: 500,
         messages: [{
@@ -6045,7 +6127,6 @@ Respond in JSON only:
 {"match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences describing specific antler traits observed and how they match or don't match the known bucks", "antler_desc": "one sentence describing this buck's rack"}` }
           ]
         }]
-      })
     });
 
     if(!response.ok) {
@@ -6315,7 +6396,7 @@ async function confirmTtpAddCam() {
   document.getElementById('ttpAddCamModal').classList.remove('on');
   cancelTapToPlace();
   try {
-    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true });
+    await sb.from('cameras').insert({ name, lat: loc.lat, lng: loc.lng, facing, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('Add camera error:', e); }
   camLocations[name] = { lng: loc.lng, lat: loc.lat };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -6426,6 +6507,7 @@ async function submitFeatureMarker() {
     lat: featFormLngLat ? featFormLngLat.lat : null,
     lng: featFormLngLat ? featFormLngLat.lng : null,
     notes: document.getElementById('ttpFeatNotes').value.trim() || null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('property_markers').insert(marker).select().single();
@@ -6439,10 +6521,10 @@ async function submitFeatureMarker() {
   // Upload photo if present
   if(featFormImgFile && data.id) {
     try {
-      const ext = (featFormImgFile.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = 'markers/' + data.id + '.' + ext;
+      featFormImgFile = await compressImage(featFormImgFile);
+      const path = 'markers/' + data.id + '.jpg';
       syncDot(true);
-      const {error: upErr} = await sb.storage.from('trail-cam-photos').upload(path, featFormImgFile, {upsert:true, contentType: featFormImgFile.type || 'image/jpeg'});
+      const {error: upErr} = await sb.storage.from('trail-cam-photos').upload(path, featFormImgFile, {upsert:true, contentType: 'image/jpeg'});
       syncDot(false);
       if(!upErr) {
         const {data: urlData} = sb.storage.from('trail-cam-photos').getPublicUrl(path);
@@ -6463,7 +6545,7 @@ async function submitFeatureMarker() {
 
 async function loadPropertyMarkers() {
   try {
-    const {data, error} = await sb.from('property_markers').select('*');
+    const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID).is('deleted_at', null);
     if(error || !data) return;
     propertyMarkers = data;
     if(mapInstance) renderPropertyMarkers();
@@ -6662,11 +6744,11 @@ function deleteFeatMarker(btnEl) {
   if(btnEl.dataset.pending === '1') {
     const m = activeFeatureMarker;
     closePopup();
-    sb.from('property_markers').delete().eq('id', m.id).then(({error}) => {
-      if(error) { showToast('Delete failed — try again'); return; }
+    sb.from('property_markers').update({ deleted_at: new Date().toISOString() }).eq('id', m.id).then(({error}) => {
+      if(error) { showToast('Archive failed — try again'); return; }
       propertyMarkers = propertyMarkers.filter(x => x.id !== m.id);
       renderPropertyMarkers();
-      showToast((m.name || m.type) + ' removed');
+      showToast((m.name || m.type) + ' archived');
     });
     activeFeatureMarker = null;
   } else {
@@ -7083,17 +7165,13 @@ async function obsRunAiHint(base64DataUrl) {
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
           { type: 'text', text: `You are analyzing a photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
-      })
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
@@ -7198,6 +7276,7 @@ async function submitObsSighting() {
     obs_lat: obsFormLngLat ? obsFormLngLat.lat : null,
     obs_lng: obsFormLngLat ? obsFormLngLat.lng : null,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
@@ -7364,7 +7443,7 @@ async function tcamSaveNewCam() {
   const name = document.getElementById('tcamNewCamName').value.trim();
   if(!name) { showToast('Camera name is required', 2000); return; }
   try {
-    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true });
+    await sb.from('cameras').insert({ name, lat: CLAT, lng: CLNG, active: true, property_id: PROPERTY_ID });
   } catch(e) { console.error('tcamSaveNewCam:', e); }
   camLocations[name] = { lng: CLNG, lat: CLAT };
   if(!CAMNAMES.includes(name)) CAMNAMES.splice(CAMNAMES.length - 1, 0, name);
@@ -7495,17 +7574,13 @@ async function tcamRunAiHint(base64DataUrl) {
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
-    const response = await fetch('/api/claude', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 300,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
           { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
-      })
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
@@ -7579,6 +7654,7 @@ async function submitTrailCamSighting() {
     travel_dir: tdir ? tdir.dataset.v : null,
     moon_phase: document.getElementById('tcamMoonLbl').textContent,
     image_url: null,
+    property_id: PROPERTY_ID,
   };
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
@@ -7895,10 +7971,7 @@ async function runAiHint(base64DataUrl) {
     const base64 = base64DataUrl.split(",")[1];
     const mediaType = base64DataUrl.split(";")[0].split(":")[1];
 
-    const response = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    const response = await claudeFetch({
         model: "claude-sonnet-4-5",
         max_tokens: 300,
         messages: [{
@@ -7919,7 +7992,6 @@ Respond in JSON only, no other text:
             }
           ]
         }]
-      })
     });
 
     const data = await response.json();
