@@ -444,7 +444,7 @@ textarea{resize:none}
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
 .mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
 .mapboxgl-ctrl-group button{background:transparent !important;color:var(--text2) !important}
-.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo{display:none !important}
+.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo,.mapboxgl-ctrl-bottom-right{display:none !important}
 
 /* teardrop marker */
 .cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s;user-select:none}
@@ -2216,15 +2216,22 @@ async function loadPropertyContext() {
 }
 
 // --- GPS Blue Dot ---
+let geolocateCtrl = null;
 function initGeolocate() {
   if(!mapInstance) return;
-  const geolocate = new mapboxgl.GeolocateControl({
+  geolocateCtrl = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
     showUserHeading: true,
     showAccuracyCircle: true
   });
-  mapInstance.addControl(geolocate, 'bottom-right');
+  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent, map stays at PROPERTY_CENTER */ });
+  mapInstance.addControl(geolocateCtrl, 'bottom-right');
+  // Auto-trigger geolocation after control is added to the map
+  // Wrapped in try/catch + setTimeout so a denial never breaks map load
+  setTimeout(() => {
+    try { geolocateCtrl.trigger(); } catch(e) { /* silent */ }
+  }, 500);
 }
 
 // Compatibility shim - old showView calls still work
