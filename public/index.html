@@ -32,11 +32,13 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* Filter FAB + Panel */
-.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:50%;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(140,115,85,0.25);border:1px solid rgba(140,115,85,0.5);color:#8C7355;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
 .filter-fab:active{transform:scale(0.9)}
-.filter-fab.active{background:rgba(200,169,81,0.2);border-color:var(--gold);color:var(--gold)}
-.filter-fab-dot{position:absolute;top:8px;right:8px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
-.filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px) - 140px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
+.filter-fab.active{background:rgba(140,115,85,0.35);border-color:#8C7355;color:#8C7355}
+.filter-fab.active svg{transform:rotate(45deg)}
+.filter-fab svg{transition:transform 0.2s ease}
+.filter-fab-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
+.filter-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);left:14px;width:280px;max-width:calc(100vw - 28px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom left}
 .filter-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
 .filter-panel-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
 .filter-panel-title{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:2px;font-weight:600}
@@ -44,19 +46,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-section{padding:6px 16px 10px;border-bottom:1px solid var(--border)}
 .filter-section:last-child{border-bottom:none}
 .filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
-.fp-chip{display:inline-block;padding:4px 10px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
-.fp-chip.sel{border-color:var(--blue);background:rgba(74,127,193,0.15);color:var(--blue)}
-.fp-movement-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;background:var(--surface2);cursor:pointer;font-size:12px;color:var(--text2);font-family:var(--font)}
-.fp-movement-chevron{font-size:14px;line-height:1;transition:transform 0.2s}
-.fp-style-chip{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:8px;border:1px solid var(--border2);background:var(--bg);color:var(--text3);font-size:11px;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
-.fp-style-chip.sel{border-color:var(--blue);background:rgba(74,127,193,0.15);color:var(--blue)}
-.buck-dropdown{position:fixed;top:155px;left:14px;min-width:220px;max-width:calc(100vw - 28px);max-height:65vh;background:rgba(15,15,15,0.98);border:1px solid var(--border2);border-radius:14px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:120;pointer-events:none}
-.buck-drop-item{display:flex;align-items:center;gap:10px;padding:11px 16px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s;font-family:var(--font)}
-.buck-drop-item:last-child{border:none}
-.buck-drop-item:active,.buck-drop-item:hover{background:var(--surface2)}
-.buck-drop-item.selected{color:var(--blue)}
-.buck-drop-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.buck-drop-divider{height:1px;background:var(--border2);margin:4px 0}
+.fp-select{flex:1;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);appearance:auto;-webkit-appearance:auto;cursor:pointer;outline:none}
+.map-style-lbl{position:absolute;bottom:2px;right:2px;font-size:7px;font-weight:800;color:var(--text3);letter-spacing:0.5px;line-height:1;pointer-events:none}
 /* heatmap small fab */
 .map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
 .map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
@@ -453,7 +444,7 @@ textarea{resize:none}
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
 .mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
 .mapboxgl-ctrl-group button{background:transparent !important;color:var(--text2) !important}
-.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo{display:none !important}
+.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo,.mapboxgl-ctrl-bottom-right{display:none !important}
 
 /* teardrop marker */
 .cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s;user-select:none}
@@ -653,21 +644,15 @@ textarea{resize:none}
   <!-- Date -->
   <div class="filter-section">
     <div class="filter-section-lbl">Date</div>
-    <div id="dateYearOptions" style="margin-bottom:6px"></div>
-    <div id="dateMonthOptions" style="display:flex;flex-wrap:wrap;gap:4px"></div>
+    <div style="display:flex;gap:8px">
+      <select id="fpYearSelect" class="fp-select" onchange="setMapYear2(this.value)"></select>
+      <select id="fpMonthSelect" class="fp-select" onchange="setMapMonth(this.value)"></select>
+    </div>
   </div>
   <!-- Movement Lines -->
   <div class="filter-section">
     <div class="filter-section-lbl">Movement Lines</div>
-    <div class="fp-movement-row" onclick="toggleBuckDropdown()">
-      <span id="filterLabel">No Movement Lines</span>
-      <span class="fp-movement-chevron" id="filterArrow">&#8964;</span>
-    </div>
-  </div>
-  <!-- Map Style -->
-  <div class="filter-section">
-    <div class="filter-section-lbl">Map Style</div>
-    <div id="fpStyleOptions" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+    <select id="fpMovementSelect" class="fp-select" onchange="setMapFilter(this.value)"></select>
   </div>
   <!-- Markers -->
   <div class="filter-section" style="border-bottom:none">
@@ -689,8 +674,6 @@ textarea{resize:none}
   </div>
 </div>
 
-<!-- Movement Lines dropdown (standalone, overlays filter panel) -->
-<div class="buck-dropdown" id="buckDropdown" style="display:none"></div>
 <div id="mapLegend" style="display:none"></div>
 
 <div class="map-legend-panel" id="mapLegendPanel">
@@ -745,6 +728,11 @@ textarea{resize:none}
   <!-- Main + FAB -->
   <div class="map-fab map-fab-main" id="fabMain" onclick="toggleFabDial()" title="Actions">
     <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </div>
+  <!-- Map Style FAB -->
+  <div class="map-fab" id="mapStyleFab" onclick="cycleMapStyleFab()" title="Map style">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+    <span class="map-style-lbl" id="mapStyleFabLbl">SAT</span>
   </div>
   <!-- Legend FAB -->
   <div class="map-fab map-legend-btn" id="mapLegendBtn" onclick="toggleLegendPanel()" title="Map legend">
@@ -2228,15 +2216,22 @@ async function loadPropertyContext() {
 }
 
 // --- GPS Blue Dot ---
+let geolocateCtrl = null;
 function initGeolocate() {
   if(!mapInstance) return;
-  const geolocate = new mapboxgl.GeolocateControl({
+  geolocateCtrl = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
     showUserHeading: true,
     showAccuracyCircle: true
   });
-  mapInstance.addControl(geolocate, 'bottom-right');
+  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent, map stays at PROPERTY_CENTER */ });
+  mapInstance.addControl(geolocateCtrl, 'bottom-right');
+  // Auto-trigger geolocation after control is added to the map
+  // Wrapped in try/catch + setTimeout so a denial never breaks map load
+  setTimeout(() => {
+    try { geolocateCtrl.trigger(); } catch(e) { /* silent */ }
+  }, 500);
 }
 
 // Compatibility shim - old showView calls still work
@@ -2269,13 +2264,22 @@ const MAP_STYLES = [
 let mapStyleIdx = 0;
 
 function toggleMapStyle() {
+  cycleMapStyleFab();
+}
+
+function cycleMapStyleFab() {
   if(!mapInstance) return;
   mapStyleIdx = (mapStyleIdx + 1) % MAP_STYLES.length;
   const style = MAP_STYLES[mapStyleIdx];
   mapInstance.setStyle(style.url);
-  buildFilterPanelStyles();
+  updateMapStyleFabLabel();
   updateFilterFabDot();
   lineLayerAdded = false;
+}
+
+function updateMapStyleFabLabel() {
+  const lbl = document.getElementById('mapStyleFabLbl');
+  if(lbl) lbl.textContent = MAP_STYLES[mapStyleIdx].label;
 }
 
 // cam popup helpers
@@ -3198,97 +3202,26 @@ function updateBuckLines() {
 
 function buildMapFilters() {
   buildDateDropdown();
-  buildFilterPanelStyles();
-  const bucks = getNamedBucks();
-  const lbl = document.getElementById('filterLabel');
-  if(lbl) {
-    if(curMapFilter === 'none') lbl.textContent = 'No Movement Lines';
-    else if(curMapFilter === 'all' || curMapFilter === 'all-bucks') lbl.textContent = 'All Movement Lines';
-    else lbl.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${buckColor(curMapFilter)};margin-right:5px;vertical-align:-1px"></span>${curMapFilter}`;
-  }
-  buildMovementDropdown(bucks, '');
+  buildMovementSelect();
   updateFilterFabDot();
   // Show/hide movement legend
   const leg = document.getElementById('movementLegend');
   if(leg) leg.classList.toggle('show', curMapFilter !== 'all' && curMapFilter !== 'none');
 }
 
-function buildMovementDropdown(bucks, searchVal) {
-  const dd = document.getElementById('buckDropdown');
-  if(!dd) return;
-
-  // Only build the full shell on first render (when dropdown is empty)
-  // After that, only update the buck list section — keeps search input intact
-  if(!dd.querySelector('#buckSearchInput')) {
-    dd.innerHTML = `
-      <div style="padding:8px 10px;border-bottom:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:6px 10px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="buckSearchInput" type="text" placeholder="Search bucks..."
-            style="background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:var(--font);width:100%"
-            onclick="event.stopPropagation()"
-            oninput="rebuildBuckList(getNamedBucks(),this.value)"/>
-        </div>
-      </div>
-      <div id="buckDropList"></div>`;
-  }
-
-  // Set search input value without moving focus
-  const searchInput = document.getElementById('buckSearchInput');
-  if(searchInput && document.activeElement !== searchInput) {
-    searchInput.value = searchVal || '';
-  }
-
-  rebuildBuckList(bucks, searchVal || (searchInput ? searchInput.value : ''));
+function buildMovementSelect() {
+  const sel = document.getElementById('fpMovementSelect');
+  if(!sel) return;
+  const bucks = getNamedBucks();
+  sel.innerHTML = [
+    `<option value="none"${curMapFilter === 'none' ? ' selected' : ''}>No Movement Lines</option>`,
+    `<option value="all-bucks"${curMapFilter === 'all-bucks' ? ' selected' : ''}>All Movement Lines</option>`,
+    ...bucks.map(b => `<option value="${b}"${curMapFilter === b ? ' selected' : ''}>${b}</option>`)
+  ].join('');
 }
 
-function rebuildBuckList(bucks, searchVal) {
-  const listEl = document.getElementById('buckDropList');
-  if(!listEl) return;
-  const allSel = curMapFilter === 'none';
-  const allBucksSel = curMapFilter === 'all-bucks';
-  const filtered = searchVal ? bucks.filter(b => b.toLowerCase().includes(searchVal.toLowerCase())) : bucks;
-
-  listEl.innerHTML = `
-    <div class="buck-drop-item${allSel?' selected':''}" onclick="setMapFilter('none')">
-      <div class="buck-drop-dot" style="background:#333;border:1px solid #555"></div>
-      <div style="flex:1"><div style="font-weight:${allSel?700:400};color:${allSel?'var(--blue)':'var(--text)'}">No Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show pins only</div></div>
-      ${allSel?'<span style="color:var(--blue)">&#10003;</span>':''}
-    </div>
-    <div class="buck-drop-item${allBucksSel?' selected':''}" onclick="setMapFilter('all-bucks')">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#8C7355,#a08468)"></div>
-      <div style="flex:1"><div style="font-weight:${allBucksSel?700:400};color:${allBucksSel?'var(--blue)':'var(--text)'}">All Movement Lines</div><div style="font-size:10px;color:var(--text3)">Show all buck corridors</div></div>
-      ${allBucksSel?'<span style="color:var(--blue)">&#10003;</span>':''}
-    </div>
-    <div class="buck-drop-divider"></div>
-    ${filtered.length === 0 ? '<div style="padding:10px 14px;font-size:12px;color:var(--text3);font-style:italic">No bucks found</div>' :
-      filtered.map(b => {
-        const color = buckColor(b);
-        const sel = curMapFilter === b;
-        const cnt = sightings.filter(s => s.buck_name === b).length;
-        const cams = [...new Set(sightings.filter(s=>s.buck_name===b).map(s=>s.camera_name))];
-        return `<div class="buck-drop-item${sel?' selected':''}" onclick="setMapFilter('${b}')">
-          <div class="buck-drop-dot" style="background:${color}"></div>
-          <div style="flex:1">
-            <div style="font-weight:${sel?700:400};color:${sel?'var(--blue)':'var(--text)'}">${b}</div>
-            <div style="font-size:10px;color:var(--text3)">${cnt} sightings &middot; ${cams.slice(0,2).join(', ')}${cams.length>2?'...':''}</div>
-          </div>
-          ${sel?'<span style="color:var(--blue)">&#10003;</span>':''}
-        </div>`;
-      }).join('')}
-    <div class="buck-drop-divider"></div>
-    <div class="buck-drop-item${dotMapOn?' selected':''}" onclick="toggleDotMapFromMenu()">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#c84a4a,#e8a040,#8C7355)"></div>
-      <div style="flex:1"><div style="font-weight:${dotMapOn?700:400};color:${dotMapOn?'var(--blue)':'var(--text)'}">Dot Map</div><div style="font-size:10px;color:var(--text3)">One dot per sighting, by month</div></div>
-      <span style="font-size:11px;color:${dotMapOn?'var(--blue)':'var(--text3)'}">${dotMapOn?'ON':'OFF'}</span>
-    </div>
-    <div class="buck-drop-item${heatmapOn?' selected':''}" onclick="toggleHeatmapFromMenu()">
-      <div class="buck-drop-dot" style="background:linear-gradient(135deg,#1a3a6a,#8C7355,#a0c8ff)"></div>
-      <div style="flex:1"><div style="font-weight:${heatmapOn?700:400};color:${heatmapOn?'var(--blue)':'var(--text)'}">Heat Map</div><div style="font-size:10px;color:var(--text3)">Activity density overlay</div></div>
-      <span style="font-size:11px;color:${heatmapOn?'var(--blue)':'var(--text3)'}">${heatmapOn?'ON':'OFF'}</span>
-    </div>
-  `;
-}
+function buildMovementDropdown() { /* legacy — replaced by inline select */ }
+function rebuildBuckList() { /* legacy */ }
 
 function toggleHeatmapFromMenu() {
   heatmapOn = !heatmapOn;
@@ -3307,34 +3240,23 @@ function toggleHeatmapFromMenu() {
 let curMapMonth = 'all';
 
 function buildDateDropdown() {
-  const lbl = document.getElementById('dateLabel');
-  const calSvg = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const yearPart = curYear === 'all' ? 'All Dates' : curYear;
-  const monthPart = curMapMonth === 'all' ? '' : ' · ' + months[parseInt(curMapMonth)-1];
-  if(lbl) lbl.innerHTML = `${calSvg}${yearPart}${monthPart}`;
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // Build year options
-  const yearEl = document.getElementById('dateYearOptions');
-  if(yearEl) {
+  // Build year <select>
+  const yearSel = document.getElementById('fpYearSelect');
+  if(yearSel) {
     const years = getAvailableYears();
-    yearEl.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:4px">
-      ${['all',...years].map(y => {
-        const sel = curYear === y;
-        return `<div onclick="setMapYear2('${y}')" style="padding:3px 8px;border-radius:6px;border:1px solid ${sel?'var(--blue)':'var(--border2)'};background:${sel?'rgba(74,127,193,0.15)':'var(--bg)'};color:${sel?'var(--blue)':'var(--text3)'};font-size:10px;cursor:pointer">${y==='all'?'All':y}</div>`;
-      }).join('')}
-    </div>`;
+    yearSel.innerHTML = ['all', ...years].map(y =>
+      `<option value="${y}"${curYear === y ? ' selected' : ''}>${y === 'all' ? 'All Years' : y}</option>`
+    ).join('');
   }
 
-  // Build month chips
-  const monthEl = document.getElementById('dateMonthOptions');
-  if(monthEl) {
-    const monthNames = ['All','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    monthEl.innerHTML = monthNames.map((m, i) => {
-      const val = i === 0 ? 'all' : String(i).padStart(2, '0');
-      const sel = curMapMonth === val;
-      return `<div onclick="setMapMonth('${val}')" style="padding:3px 8px;border-radius:6px;border:1px solid ${sel?'var(--blue)':'var(--border2)'};background:${sel?'rgba(74,127,193,0.15)':'var(--bg)'};color:${sel?'var(--blue)':'var(--text3)'};font-size:10px;cursor:pointer">${m}</div>`;
-    }).join('');
+  // Build month <select>
+  const monthSel = document.getElementById('fpMonthSelect');
+  if(monthSel) {
+    monthSel.innerHTML = ['all', ...monthNames.map((m, i) => String(i + 1).padStart(2, '0'))].map((val, i) =>
+      `<option value="${val}"${curMapMonth === val ? ' selected' : ''}>${i === 0 ? 'All Months' : monthNames[i - 1]}</option>`
+    ).join('');
   }
 }
 
@@ -3376,14 +3298,12 @@ function setMapStyleFromDrop(idx) {
   mapStyleIdx = idx;
   const style = MAP_STYLES[mapStyleIdx];
   mapInstance.setStyle(style.url);
-  buildFilterPanelStyles();
+  updateMapStyleFabLabel();
   updateFilterFabDot();
   lineLayerAdded = false;
 }
 
-function closeAllMapDropdowns() {
-  closeBuckDropdown();
-}
+function closeAllMapDropdowns() { /* legacy — no floating dropdowns remain */ }
 
 // --- Markers filter pill ---
 function toggleMarkersDropdown() { /* legacy — markers now inline in filter panel */ }
@@ -3430,10 +3350,13 @@ function toggleFilterPanel() {
 function openFilterPanel() {
   const panel = document.getElementById('filterPanel');
   const fab = document.getElementById('filterFab');
+  // Compute max-height so panel stays within viewport (20px top margin)
+  const fabRect = fab.getBoundingClientRect();
+  const available = fabRect.top - 20 - 10; // 20px top margin, 10px gap above fab
+  panel.style.maxHeight = Math.max(200, available) + 'px';
   panel.classList.add('open');
   fab.classList.add('active');
   buildDateDropdown();
-  buildFilterPanelStyles();
   setTimeout(() => document.addEventListener('click', filterPanelOutsideClick), 50);
 }
 
@@ -3442,15 +3365,13 @@ function closeFilterPanel() {
   const fab = document.getElementById('filterFab');
   panel.classList.remove('open');
   fab.classList.remove('active');
-  closeBuckDropdown();
   document.removeEventListener('click', filterPanelOutsideClick);
 }
 
 function filterPanelOutsideClick(e) {
   const panel = document.getElementById('filterPanel');
   const fab = document.getElementById('filterFab');
-  const buckDd = document.getElementById('buckDropdown');
-  if(panel && !panel.contains(e.target) && fab && !fab.contains(e.target) && (!buckDd || !buckDd.contains(e.target))) {
+  if(panel && !panel.contains(e.target) && fab && !fab.contains(e.target)) {
     closeFilterPanel();
   }
 }
@@ -3458,54 +3379,15 @@ function filterPanelOutsideClick(e) {
 function updateFilterFabDot() {
   const dot = document.getElementById('filterFabDot');
   if(!dot) return;
-  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || mapStyleIdx !== 0 || obsMarkersVisible || scrapeMarkersVisible || beddingMarkersVisible;
+  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || obsMarkersVisible || scrapeMarkersVisible || beddingMarkersVisible;
   dot.style.display = nonDefault ? 'block' : 'none';
 }
 
-function buildFilterPanelStyles() {
-  const el = document.getElementById('fpStyleOptions');
-  if(!el) return;
-  el.innerHTML = MAP_STYLES.map((s, i) => {
-    const sel = mapStyleIdx === i;
-    return `<div class="fp-style-chip${sel?' sel':''}" onclick="setMapStyleFromDrop(${i})">${s.label}${sel?' &#10003;':''}</div>`;
-  }).join('');
-}
+function buildFilterPanelStyles() { updateMapStyleFabLabel(); }
 
-function toggleBuckDropdown() {
-  const dd = document.getElementById('buckDropdown');
-  const arrow = document.getElementById('filterArrow');
-  const isOpen = dd.style.display !== 'none';
-  if(isOpen) { closeBuckDropdown(); return; }
-  // Position the dropdown above the filter panel
-  const panel = document.getElementById('filterPanel');
-  if(panel) {
-    const r = panel.getBoundingClientRect();
-    dd.style.position = 'fixed';
-    dd.style.left = r.left + 'px';
-    dd.style.bottom = (window.innerHeight - r.top + 6) + 'px';
-    dd.style.top = 'auto';
-    dd.style.maxHeight = (r.top - 20) + 'px';
-    dd.style.width = r.width + 'px';
-  }
-  dd.style.display = 'block';
-  dd.style.pointerEvents = 'auto';
-  if(arrow) arrow.classList.add('open');
-  buildMovementDropdown(getNamedBucks(), '');
-  setTimeout(() => document.addEventListener('click', closeBuckDropdownOutside), 50);
-}
-
-function closeBuckDropdownOutside(e) {
-  const dd = document.getElementById('buckDropdown');
-  if(dd && !dd.contains(e.target)) closeBuckDropdown();
-}
-
-function closeBuckDropdown() {
-  const dd = document.getElementById('buckDropdown');
-  const arrow = document.getElementById('filterArrow');
-  if(dd) { dd.style.display = 'none'; dd.style.pointerEvents = 'none'; }
-  if(arrow) arrow.classList.remove('open');
-  document.removeEventListener('click', closeBuckDropdownOutside);
-}
+function toggleBuckDropdown() { /* legacy — replaced by inline select */ }
+function closeBuckDropdownOutside() { /* legacy */ }
+function closeBuckDropdown() { /* legacy */ }
 
 
 function buildMapLegend() {
@@ -3584,7 +3466,6 @@ function setMapYear(y) {
 
 function setMapFilter(name) {
   curMapFilter = name;
-  closeBuckDropdown();
   buildMapFilters();
   buildMapLegend();
   refreshMapPins();
