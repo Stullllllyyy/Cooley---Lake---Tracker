@@ -3030,14 +3030,28 @@ function initMap() {
   mapInstance = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: PROPERTY_CENTER,
-    zoom: 15,
+    center: [-98.5, 39.5],
+    zoom: 4,
     fadeDuration: 0,
   });
   mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
     mapInstance.resize();
     initGeolocate();
+    // Fly to GPS if available, otherwise fly to property center
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          mapInstance.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: 1500 });
+        },
+        () => {
+          mapInstance.flyTo({ center: PROPERTY_CENTER, zoom: 15, duration: 1500 });
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      mapInstance.flyTo({ center: PROPERTY_CENTER, zoom: 15, duration: 1500 });
+    }
   });
   mapInstance.on('style.load', () => {
     addLineLayer();
