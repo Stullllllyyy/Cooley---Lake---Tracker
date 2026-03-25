@@ -2365,6 +2365,7 @@ function bootApp() {
   if(appBooted) return;
   appBooted = true;
   document.getElementById('authGate').style.display = 'none';
+  loadBuckRegistry();
   loadSightings();
   updateMapWeather();
   startMap();
