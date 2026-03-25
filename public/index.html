@@ -2411,6 +2411,8 @@ async function bootApp() {
     .limit(1)
     .single();
 
+  console.log('[DIAG] user.id:', user.id, 'membership:', JSON.stringify(membership), 'memErr:', JSON.stringify(memErr));
+
   if(memErr || !membership) {
     // User has an account but no property access
     document.getElementById('authGate').style.display = 'flex';
