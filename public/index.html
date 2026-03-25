@@ -2340,6 +2340,7 @@ async function handleSignUp() {
     .select('*')
     .eq('code', code)
     .is('claimed_by', null)
+    .is('claimed_at', null)
     .single();
   if(invErr || !invite) {
     btn.disabled = false; btn.textContent = 'Create Account';
