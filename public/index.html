@@ -47,6 +47,21 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-section:last-child{border-bottom:none}
 .filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
 .fp-select{flex:1;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);appearance:auto;-webkit-appearance:auto;cursor:pointer;outline:none}
+/* map display panel */
+.map-display-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);right:14px;width:240px;max-width:calc(100vw - 28px);background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom right}
+.map-display-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.mdp-style-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px}
+.mdp-style-btn{padding:8px 0;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;text-align:center;transition:all 0.15s;letter-spacing:0.5px}
+.mdp-style-btn.active{background:rgba(140,115,85,0.25);border-color:var(--gold);color:var(--gold)}
+.mdp-compass-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 12px}
+.mdp-compass-lbl{font-size:12px;color:var(--text2);font-family:var(--font)}
+.mdp-toggle{width:40px;height:22px;border-radius:11px;background:var(--surface2);border:1px solid var(--border2);position:relative;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0}
+.mdp-toggle.on{background:var(--gold);border-color:var(--gold)}
+.mdp-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.2s}
+.mdp-toggle.on::after{transform:translateX(18px)}
+.mdp-compass-denied{font-size:10px;color:var(--red);margin-top:4px;display:none}
+
+/* map display panel */
 .map-style-lbl{position:absolute;bottom:2px;right:2px;font-size:7px;font-weight:800;color:var(--text3);letter-spacing:0.5px;line-height:1;pointer-events:none}
 /* heatmap small fab */
 .map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
@@ -764,7 +779,7 @@ textarea{resize:none}
     <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </div>
   <!-- Map Style FAB -->
-  <div class="map-fab" id="mapStyleFab" onclick="cycleMapStyleFab()" title="Map style">
+  <div class="map-fab" id="mapStyleFab" onclick="toggleMapDisplayPanel()" title="Map style">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
     <span class="map-style-lbl" id="mapStyleFabLbl">SAT</span>
   </div>
@@ -776,6 +791,26 @@ textarea{resize:none}
       <line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/>
       <line x1="4.9" y1="19.1" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="19.1" y2="4.9"/>
     </svg>
+  </div>
+</div>
+
+<!-- Map Display Panel -->
+<div class="map-display-panel" id="mapDisplayPanel" onclick="event.stopPropagation()">
+  <div class="filter-panel-hdr">
+    <span class="filter-panel-title">Map Display</span>
+    <button class="filter-panel-close" onclick="closeMapDisplayPanel()">&times;</button>
+  </div>
+  <div class="filter-section">
+    <div class="filter-section-lbl">Map Style</div>
+    <div class="mdp-style-grid" id="mdpStyleGrid"></div>
+  </div>
+  <div class="filter-section" id="mdpCompassSection" style="display:none;border-bottom:none">
+    <div class="filter-section-lbl">Compass</div>
+    <div class="mdp-compass-row">
+      <span class="mdp-compass-lbl">Heading Cone</span>
+      <div class="mdp-toggle" id="mdpCompassToggle" onclick="toggleCompassHeading()"></div>
+    </div>
+    <div class="mdp-compass-denied" id="mdpCompassDenied">Permission denied in iOS Settings</div>
   </div>
 </div>
 
@@ -2286,7 +2321,7 @@ function initGeolocate() {
   geolocateCtrl.on('geolocate', (e) => {
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
     dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
-    if(lastHeading !== null) updateHeadingConeGeoJSON();
+    if(compassConeActive && lastHeading !== null) updateHeadingConeGeoJSON();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
     dbg('trackuserlocationend');
@@ -2295,40 +2330,10 @@ function initGeolocate() {
   });
   mapInstance.addControl(geolocateCtrl, 'bottom-right');
 
-  // Intercept geolocate button tap for iOS DeviceOrientation permission (requires user gesture)
-  setTimeout(() => {
-    const geoBtn = document.querySelector('.mapboxgl-ctrl-geolocate');
-    dbg('geoBtn found: ' + !!geoBtn);
-    if(geoBtn) {
-      geoBtn.addEventListener('click', () => {
-        dbg('geolocate button tapped — requesting heading permission');
-        requestHeadingPermission();
-      }, { once: true });
-    }
-  }, 100);
-
   // Auto-trigger geolocation after control is added to the map
   setTimeout(() => {
     try { geolocateCtrl.trigger(); dbg('auto-trigger fired'); } catch(e) { dbg('auto-trigger error: ' + e.message); }
   }, 500);
-}
-
-function requestHeadingPermission() {
-  dbg('requestHeadingPermission called');
-  dbg('DeviceOrientationEvent exists: ' + (typeof DeviceOrientationEvent !== 'undefined'));
-  dbg('requestPermission exists: ' + (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'));
-  if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    dbg('permission requested (iOS path)');
-    DeviceOrientationEvent.requestPermission().then(state => {
-      dbg('permission result: ' + state);
-      if(state === 'granted') startHeadingWatch();
-    }).catch((err) => { dbg('permission denied/error: ' + err); });
-  } else if('DeviceOrientationEvent' in window) {
-    dbg('no permission needed (Android/desktop path) — starting watch');
-    startHeadingWatch();
-  } else {
-    dbg('DeviceOrientationEvent not available');
-  }
 }
 
 function startHeadingWatch() {
@@ -2356,7 +2361,7 @@ function onDeviceHeading(e) {
   }
   if(heading === null || !lastUserLngLat) return;
   lastHeading = heading;
-  updateHeadingConeGeoJSON();
+  if(compassConeActive) updateHeadingConeGeoJSON();
 }
 
 // Bearing math: given a point, bearing (degrees), and distance (meters), return [lng, lat]
@@ -2476,6 +2481,134 @@ function cycleMapStyleFab() {
 function updateMapStyleFabLabel() {
   const lbl = document.getElementById('mapStyleFabLbl');
   if(lbl) lbl.textContent = MAP_STYLES[mapStyleIdx].label;
+}
+
+// --- Map Display Panel ---
+let mapDisplayPanelOpen = false;
+let compassPermissionGranted = false;
+let compassDenied = false;
+let compassConeActive = false;
+
+function toggleMapDisplayPanel() {
+  if(mapDisplayPanelOpen) closeMapDisplayPanel();
+  else openMapDisplayPanel();
+}
+
+function openMapDisplayPanel() {
+  const panel = document.getElementById('mapDisplayPanel');
+  panel.classList.add('open');
+  mapDisplayPanelOpen = true;
+  renderStyleGrid();
+  initCompassSection();
+  // Close on outside tap
+  setTimeout(() => document.addEventListener('click', onMapDisplayOutsideClick), 10);
+}
+
+function closeMapDisplayPanel() {
+  const panel = document.getElementById('mapDisplayPanel');
+  panel.classList.remove('open');
+  mapDisplayPanelOpen = false;
+  document.removeEventListener('click', onMapDisplayOutsideClick);
+}
+
+function onMapDisplayOutsideClick(e) {
+  const panel = document.getElementById('mapDisplayPanel');
+  const fab = document.getElementById('mapStyleFab');
+  if(!panel.contains(e.target) && !fab.contains(e.target)) {
+    closeMapDisplayPanel();
+  }
+}
+
+function renderStyleGrid() {
+  const grid = document.getElementById('mdpStyleGrid');
+  grid.innerHTML = MAP_STYLES.map((s, i) =>
+    '<button class="mdp-style-btn' + (i === mapStyleIdx ? ' active' : '') + '" onclick="selectMapStyle(' + i + ')">' + s.label + '</button>'
+  ).join('');
+}
+
+function selectMapStyle(idx) {
+  if(!mapInstance) return;
+  mapStyleIdx = idx;
+  const style = MAP_STYLES[mapStyleIdx];
+  mapInstance.setStyle(style.url);
+  updateMapStyleFabLabel();
+  updateFilterFabDot();
+  lineLayerAdded = false;
+  // Re-add heading cone layer after style change if active
+  if(compassConeActive) {
+    headingConeLayerAdded = false;
+    mapInstance.once('style.load', () => {
+      if(lastHeading !== null && lastUserLngLat) updateHeadingConeGeoJSON();
+    });
+  }
+  renderStyleGrid();
+}
+
+function initCompassSection() {
+  const section = document.getElementById('mdpCompassSection');
+  // Only show on iOS devices where requestPermission is available
+  const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
+  const hasPermissionAPI = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+  if(isIOS && hasPermissionAPI) {
+    section.style.display = '';
+  } else {
+    section.style.display = 'none';
+    return;
+  }
+  const toggle = document.getElementById('mdpCompassToggle');
+  toggle.classList.toggle('on', compassConeActive);
+}
+
+function toggleCompassHeading() {
+  dbg('compass btn tapped — coneActive=' + compassConeActive + ' permGranted=' + compassPermissionGranted + ' denied=' + compassDenied);
+  const toggle = document.getElementById('mdpCompassToggle');
+  const deniedMsg = document.getElementById('mdpCompassDenied');
+
+  if(compassConeActive) {
+    // Turn off
+    compassConeActive = false;
+    toggle.classList.remove('on');
+    removeHeadingCone();
+    dbg('compass cone disabled');
+    return;
+  }
+
+  if(compassDenied) {
+    deniedMsg.style.display = 'block';
+    dbg('compass previously denied');
+    return;
+  }
+
+  if(compassPermissionGranted) {
+    // Already have permission — just enable
+    compassConeActive = true;
+    toggle.classList.add('on');
+    if(!headingWatchActive) startHeadingWatch();
+    dbg('compass cone enabled (permission already granted)');
+    return;
+  }
+
+  // First time — request permission synchronously in this tap handler
+  dbg('permission requested');
+  DeviceOrientationEvent.requestPermission().then(state => {
+    dbg('permission result: ' + state);
+    if(state === 'granted') {
+      compassPermissionGranted = true;
+      compassConeActive = true;
+      toggle.classList.add('on');
+      startHeadingWatch();
+      deniedMsg.style.display = 'none';
+    } else {
+      compassDenied = true;
+      toggle.classList.remove('on');
+      deniedMsg.style.display = 'block';
+    }
+  }).catch(err => {
+    dbg('permission error: ' + err);
+    compassDenied = true;
+    toggle.classList.remove('on');
+    deniedMsg.style.display = 'block';
+  });
 }
 
 // cam popup helpers
