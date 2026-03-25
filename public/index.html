@@ -4008,12 +4008,11 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const x2 = cx + Math.cos(angle2) * r;
     const y2 = cy + Math.sin(angle2) * r;
 
-    // Gradient color: top = gold, high = light gray, normal = dark gray
-    const fill = isTop ? '#c8a951' : isHigh ? '#888888' : '#444444';
-    const opacity = isTop ? '1' : isHigh ? '0.85' : '0.6';
+    // Gradient color: top = gold, high = muted, normal = dark (full opacity to prevent bleed-through)
+    const fill = isTop ? '#c8a951' : isHigh ? '#6e6e6e' : '#333333';
 
     slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
-      fill="${fill}" fill-opacity="${opacity}" stroke="none"/>`;
+      fill="${fill}" stroke="${fill}" stroke-width="0.5" stroke-linejoin="round"/>`;
   });
 
   // Center dot
