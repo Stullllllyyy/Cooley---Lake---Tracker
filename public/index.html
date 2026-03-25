@@ -6030,13 +6030,16 @@ async function runFullAiMatch(sightingId, imageUrl) {
     return;
   }
 
-  // Build detailed buck profiles including notes from all sightings
+  // Build detailed buck profiles including registry notes + sightings data
   const buckProfiles = namedBucks.map(name => {
+    const regBuck = buckRegistry.find(b => b.name === name);
     const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
     const notesSample = bs.filter(s => s.notes).map(s => s.notes).slice(0, 5).join("; ");
+    const regNotes = regBuck && regBuck.notes ? regBuck.notes : "";
     const cameras = [...new Set(bs.map(s => s.camera_name))].join(", ");
     const matCount = bs.filter(s => s.deer_type.includes("Mature")).length;
-    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${notesSample ? `\nField notes: ${notesSample}` : ""}`;
+    const allNotes = [regNotes, notesSample].filter(Boolean).join("; ");
+    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${allNotes ? `\nField notes: ${allNotes}` : ""}`;
   }).join("\n\n");
 
   try {
@@ -7105,9 +7108,12 @@ async function obsRunAiHint(base64DataUrl) {
   obsAiHintSugg = null;
   try {
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
@@ -7525,9 +7531,12 @@ async function tcamRunAiHint(base64DataUrl) {
   tcamAiHintSugg = null;
   try {
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
@@ -7948,11 +7957,14 @@ async function runAiHint(base64DataUrl) {
   aiHintSuggestion = null;
 
   try {
-    // Build buck profiles from existing sightings
+    // Build buck profiles from registry notes + sightings data
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join("; ");
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(", ")}${notes ? ", notes: " + notes : ""}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join("; ");
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : "";
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join("; ");
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(", ")}${allNotes ? ", notes: " + allNotes : ""}`;
     }).join("\n");
 
     const base64 = base64DataUrl.split(",")[1];
