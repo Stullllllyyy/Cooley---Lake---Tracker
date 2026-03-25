@@ -18,6 +18,7 @@ Immediate
 * [ ] Update Scrape/Rub/Bedding/Stand map pins — replace filled-circle style with Feather-style SVG teardrop icons matching camera pin shape. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e. anchor:bottom, same architecture as camera pins.
 
 Near Term
+* [ ] Tighten bucks table RLS policies when Auth ships — currently open anon bridge same as other tables.
 * [ ] Replace confirm() calls with custom modals — 3 remaining: camera archive from popup, camera archive from pin menu, feature marker archive confirmation. CLAUDE.md prohibits confirm(). Flagged during soft delete implementation (Mar 24 2026).
 * [ ] Archived Pins UI — Settings section showing soft-deleted cameras and property_markers with restore option. Prerequisite: Settings tab must exist.
 * [ ] Trail cam photo AI 'Accept/Train' workflow — after AI identifies a buck in a trail cam photo, provide Accept (confirm ID) and Train (correct ID) buttons to feed ai_feedback table for learning loop.

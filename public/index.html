@@ -2365,6 +2365,7 @@ function bootApp() {
   if(appBooted) return;
   appBooted = true;
   document.getElementById('authGate').style.display = 'none';
+  loadBuckRegistry();
   loadSightings();
   updateMapWeather();
   startMap();
@@ -2463,6 +2464,8 @@ const simpleDir = windDir => {
   return simple.find(d => windDir.startsWith(d)) || "";
 };
 function getNamedBucks() {
+  if(buckRegistry.length > 0) return buckRegistry.map(b => b.name);
+  // Fallback: scan sightings if registry not yet loaded
   return [...new Set(sightings.filter(s=>s.buck_name&&s.buck_name.trim()).map(s=>s.buck_name.trim()))];
 }
 function buckColor(name) {
@@ -2473,6 +2476,60 @@ function buckColor(name) {
 function syncDot(on) {
   const d = document.getElementById("syncDot");
   if(d) d.className = "sync-dot" + (on ? " on" : "");
+}
+
+// --- Buck Registry ---
+let buckRegistry = []; // Array of {id, property_id, name, first_seen, last_seen, notes, created_at}
+
+async function loadBuckRegistry() {
+  try {
+    const { data, error } = await sb.from('bucks').select('*')
+      .eq('property_id', PROPERTY_ID)
+      .order('name');
+    if(error) { console.error('loadBuckRegistry error:', error); return; }
+    buckRegistry = data || [];
+  } catch(e) { console.error('loadBuckRegistry:', e); }
+}
+
+async function createBuck(name) {
+  if(!name || !name.trim()) return null;
+  name = name.trim();
+  // Check if already exists in registry
+  const existing = buckRegistry.find(b => b.name.toLowerCase() === name.toLowerCase());
+  if(existing) return existing;
+  try {
+    const { data, error } = await sb.from('bucks').insert({
+      property_id: PROPERTY_ID,
+      name: name
+    }).select().single();
+    if(error) { console.error('createBuck error:', error); return null; }
+    buckRegistry.push(data);
+    return data;
+  } catch(e) { console.error('createBuck:', e); return null; }
+}
+
+async function resolveBuckId(buckName) {
+  if(!buckName || !buckName.trim()) return null;
+  buckName = buckName.trim();
+  let buck = buckRegistry.find(b => b.name.toLowerCase() === buckName.toLowerCase());
+  if(buck) return buck.id;
+  // Auto-create if not found
+  buck = await createBuck(buckName);
+  return buck ? buck.id : null;
+}
+
+async function updateBuckDates(buckId, sightingDate) {
+  if(!buckId || !sightingDate) return;
+  const buck = buckRegistry.find(b => b.id === buckId);
+  if(!buck) return;
+  const updates = {};
+  if(!buck.first_seen || sightingDate < buck.first_seen) updates.first_seen = sightingDate;
+  if(!buck.last_seen || sightingDate > buck.last_seen) updates.last_seen = sightingDate;
+  if(Object.keys(updates).length === 0) return;
+  try {
+    await sb.from('bucks').update(updates).eq('id', buckId);
+    Object.assign(buck, updates);
+  } catch(e) { console.error('updateBuckDates:', e); }
 }
 
 // --- data -
@@ -2550,6 +2607,8 @@ async function submitSighting() {
   btn.textContent = "Saving..."; btn.classList.remove("rdy"); btn.classList.add("dis");
   const beh = document.querySelector(".chip[data-k='beh'].on");
   const wx = wxApplied || {};
+  const buckNameVal = document.getElementById("fbuckname").value.trim() || null;
+  const buckId = buckNameVal ? await resolveBuckId(buckNameVal) : null;
 
   let newSighting;
 
@@ -2562,7 +2621,8 @@ async function submitSighting() {
       camera_name: c.dataset.v,
       deer_type: d.dataset.v,
       behavior: beh ? beh.dataset.v : null,
-      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      buck_name: buckNameVal,
+      buck_id: buckId,
       wind_dir: document.getElementById("fwind").value || null,
       temp_f: parseFloat(document.getElementById("ftemp").value) || null,
       wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
@@ -2585,7 +2645,8 @@ async function submitSighting() {
       camera_name: null,
       deer_type: d.dataset.v,
       behavior: beh ? beh.dataset.v : null,
-      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      buck_name: buckNameVal,
+      buck_id: buckId,
       wind_dir: document.getElementById("fwind").value || null,
       temp_f: parseFloat(document.getElementById("ftemp").value) || null,
       wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
@@ -2634,6 +2695,7 @@ async function submitSighting() {
   obsLatLng = null;
 
   sightings.unshift(data);
+  if(buckId && data.date) updateBuckDates(buckId, data.date);
   // Reset form
   formImgFile = null; wxApplied = null;
   document.getElementById("fnotes").value = "";
@@ -2657,8 +2719,11 @@ async function submitSighting() {
 
 async function saveEdit() {
   const s = sightings.find(x => x.id === editId); if(!s) return;
+  const editBuckName = document.getElementById("eBuckName").value.trim() || null;
+  const editBuckId = editBuckName ? await resolveBuckId(editBuckName) : null;
   const updates = {
-    buck_name: document.getElementById("eBuckName").value.trim() || null,
+    buck_name: editBuckName,
+    buck_id: editBuckId,
     deer_type: document.getElementById("eDeerType").value,
     camera_name: document.getElementById("eCamera").value,
     date: document.getElementById("eDate").value,
@@ -2677,6 +2742,7 @@ async function saveEdit() {
   syncDot(false);
   if(error) { showToast('Save failed: ' + error.message); return; }
   Object.assign(s, updates);
+  if(editBuckId && s.date) updateBuckDates(editBuckId, s.date);
   document.getElementById("editModal").style.display = "none";
   renderLog(); renderDash(); refreshMapPins(); buildMapFilters(); buildMapLegend();
 }
@@ -5829,10 +5895,12 @@ async function bulkSaveName() {
 async function bulkSaveNameValue(name) {
   const s = bulkQueue[bulkIdx];
   if(!s) return;
-  const { error } = await sb.from('sightings').update({ buck_name: name }).eq('id', s.id);
+  const bulkBuckId = name ? await resolveBuckId(name) : null;
+  const { error } = await sb.from('sightings').update({ buck_name: name, buck_id: bulkBuckId }).eq('id', s.id);
   if(error) { showToast('Save failed: ' + error.message); return; }
   const local = sightings.find(x => x.id === s.id);
-  if(local) local.buck_name = name;
+  if(local) { local.buck_name = name; local.buck_id = bulkBuckId; }
+  if(bulkBuckId && local && local.date) updateBuckDates(bulkBuckId, local.date);
   showToast(`Saved: ${name}`);
   refreshBucknameList();
   buildMapFilters();
@@ -5965,13 +6033,16 @@ async function runFullAiMatch(sightingId, imageUrl) {
     return;
   }
 
-  // Build detailed buck profiles including notes from all sightings
+  // Build detailed buck profiles including registry notes + sightings data
   const buckProfiles = namedBucks.map(name => {
+    const regBuck = buckRegistry.find(b => b.name === name);
     const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
     const notesSample = bs.filter(s => s.notes).map(s => s.notes).slice(0, 5).join("; ");
+    const regNotes = regBuck && regBuck.notes ? regBuck.notes : "";
     const cameras = [...new Set(bs.map(s => s.camera_name))].join(", ");
     const matCount = bs.filter(s => s.deer_type.includes("Mature")).length;
-    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${notesSample ? `\nField notes: ${notesSample}` : ""}`;
+    const allNotes = [regNotes, notesSample].filter(Boolean).join("; ");
+    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${allNotes ? `\nField notes: ${allNotes}` : ""}`;
   }).join("\n\n");
 
   try {
@@ -6062,10 +6133,12 @@ async function applyWhoEdit() {
   const sightingId = parseInt(modal.dataset.sightingId);
   const name = input?.value.trim();
   if(!name || !sightingId) return;
-  const {error} = await sb.from('sightings').update({ buck_name: name }).eq('id', sightingId);
+  const whoEditBuckId = await resolveBuckId(name);
+  const {error} = await sb.from('sightings').update({ buck_name: name, buck_id: whoEditBuckId }).eq('id', sightingId);
   if(error) { showToast('Save failed: ' + error.message); return; }
   const s = sightings.find(x => x.id === sightingId);
-  if(s) s.buck_name = name;
+  if(s) { s.buck_name = name; s.buck_id = whoEditBuckId; }
+  if(whoEditBuckId && s && s.date) updateBuckDates(whoEditBuckId, s.date);
   modal.style.display = 'none';
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
   showToast(`ID updated: ${name}`);
@@ -6077,8 +6150,10 @@ async function applyWhoMatch() {
   if(!whoMatchResult?.match || !sightingId) return;
   const btn = document.getElementById("whoAcceptBtn");
   if(btn) { btn.textContent = "Saving..."; btn.disabled = true; }
+  // Resolve buck_id from registry
+  const whoMatchBuckId = await resolveBuckId(whoMatchResult.match);
   // Update in Supabase
-  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match }).eq("id", sightingId);
+  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match, buck_id: whoMatchBuckId }).eq("id", sightingId);
   if(error) {
     showToast("Save failed: " + error.message);
     if(btn) { btn.textContent = "Apply: " + whoMatchResult.match; btn.disabled = false; }
@@ -6086,7 +6161,8 @@ async function applyWhoMatch() {
   }
   // Update local
   const s = sightings.find(x => x.id === sightingId);
-  if(s) s.buck_name = whoMatchResult.match;
+  if(s) { s.buck_name = whoMatchResult.match; s.buck_id = whoMatchBuckId; }
+  if(whoMatchBuckId && s && s.date) updateBuckDates(whoMatchBuckId, s.date);
   modal.style.display = "none";
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend();
   refreshBucknameList(); refreshMapPins();
@@ -6793,16 +6869,20 @@ async function submitObsEdit() {
   const deerChip = document.querySelector('#obsEditDeerRow .chip.on');
   const behChip  = document.querySelector('#obsEditBehRow .chip.on');
   const isBuck = deerChip && deerChip.textContent.startsWith('Buck');
+  const obsEditBuckName = isBuck ? (document.getElementById('obsEditBuckName').value.trim() || null) : null;
+  const obsEditBuckId = obsEditBuckName ? await resolveBuckId(obsEditBuckName) : null;
   const updates = {
     deer_type: deerChip ? deerChip.textContent : activeObsSighting.deer_type,
     behavior:  behChip  ? behChip.textContent  : activeObsSighting.behavior,
-    buck_name: isBuck ? (document.getElementById('obsEditBuckName').value.trim() || null) : null,
+    buck_name: obsEditBuckName,
+    buck_id: obsEditBuckId,
     notes:     document.getElementById('obsEditNotes').value.trim() || null
   };
   const {error} = await sb.from('sightings').update(updates).eq('id', activeObsSighting.id);
   if(error) { showToast('Save failed'); return; }
   const idx = sightings.findIndex(x => x.id === activeObsSighting.id);
   if(idx >= 0) Object.assign(sightings[idx], updates);
+  if(obsEditBuckId && activeObsSighting.date) updateBuckDates(obsEditBuckId, activeObsSighting.date);
   activeObsSighting = null;
   document.getElementById('obsEditModal').classList.remove('on');
   addObsMarkers();
@@ -7034,9 +7114,12 @@ async function obsRunAiHint(base64DataUrl) {
   obsAiHintSugg = null;
   try {
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
@@ -7079,12 +7162,20 @@ function filterObsBuckSugg(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectObsBuckSugg('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','ttpObsBuckName');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 function showObsBuckSugg() {
@@ -7131,6 +7222,8 @@ async function submitObsSighting() {
   btn.textContent = 'Saving...'; btn.classList.remove('rdy'); btn.classList.add('dis');
   const beh = document.querySelector('#ttpObsBehRow .chip.on');
   const wx = obsFormWxApplied || {};
+  const obsBuckName = document.getElementById('ttpObsBuckName').value.trim() || null;
+  const obsBuckId = obsBuckName ? await resolveBuckId(obsBuckName) : null;
   const newSighting = {
     source: 'observation',
     date: document.getElementById('ttpObsDate').value,
@@ -7138,7 +7231,8 @@ async function submitObsSighting() {
     camera_name: null,
     deer_type: deer.dataset.v,
     behavior: beh ? beh.dataset.v : null,
-    buck_name: document.getElementById('ttpObsBuckName').value.trim() || null,
+    buck_name: obsBuckName,
+    buck_id: obsBuckId,
     wind_dir: document.getElementById('ttpObsWind').value || null,
     temp_f: parseFloat(document.getElementById('ttpObsTemp').value) || null,
     wind_speed: wx.windSpd != null ? wx.windSpd : null,
@@ -7177,6 +7271,7 @@ async function submitObsSighting() {
   tapToPlaceLngLat = null; obsFormLngLat = null; obsFormImgFile = null;
   document.getElementById('ttpObsModal').classList.remove('on');
   sightings.unshift(data);
+  if(obsBuckId && data.date) updateBuckDates(obsBuckId, data.date);
   btn.textContent = 'Log Field Observation'; obsCheckSub();
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Field observation logged!');
@@ -7443,9 +7538,12 @@ async function tcamRunAiHint(base64DataUrl) {
   tcamAiHintSugg = null;
   try {
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
     }).join('\n');
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
@@ -7488,12 +7586,20 @@ function filterTcamBuckSugg(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectTcamBuckSugg('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','tcamBuckName');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 function showTcamBuckSugg() { const val = document.getElementById('tcamBuckName').value; if(!val) filterTcamBuckSugg(''); }
@@ -7510,6 +7616,8 @@ async function submitTrailCamSighting() {
   const beh   = document.querySelector('#tcamBehRow .chip.on');
   const tdir  = document.querySelector('#tcamTravelRow .chip.on');
   const wx = tcamFormWxApplied || {};
+  const tcamBuckNameVal = document.getElementById('tcamBuckName').value.trim() || null;
+  const tcamBuckId = tcamBuckNameVal ? await resolveBuckId(tcamBuckNameVal) : null;
   const newSighting = {
     source: 'camera',
     date: document.getElementById('tcamDate').value,
@@ -7517,7 +7625,8 @@ async function submitTrailCamSighting() {
     camera_name: tcamSelectedCam,
     deer_type: deer.dataset.v,
     behavior: beh ? beh.dataset.v : null,
-    buck_name: document.getElementById('tcamBuckName').value.trim() || null,
+    buck_name: tcamBuckNameVal,
+    buck_id: tcamBuckId,
     wind_dir: document.getElementById('tcamWind').value || null,
     temp_f: parseFloat(document.getElementById('tcamTemp').value) || null,
     wind_speed: wx.windSpd != null ? wx.windSpd : null,
@@ -7550,6 +7659,7 @@ async function submitTrailCamSighting() {
     } catch(e) { syncDot(false); console.error('Tcam photo upload:', e); }
   }
   sightings.unshift(data);
+  if(tcamBuckId && data.date) updateBuckDates(tcamBuckId, data.date);
   closeSheet('trail-cam');
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Camera sighting logged!');
@@ -7741,12 +7851,20 @@ function filterBuckSuggestions(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectBuckSuggestion('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','fbuckname');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 
@@ -7764,6 +7882,17 @@ function selectBuckSuggestion(name) {
   document.getElementById('fbuckname').value = name;
   hideBuckSuggestions();
   checkSub();
+}
+async function addNewBuckFromDropdown(name, inputId) {
+  const buck = await createBuck(name);
+  if(buck) {
+    document.getElementById(inputId).value = buck.name;
+    showToast(`"${buck.name}" added to buck registry`);
+  }
+  // Hide all suggestion dropdowns
+  hideBuckSuggestions();
+  hideObsBuckSugg();
+  hideTcamBuckSugg();
 }
 function mkChips(id, opts, key) {
   document.getElementById(id).innerHTML = opts.map(o =>
@@ -7836,11 +7965,14 @@ async function runAiHint(base64DataUrl) {
   aiHintSuggestion = null;
 
   try {
-    // Build buck profiles from existing sightings
+    // Build buck profiles from registry notes + sightings data
     const buckProfiles = namedBucks.map(name => {
+      const regBuck = buckRegistry.find(b => b.name === name);
       const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
-      const notes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join("; ");
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(", ")}${notes ? ", notes: " + notes : ""}`;
+      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join("; ");
+      const regNotes = regBuck && regBuck.notes ? regBuck.notes : "";
+      const allNotes = [regNotes, sightingNotes].filter(Boolean).join("; ");
+      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(", ")}${allNotes ? ", notes: " + allNotes : ""}`;
     }).join("\n");
 
     const base64 = base64DataUrl.split(",")[1];
