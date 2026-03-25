@@ -440,6 +440,9 @@ textarea{resize:none}
 .save-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
 .del-btn{width:100%;padding:11px;border:1px solid rgba(224,85,85,0.3);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px}
 
+/* north indicator */
+.north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:32px;height:32px;border-radius:8px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out}
+
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
 .mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
@@ -605,6 +608,14 @@ textarea{resize:none}
 
 <div id="map"></div>
 
+<!-- North Indicator -->
+<div class="north-indicator" id="northIndicator">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+    <polygon points="12,2 8,14 12,11 16,14" fill="#BCC6CC"/>
+    <polygon points="12,22 8,14 12,11 16,14" fill="#4A4D4E"/>
+    <text x="12" y="6" text-anchor="middle" font-size="7" font-weight="700" fill="#BCC6CC" font-family="'Roboto',sans-serif">N</text>
+  </svg>
+</div>
 
 <!-- Map header -->
 <div class="map-hdr">
@@ -3070,6 +3081,10 @@ function initMap() {
     if(el) { el.style.display='block'; el.style.color='#e87a4a'; el.textContent = 'Map error: ' + (e.error?.message || JSON.stringify(e.error)); }
   });
   mapInstance.on('idle', () => { const el = document.getElementById('mapLoadText'); if(el) el.style.display='none'; });
+  mapInstance.on('rotate', () => {
+    const ni = document.getElementById('northIndicator');
+    if(ni) ni.style.transform = 'rotate(' + (-mapInstance.getBearing()) + 'deg)';
+  });
   [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
