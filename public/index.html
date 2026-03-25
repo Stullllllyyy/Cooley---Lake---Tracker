@@ -2607,6 +2607,8 @@ async function submitSighting() {
   btn.textContent = "Saving..."; btn.classList.remove("rdy"); btn.classList.add("dis");
   const beh = document.querySelector(".chip[data-k='beh'].on");
   const wx = wxApplied || {};
+  const buckNameVal = document.getElementById("fbuckname").value.trim() || null;
+  const buckId = buckNameVal ? await resolveBuckId(buckNameVal) : null;
 
   let newSighting;
 
@@ -2619,7 +2621,8 @@ async function submitSighting() {
       camera_name: c.dataset.v,
       deer_type: d.dataset.v,
       behavior: beh ? beh.dataset.v : null,
-      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      buck_name: buckNameVal,
+      buck_id: buckId,
       wind_dir: document.getElementById("fwind").value || null,
       temp_f: parseFloat(document.getElementById("ftemp").value) || null,
       wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
@@ -2642,7 +2645,8 @@ async function submitSighting() {
       camera_name: null,
       deer_type: d.dataset.v,
       behavior: beh ? beh.dataset.v : null,
-      buck_name: document.getElementById("fbuckname").value.trim() || null,
+      buck_name: buckNameVal,
+      buck_id: buckId,
       wind_dir: document.getElementById("fwind").value || null,
       temp_f: parseFloat(document.getElementById("ftemp").value) || null,
       wind_speed: wx.windSpeed ? parseFloat(wx.windSpeed) : null,
@@ -7196,6 +7200,8 @@ async function submitObsSighting() {
   btn.textContent = 'Saving...'; btn.classList.remove('rdy'); btn.classList.add('dis');
   const beh = document.querySelector('#ttpObsBehRow .chip.on');
   const wx = obsFormWxApplied || {};
+  const obsBuckName = document.getElementById('ttpObsBuckName').value.trim() || null;
+  const obsBuckId = obsBuckName ? await resolveBuckId(obsBuckName) : null;
   const newSighting = {
     source: 'observation',
     date: document.getElementById('ttpObsDate').value,
@@ -7203,7 +7209,8 @@ async function submitObsSighting() {
     camera_name: null,
     deer_type: deer.dataset.v,
     behavior: beh ? beh.dataset.v : null,
-    buck_name: document.getElementById('ttpObsBuckName').value.trim() || null,
+    buck_name: obsBuckName,
+    buck_id: obsBuckId,
     wind_dir: document.getElementById('ttpObsWind').value || null,
     temp_f: parseFloat(document.getElementById('ttpObsTemp').value) || null,
     wind_speed: wx.windSpd != null ? wx.windSpd : null,
@@ -7583,6 +7590,8 @@ async function submitTrailCamSighting() {
   const beh   = document.querySelector('#tcamBehRow .chip.on');
   const tdir  = document.querySelector('#tcamTravelRow .chip.on');
   const wx = tcamFormWxApplied || {};
+  const tcamBuckNameVal = document.getElementById('tcamBuckName').value.trim() || null;
+  const tcamBuckId = tcamBuckNameVal ? await resolveBuckId(tcamBuckNameVal) : null;
   const newSighting = {
     source: 'camera',
     date: document.getElementById('tcamDate').value,
@@ -7590,7 +7599,8 @@ async function submitTrailCamSighting() {
     camera_name: tcamSelectedCam,
     deer_type: deer.dataset.v,
     behavior: beh ? beh.dataset.v : null,
-    buck_name: document.getElementById('tcamBuckName').value.trim() || null,
+    buck_name: tcamBuckNameVal,
+    buck_id: tcamBuckId,
     wind_dir: document.getElementById('tcamWind').value || null,
     temp_f: parseFloat(document.getElementById('tcamTemp').value) || null,
     wind_speed: wx.windSpd != null ? wx.windSpd : null,
