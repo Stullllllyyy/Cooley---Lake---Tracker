@@ -2226,6 +2226,12 @@ function initGeolocate() {
     showAccuracyCircle: true
   });
   geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent, map stays at PROPERTY_CENTER */ });
+  // After geolocation starts tracking, request iOS DeviceOrientation permission for heading cone
+  geolocateCtrl.on('trackuserlocationstart', () => {
+    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().catch(() => { /* denied — blue dot still shows, no heading cone */ });
+    }
+  });
   mapInstance.addControl(geolocateCtrl, 'bottom-right');
   // Auto-trigger geolocation after control is added to the map
   // Wrapped in try/catch + setTimeout so a denial never breaks map load
