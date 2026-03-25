@@ -610,6 +610,9 @@ textarea{resize:none}
 
 <div id="map"></div>
 
+<!-- DEBUG: on-screen log for mobile heading diagnostics — REMOVE AFTER DIAGNOSIS -->
+<div id="debugLog" style="position:fixed;top:60px;left:10px;z-index:9998;background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;padding:6px 8px;border-radius:6px;max-width:70vw;max-height:30vh;overflow-y:auto;pointer-events:none;display:none"></div>
+
 <!-- North Indicator -->
 <div class="north-indicator" id="northIndicator">
   <span style="font-size:10px;font-weight:700;color:#BCC6CC;font-family:'Roboto',sans-serif;line-height:1">N</span>
@@ -2255,20 +2258,38 @@ let lastUserLngLat = null;
 let lastHeading = null;
 let headingConeLayerAdded = false;
 
+// DEBUG: on-screen logger for mobile diagnosis — REMOVE AFTER DIAGNOSIS
+let _dbgCount = 0;
+function dbg(msg) {
+  console.log('[HEADING] ' + msg);
+  const el = document.getElementById('debugLog');
+  if(!el) return;
+  el.style.display = 'block';
+  _dbgCount++;
+  // Keep last 20 lines
+  const lines = el.innerHTML.split('<br>');
+  if(lines.length > 20) lines.shift();
+  lines.push(_dbgCount + ': ' + msg);
+  el.innerHTML = lines.join('<br>');
+}
+
 function initGeolocate() {
   if(!mapInstance) return;
+  dbg('initGeolocate called');
   geolocateCtrl = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
     showUserHeading: false,
     showAccuracyCircle: true
   });
-  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent */ });
+  geolocateCtrl.on('error', (err) => { dbg('geolocate error: ' + (err?.message || JSON.stringify(err))); });
   geolocateCtrl.on('geolocate', (e) => {
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
+    dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
     if(lastHeading !== null) updateHeadingConeGeoJSON();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
+    dbg('trackuserlocationend');
     removeHeadingCone();
     lastUserLngLat = null;
   });
@@ -2277,35 +2298,54 @@ function initGeolocate() {
   // Intercept geolocate button tap for iOS DeviceOrientation permission (requires user gesture)
   setTimeout(() => {
     const geoBtn = document.querySelector('.mapboxgl-ctrl-geolocate');
+    dbg('geoBtn found: ' + !!geoBtn);
     if(geoBtn) {
-      geoBtn.addEventListener('click', requestHeadingPermission, { once: true });
+      geoBtn.addEventListener('click', () => {
+        dbg('geolocate button tapped — requesting heading permission');
+        requestHeadingPermission();
+      }, { once: true });
     }
   }, 100);
 
   // Auto-trigger geolocation after control is added to the map
   setTimeout(() => {
-    try { geolocateCtrl.trigger(); } catch(e) { /* silent */ }
+    try { geolocateCtrl.trigger(); dbg('auto-trigger fired'); } catch(e) { dbg('auto-trigger error: ' + e.message); }
   }, 500);
 }
 
 function requestHeadingPermission() {
+  dbg('requestHeadingPermission called');
+  dbg('DeviceOrientationEvent exists: ' + (typeof DeviceOrientationEvent !== 'undefined'));
+  dbg('requestPermission exists: ' + (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'));
   if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    dbg('permission requested (iOS path)');
     DeviceOrientationEvent.requestPermission().then(state => {
+      dbg('permission result: ' + state);
       if(state === 'granted') startHeadingWatch();
-    }).catch(() => { /* denied — no cone */ });
+    }).catch((err) => { dbg('permission denied/error: ' + err); });
   } else if('DeviceOrientationEvent' in window) {
+    dbg('no permission needed (Android/desktop path) — starting watch');
     startHeadingWatch();
+  } else {
+    dbg('DeviceOrientationEvent not available');
   }
 }
 
 function startHeadingWatch() {
-  if(headingWatchActive) return;
+  if(headingWatchActive) { dbg('heading watch already active'); return; }
   headingWatchActive = true;
+  dbg('startHeadingWatch — adding listeners');
   window.addEventListener('deviceorientationabsolute', onDeviceHeading, true);
   window.addEventListener('deviceorientation', onDeviceHeading);
 }
 
+let _orientCount = 0;
 function onDeviceHeading(e) {
+  _orientCount++;
+  // Log first 5 events then every 50th to avoid spam
+  if(_orientCount <= 5 || _orientCount % 50 === 0) {
+    dbg('orientation #' + _orientCount + ': alpha=' + e.alpha + ' webkitCH=' + e.webkitCompassHeading + ' absolute=' + e.absolute + ' type=' + e.type);
+  }
   let heading = null;
   if(typeof e.webkitCompassHeading === 'number') {
     heading = e.webkitCompassHeading;
@@ -2361,6 +2401,8 @@ function updateHeadingConeGeoJSON() {
 
   if(!headingConeLayerAdded) {
     // Add source + layer on first call
+    dbg('Adding cone layer — heading=' + lastHeading.toFixed(1) + ' pos=' + lastUserLngLat[1].toFixed(5) + ',' + lastUserLngLat[0].toFixed(5));
+    dbg('Cone coords[0]=' + JSON.stringify(coords[0]) + ' coords[1]=' + JSON.stringify(coords[1]));
     mapInstance.addSource('heading-cone', { type: 'geojson', data: geojson });
     mapInstance.addLayer({
       id: 'heading-cone-layer',
@@ -2372,6 +2414,7 @@ function updateHeadingConeGeoJSON() {
       }
     });
     headingConeLayerAdded = true;
+    dbg('Cone layer added successfully');
   } else {
     const src = mapInstance.getSource('heading-cone');
     if(src) src.setData(geojson);
