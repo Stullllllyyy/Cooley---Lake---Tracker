@@ -443,6 +443,9 @@ textarea{resize:none}
 /* north indicator */
 .north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out;box-shadow:0 2px 16px rgba(0,0,0,0.5)}
 
+/* heading cone */
+.heading-cone{width:80px;height:80px;pointer-events:none;transition:transform 0.1s linear}
+
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
 .mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
@@ -2246,8 +2249,12 @@ async function loadPropertyContext() {
   }
 }
 
-// --- GPS Blue Dot ---
+// --- GPS Blue Dot + Heading Cone ---
 let geolocateCtrl = null;
+let headingConeMarker = null;
+let headingWatchActive = false;
+let lastUserLngLat = null;
+
 function initGeolocate() {
   if(!mapInstance) return;
   geolocateCtrl = new mapboxgl.GeolocateControl({
@@ -2256,19 +2263,87 @@ function initGeolocate() {
     showUserHeading: true,
     showAccuracyCircle: true
   });
-  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent, map stays at PROPERTY_CENTER */ });
-  // After geolocation starts tracking, request iOS DeviceOrientation permission for heading cone
-  geolocateCtrl.on('trackuserlocationstart', () => {
-    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().catch(() => { /* denied — blue dot still shows, no heading cone */ });
-    }
+  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent */ });
+  geolocateCtrl.on('geolocate', (e) => {
+    lastUserLngLat = [e.coords.longitude, e.coords.latitude];
+    if(headingConeMarker) headingConeMarker.setLngLat(lastUserLngLat);
+  });
+  geolocateCtrl.on('trackuserlocationend', () => {
+    removeHeadingCone();
   });
   mapInstance.addControl(geolocateCtrl, 'bottom-right');
+
+  // Intercept geolocate button tap for iOS DeviceOrientation permission (requires user gesture)
+  const geoBtn = document.querySelector('.mapboxgl-ctrl-geolocate');
+  if(geoBtn) {
+    geoBtn.addEventListener('click', requestHeadingPermission, { once: true });
+  }
+
   // Auto-trigger geolocation after control is added to the map
-  // Wrapped in try/catch + setTimeout so a denial never breaks map load
   setTimeout(() => {
     try { geolocateCtrl.trigger(); } catch(e) { /* silent */ }
   }, 500);
+}
+
+function requestHeadingPermission() {
+  if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    // iOS 13+ requires user gesture for permission
+    DeviceOrientationEvent.requestPermission().then(state => {
+      if(state === 'granted') startHeadingWatch();
+    }).catch(() => { /* denied — no cone, blue dot still works */ });
+  } else if('DeviceOrientationEvent' in window) {
+    // Android / non-iOS — no permission needed
+    startHeadingWatch();
+  }
+}
+
+function startHeadingWatch() {
+  if(headingWatchActive) return;
+  headingWatchActive = true;
+  window.addEventListener('deviceorientationabsolute', onDeviceHeading, true);
+  window.addEventListener('deviceorientation', onDeviceHeading);
+}
+
+function onDeviceHeading(e) {
+  // webkitCompassHeading for iOS, alpha for Android (absolute if available)
+  let heading = null;
+  if(typeof e.webkitCompassHeading === 'number') {
+    heading = e.webkitCompassHeading;
+  } else if(e.absolute && typeof e.alpha === 'number') {
+    heading = 360 - e.alpha;
+  } else if(typeof e.alpha === 'number') {
+    heading = 360 - e.alpha;
+  }
+  if(heading === null || !lastUserLngLat) return;
+
+  // rotationAlignment:'map' on marker handles map rotation — just apply compass heading directly
+  const rotation = heading;
+
+  if(!headingConeMarker) {
+    createHeadingCone();
+  }
+  const coneEl = headingConeMarker?.getElement();
+  if(coneEl) coneEl.style.transform = 'rotate(' + rotation + 'deg)';
+  if(headingConeMarker && lastUserLngLat) headingConeMarker.setLngLat(lastUserLngLat);
+}
+
+function createHeadingCone() {
+  if(!mapInstance || !lastUserLngLat) return;
+  const el = document.createElement('div');
+  el.className = 'heading-cone';
+  el.innerHTML = '<svg width="80" height="80" viewBox="0 0 80 80" fill="none">' +
+    '<path d="M40 40 L28 4 Q40 0 52 4 Z" fill="rgba(66,133,244,0.25)" stroke="none"/>' +
+    '</svg>';
+  headingConeMarker = new mapboxgl.Marker({ element: el, anchor: 'center', pitchAlignment: 'map', rotationAlignment: 'map' })
+    .setLngLat(lastUserLngLat)
+    .addTo(mapInstance);
+}
+
+function removeHeadingCone() {
+  if(headingConeMarker) {
+    headingConeMarker.remove();
+    headingConeMarker = null;
+  }
 }
 
 // Compatibility shim - old showView calls still work
