@@ -2361,9 +2361,12 @@ async function handleLogout() {
   await sb.auth.signOut();
 }
 
-function bootApp() {
+async function bootApp() {
   if(appBooted) return;
   appBooted = true;
+  // Temporary: log auth UID for owner bootstrap SQL
+  const { data: { user } } = await sb.auth.getUser();
+  if(user) console.log('[AUTH] Your auth.uid():', user.id);
   document.getElementById('authGate').style.display = 'none';
   loadSightings();
   updateMapWeather();
