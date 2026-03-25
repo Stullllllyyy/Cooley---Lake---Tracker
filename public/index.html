@@ -444,7 +444,8 @@ textarea{resize:none}
 .north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out;box-shadow:0 2px 16px rgba(0,0,0,0.5)}
 
 /* heading cone */
-.heading-cone{width:80px;height:80px;pointer-events:none;transition:transform 0.1s linear}
+.heading-cone{pointer-events:none}
+.heading-cone-inner{transition:transform 0.1s linear}
 
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
@@ -2254,30 +2255,34 @@ let geolocateCtrl = null;
 let headingConeMarker = null;
 let headingWatchActive = false;
 let lastUserLngLat = null;
+let lastHeading = null;
 
 function initGeolocate() {
   if(!mapInstance) return;
   geolocateCtrl = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
-    showUserHeading: true,
+    showUserHeading: false,
     showAccuracyCircle: true
   });
   geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent */ });
   geolocateCtrl.on('geolocate', (e) => {
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
-    if(headingConeMarker) headingConeMarker.setLngLat(lastUserLngLat);
+    updateConePosition();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
     removeHeadingCone();
+    lastUserLngLat = null;
   });
   mapInstance.addControl(geolocateCtrl, 'bottom-right');
 
   // Intercept geolocate button tap for iOS DeviceOrientation permission (requires user gesture)
-  const geoBtn = document.querySelector('.mapboxgl-ctrl-geolocate');
-  if(geoBtn) {
-    geoBtn.addEventListener('click', requestHeadingPermission, { once: true });
-  }
+  setTimeout(() => {
+    const geoBtn = document.querySelector('.mapboxgl-ctrl-geolocate');
+    if(geoBtn) {
+      geoBtn.addEventListener('click', requestHeadingPermission, { once: true });
+    }
+  }, 100);
 
   // Auto-trigger geolocation after control is added to the map
   setTimeout(() => {
@@ -2302,10 +2307,13 @@ function startHeadingWatch() {
   headingWatchActive = true;
   window.addEventListener('deviceorientationabsolute', onDeviceHeading, true);
   window.addEventListener('deviceorientation', onDeviceHeading);
+  // Update cone rotation when map bearing changes
+  if(mapInstance) {
+    mapInstance.on('rotate', updateConeRotation);
+  }
 }
 
 function onDeviceHeading(e) {
-  // webkitCompassHeading for iOS, alpha for Android (absolute if available)
   let heading = null;
   if(typeof e.webkitCompassHeading === 'number') {
     heading = e.webkitCompassHeading;
@@ -2316,27 +2324,101 @@ function onDeviceHeading(e) {
   }
   if(heading === null || !lastUserLngLat) return;
 
-  // rotationAlignment:'map' on marker handles map rotation — just apply compass heading directly
-  const rotation = heading;
+  lastHeading = heading;
 
-  if(!headingConeMarker) {
-    createHeadingCone();
+  if(!headingConeMarker) createHeadingCone();
+  updateConeRotation();
+  updateConePosition();
+}
+
+function updateConeRotation() {
+  if(lastHeading === null || !headingConeMarker) return;
+  const mapBearing = mapInstance ? mapInstance.getBearing() : 0;
+  const rotation = lastHeading - mapBearing;
+  const inner = headingConeMarker.getElement()?.querySelector('.heading-cone-inner');
+  if(inner) inner.style.transform = 'rotate(' + rotation + 'deg)';
+}
+
+function updateConePosition() {
+  if(headingConeMarker && lastUserLngLat) {
+    headingConeMarker.setLngLat(lastUserLngLat);
   }
-  const coneEl = headingConeMarker?.getElement();
-  if(coneEl) coneEl.style.transform = 'rotate(' + rotation + 'deg)';
-  if(headingConeMarker && lastUserLngLat) headingConeMarker.setLngLat(lastUserLngLat);
+}
+
+function getConeSizePx() {
+  if(!mapInstance) return 120;
+  const z = mapInstance.getZoom();
+  if(z >= 18) return 200;
+  if(z >= 16) return 160;
+  if(z >= 14) return 120;
+  if(z >= 12) return 90;
+  return 60;
 }
 
 function createHeadingCone() {
   if(!mapInstance || !lastUserLngLat) return;
+  const size = getConeSizePx();
+  const half = size / 2;
+  // ~50 degree cone: endpoints at ±25 degrees from top center
+  const angL = (-90 - 25) * Math.PI / 180;
+  const angR = (-90 + 25) * Math.PI / 180;
+  const tipX = half, tipY = half;
+  const lx = half + Math.cos(angL) * half;
+  const ly = half + Math.sin(angL) * half;
+  const rx = half + Math.cos(angR) * half;
+  const ry = half + Math.sin(angR) * half;
+
   const el = document.createElement('div');
   el.className = 'heading-cone';
-  el.innerHTML = '<svg width="80" height="80" viewBox="0 0 80 80" fill="none">' +
-    '<path d="M40 40 L28 4 Q40 0 52 4 Z" fill="rgba(66,133,244,0.25)" stroke="none"/>' +
-    '</svg>';
-  headingConeMarker = new mapboxgl.Marker({ element: el, anchor: 'center', pitchAlignment: 'map', rotationAlignment: 'map' })
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  el.innerHTML = '<div class="heading-cone-inner" style="width:100%;height:100%">' +
+    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" fill="none">' +
+    '<defs><radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">' +
+    '<stop offset="0%" stop-color="#4A90D9" stop-opacity="0.45"/>' +
+    '<stop offset="100%" stop-color="#4A90D9" stop-opacity="0.05"/>' +
+    '</radialGradient></defs>' +
+    '<path d="M ' + tipX + ' ' + tipY + ' L ' + lx.toFixed(1) + ' ' + ly.toFixed(1) +
+    ' A ' + half + ' ' + half + ' 0 0 1 ' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' Z"' +
+    ' fill="url(#coneGrad)" stroke="none"/>' +
+    '</svg></div>';
+
+  headingConeMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
     .setLngLat(lastUserLngLat)
     .addTo(mapInstance);
+
+  // Resize cone on zoom
+  mapInstance.on('zoom', onConeZoom);
+}
+
+function onConeZoom() {
+  if(!headingConeMarker) return;
+  const size = getConeSizePx();
+  const half = size / 2;
+  const angL = (-90 - 25) * Math.PI / 180;
+  const angR = (-90 + 25) * Math.PI / 180;
+  const lx = half + Math.cos(angL) * half;
+  const ly = half + Math.sin(angL) * half;
+  const rx = half + Math.cos(angR) * half;
+  const ry = half + Math.sin(angR) * half;
+
+  const el = headingConeMarker.getElement();
+  el.style.width = size + 'px';
+  el.style.height = size + 'px';
+  const inner = el.querySelector('.heading-cone-inner');
+  if(inner) {
+    inner.innerHTML =
+      '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" fill="none">' +
+      '<defs><radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">' +
+      '<stop offset="0%" stop-color="#4A90D9" stop-opacity="0.45"/>' +
+      '<stop offset="100%" stop-color="#4A90D9" stop-opacity="0.05"/>' +
+      '</radialGradient></defs>' +
+      '<path d="M ' + half + ' ' + half + ' L ' + lx.toFixed(1) + ' ' + ly.toFixed(1) +
+      ' A ' + half + ' ' + half + ' 0 0 1 ' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' Z"' +
+      ' fill="url(#coneGrad)" stroke="none"/>' +
+      '</svg>';
+  }
+  updateConeRotation();
 }
 
 function removeHeadingCone() {
@@ -2344,6 +2426,10 @@ function removeHeadingCone() {
     headingConeMarker.remove();
     headingConeMarker = null;
   }
+  if(mapInstance) {
+    mapInstance.off('zoom', onConeZoom);
+  }
+  lastHeading = null;
 }
 
 // Compatibility shim - old showView calls still work
