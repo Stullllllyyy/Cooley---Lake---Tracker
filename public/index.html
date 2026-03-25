@@ -7136,12 +7136,20 @@ function filterObsBuckSugg(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectObsBuckSugg('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','ttpObsBuckName');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 function showObsBuckSugg() {
@@ -7545,12 +7553,20 @@ function filterTcamBuckSugg(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectTcamBuckSugg('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','tcamBuckName');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 function showTcamBuckSugg() { const val = document.getElementById('tcamBuckName').value; if(!val) filterTcamBuckSugg(''); }
@@ -7798,12 +7814,20 @@ function filterBuckSuggestions(val) {
   if(!drop) return;
   const bucks = getNamedBucks();
   const matches = val ? bucks.filter(b => b.toLowerCase().includes(val.toLowerCase())) : bucks;
-  if(matches.length === 0 || !val) { drop.style.display = 'none'; return; }
-  drop.innerHTML = matches.map(b =>
+  if(!val) { drop.style.display = 'none'; return; }
+  let html = matches.map(b =>
     `<div onclick="selectBuckSuggestion('${b.replace(/'/g,"\\'")}');event.preventDefault()"
       style="padding:9px 14px;font-size:13px;color:var(--text2);cursor:pointer;border-bottom:1px solid var(--border);font-family:var(--font)"
       onmousedown="event.preventDefault()">${b}</div>`
   ).join('');
+  const exactMatch = bucks.some(b => b.toLowerCase() === val.toLowerCase());
+  if(val.trim() && !exactMatch) {
+    html += `<div onclick="addNewBuckFromDropdown('${val.trim().replace(/'/g,"\\'")}','fbuckname');event.preventDefault()"
+      style="padding:9px 14px;font-size:13px;color:var(--sulfur);cursor:pointer;font-family:var(--font);font-weight:600"
+      onmousedown="event.preventDefault()">+ Add "${val.trim()}"</div>`;
+  }
+  if(!html) { drop.style.display = 'none'; return; }
+  drop.innerHTML = html;
   drop.style.display = 'block';
 }
 
@@ -7821,6 +7845,17 @@ function selectBuckSuggestion(name) {
   document.getElementById('fbuckname').value = name;
   hideBuckSuggestions();
   checkSub();
+}
+async function addNewBuckFromDropdown(name, inputId) {
+  const buck = await createBuck(name);
+  if(buck) {
+    document.getElementById(inputId).value = buck.name;
+    showToast(`"${buck.name}" added to buck registry`);
+  }
+  // Hide all suggestion dropdowns
+  hideBuckSuggestions();
+  hideObsBuckSugg();
+  hideTcamBuckSugg();
 }
 function mkChips(id, opts, key) {
   document.getElementById(id).innerHTML = opts.map(o =>
