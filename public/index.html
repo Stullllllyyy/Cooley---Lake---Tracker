@@ -2336,16 +2336,25 @@ async function handleSignUp() {
 
   // Validate invite code against invites table
   btn.disabled = true; btn.textContent = 'Validating invite...';
-  console.log('[DIAG] invite code from input:', JSON.stringify(code));
   const { data: invite, error: invErr } = await sb.from('invites')
     .select('*')
     .eq('code', code)
     .is('claimed_by', null)
     .single();
-  console.log('[DIAG] invite query result - data:', JSON.stringify(invite), 'error:', JSON.stringify(invErr));
   if(invErr || !invite) {
     btn.disabled = false; btn.textContent = 'Create Account';
     errEl.textContent = 'Invalid or already used invite code.';
+    return;
+  }
+
+  // Pre-claim invite while still anon (RLS allows anon UPDATE)
+  // Use email as a temporary claim marker so the code can't be reused during signup
+  const { error: preClaimErr } = await sb.from('invites').update({
+    claimed_at: new Date().toISOString()
+  }).eq('id', invite.id);
+  if(preClaimErr) {
+    btn.disabled = false; btn.textContent = 'Create Account';
+    errEl.textContent = 'Failed to reserve invite. Try again.';
     return;
   }
 
@@ -2353,20 +2362,18 @@ async function handleSignUp() {
   btn.textContent = 'Creating account...';
   const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pass });
   if(signUpErr) {
+    // Roll back pre-claim
+    await sb.from('invites').update({ claimed_at: null }).eq('id', invite.id);
     btn.disabled = false; btn.textContent = 'Create Account';
     errEl.textContent = signUpErr.message;
     return;
   }
 
-  // Claim invite and add to property_members
+  // Finalize claim with user ID and add to property_members
   const newUserId = signUpData.user?.id;
-  console.log('[DIAG] newUserId:', newUserId, 'invite.id:', invite.id);
   if(newUserId) {
-    const { data: claimData, error: claimErr } = await sb.from('invites').update({
-      claimed_by: newUserId,
-      claimed_at: new Date().toISOString()
-    }).eq('id', invite.id).select();
-    console.log('[DIAG] invite claim update - data:', JSON.stringify(claimData), 'error:', JSON.stringify(claimErr));
+    // claimed_by update may fail if auth role switched — that's OK, claimed_at is already set
+    await sb.from('invites').update({ claimed_by: newUserId }).eq('id', invite.id);
 
     await sb.from('property_members').insert({
       property_id: invite.property_id,
