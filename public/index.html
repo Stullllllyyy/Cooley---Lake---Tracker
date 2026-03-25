@@ -4001,8 +4001,8 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const isTop = topWinds[0] === w;
     const isHigh = topWinds.includes(w);
 
-    // Overdraw by 0.02 rad each side so adjacent wedges overlap — eliminates anti-aliasing gaps
-    const overdraw = 0.02;
+    // Overdraw 0.05 rad each side + matching stroke to guarantee gapless edges
+    const overdraw = 0.05;
     const angle1 = startAngle + i * angleStep - angleStep * 0.5 - overdraw;
     const angle2 = startAngle + i * angleStep + angleStep * 0.5 + overdraw;
     const x1 = cx + Math.cos(angle1) * r;
@@ -4014,7 +4014,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const fill = isTop ? '#c8a951' : isHigh ? '#6e6e6e' : '#333333';
 
     slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
-      fill="${fill}" stroke="none"/>`;
+      fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`;
   });
 
   // Center dot
