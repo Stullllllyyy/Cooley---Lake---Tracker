@@ -2475,6 +2475,60 @@ function syncDot(on) {
   if(d) d.className = "sync-dot" + (on ? " on" : "");
 }
 
+// --- Buck Registry ---
+let buckRegistry = []; // Array of {id, property_id, name, first_seen, last_seen, notes, created_at}
+
+async function loadBuckRegistry() {
+  try {
+    const { data, error } = await sb.from('bucks').select('*')
+      .eq('property_id', PROPERTY_ID)
+      .order('name');
+    if(error) { console.error('loadBuckRegistry error:', error); return; }
+    buckRegistry = data || [];
+  } catch(e) { console.error('loadBuckRegistry:', e); }
+}
+
+async function createBuck(name) {
+  if(!name || !name.trim()) return null;
+  name = name.trim();
+  // Check if already exists in registry
+  const existing = buckRegistry.find(b => b.name.toLowerCase() === name.toLowerCase());
+  if(existing) return existing;
+  try {
+    const { data, error } = await sb.from('bucks').insert({
+      property_id: PROPERTY_ID,
+      name: name
+    }).select().single();
+    if(error) { console.error('createBuck error:', error); return null; }
+    buckRegistry.push(data);
+    return data;
+  } catch(e) { console.error('createBuck:', e); return null; }
+}
+
+async function resolveBuckId(buckName) {
+  if(!buckName || !buckName.trim()) return null;
+  buckName = buckName.trim();
+  let buck = buckRegistry.find(b => b.name.toLowerCase() === buckName.toLowerCase());
+  if(buck) return buck.id;
+  // Auto-create if not found
+  buck = await createBuck(buckName);
+  return buck ? buck.id : null;
+}
+
+async function updateBuckDates(buckId, sightingDate) {
+  if(!buckId || !sightingDate) return;
+  const buck = buckRegistry.find(b => b.id === buckId);
+  if(!buck) return;
+  const updates = {};
+  if(!buck.first_seen || sightingDate < buck.first_seen) updates.first_seen = sightingDate;
+  if(!buck.last_seen || sightingDate > buck.last_seen) updates.last_seen = sightingDate;
+  if(Object.keys(updates).length === 0) return;
+  try {
+    await sb.from('bucks').update(updates).eq('id', buckId);
+    Object.assign(buck, updates);
+  } catch(e) { console.error('updateBuckDates:', e); }
+}
+
 // --- data -
 async function loadSightings() {
   syncDot(true);
