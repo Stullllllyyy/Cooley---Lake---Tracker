@@ -48,7 +48,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
 .fp-select{flex:1;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);appearance:auto;-webkit-appearance:auto;cursor:pointer;outline:none}
 /* map display panel */
-.map-display-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);right:14px;width:240px;max-width:calc(100vw - 28px);background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom right}
+.map-display-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);right:68px;width:240px;max-width:calc(100vw - 82px);background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom right}
 .map-display-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
 .mdp-style-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px}
 .mdp-style-btn{padding:8px 0;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;text-align:center;transition:all 0.15s;letter-spacing:0.5px}
@@ -624,9 +624,6 @@ textarea{resize:none}
 </div>
 
 <div id="map"></div>
-
-<!-- DEBUG: on-screen log for mobile heading diagnostics — REMOVE AFTER DIAGNOSIS -->
-<div id="debugLog" style="position:fixed;top:60px;left:10px;z-index:9998;background:rgba(0,0,0,0.85);color:#0f0;font-size:10px;font-family:monospace;padding:6px 8px;border-radius:6px;max-width:70vw;max-height:30vh;overflow-y:auto;pointer-events:none;display:none"></div>
 
 <!-- North Indicator -->
 <div class="north-indicator" id="northIndicator">
@@ -2293,20 +2290,7 @@ let lastUserLngLat = null;
 let lastHeading = null;
 let headingConeLayerAdded = false;
 
-// DEBUG: on-screen logger for mobile diagnosis — REMOVE AFTER DIAGNOSIS
-let _dbgCount = 0;
-function dbg(msg) {
-  console.log('[HEADING] ' + msg);
-  const el = document.getElementById('debugLog');
-  if(!el) return;
-  el.style.display = 'block';
-  _dbgCount++;
-  // Keep last 20 lines
-  const lines = el.innerHTML.split('<br>');
-  if(lines.length > 20) lines.shift();
-  lines.push(_dbgCount + ': ' + msg);
-  el.innerHTML = lines.join('<br>');
-}
+function dbg(msg) { console.log('[HEADING] ' + msg); }
 
 function initGeolocate() {
   if(!mapInstance) return;
