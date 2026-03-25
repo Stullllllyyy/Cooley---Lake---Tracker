@@ -2718,8 +2718,11 @@ async function submitSighting() {
 
 async function saveEdit() {
   const s = sightings.find(x => x.id === editId); if(!s) return;
+  const editBuckName = document.getElementById("eBuckName").value.trim() || null;
+  const editBuckId = editBuckName ? await resolveBuckId(editBuckName) : null;
   const updates = {
-    buck_name: document.getElementById("eBuckName").value.trim() || null,
+    buck_name: editBuckName,
+    buck_id: editBuckId,
     deer_type: document.getElementById("eDeerType").value,
     camera_name: document.getElementById("eCamera").value,
     date: document.getElementById("eDate").value,
@@ -5890,7 +5893,8 @@ async function bulkSaveName() {
 async function bulkSaveNameValue(name) {
   const s = bulkQueue[bulkIdx];
   if(!s) return;
-  const { error } = await sb.from('sightings').update({ buck_name: name }).eq('id', s.id);
+  const bulkBuckId = name ? await resolveBuckId(name) : null;
+  const { error } = await sb.from('sightings').update({ buck_name: name, buck_id: bulkBuckId }).eq('id', s.id);
   if(error) { showToast('Save failed: ' + error.message); return; }
   const local = sightings.find(x => x.id === s.id);
   if(local) local.buck_name = name;
@@ -6123,10 +6127,11 @@ async function applyWhoEdit() {
   const sightingId = parseInt(modal.dataset.sightingId);
   const name = input?.value.trim();
   if(!name || !sightingId) return;
-  const {error} = await sb.from('sightings').update({ buck_name: name }).eq('id', sightingId);
+  const whoEditBuckId = await resolveBuckId(name);
+  const {error} = await sb.from('sightings').update({ buck_name: name, buck_id: whoEditBuckId }).eq('id', sightingId);
   if(error) { showToast('Save failed: ' + error.message); return; }
   const s = sightings.find(x => x.id === sightingId);
-  if(s) s.buck_name = name;
+  if(s) { s.buck_name = name; s.buck_id = whoEditBuckId; }
   modal.style.display = 'none';
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
   showToast(`ID updated: ${name}`);
@@ -6138,8 +6143,10 @@ async function applyWhoMatch() {
   if(!whoMatchResult?.match || !sightingId) return;
   const btn = document.getElementById("whoAcceptBtn");
   if(btn) { btn.textContent = "Saving..."; btn.disabled = true; }
+  // Resolve buck_id from registry
+  const whoMatchBuckId = await resolveBuckId(whoMatchResult.match);
   // Update in Supabase
-  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match }).eq("id", sightingId);
+  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match, buck_id: whoMatchBuckId }).eq("id", sightingId);
   if(error) {
     showToast("Save failed: " + error.message);
     if(btn) { btn.textContent = "Apply: " + whoMatchResult.match; btn.disabled = false; }
@@ -6147,7 +6154,7 @@ async function applyWhoMatch() {
   }
   // Update local
   const s = sightings.find(x => x.id === sightingId);
-  if(s) s.buck_name = whoMatchResult.match;
+  if(s) { s.buck_name = whoMatchResult.match; s.buck_id = whoMatchBuckId; }
   modal.style.display = "none";
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend();
   refreshBucknameList(); refreshMapPins();
@@ -6854,10 +6861,13 @@ async function submitObsEdit() {
   const deerChip = document.querySelector('#obsEditDeerRow .chip.on');
   const behChip  = document.querySelector('#obsEditBehRow .chip.on');
   const isBuck = deerChip && deerChip.textContent.startsWith('Buck');
+  const obsEditBuckName = isBuck ? (document.getElementById('obsEditBuckName').value.trim() || null) : null;
+  const obsEditBuckId = obsEditBuckName ? await resolveBuckId(obsEditBuckName) : null;
   const updates = {
     deer_type: deerChip ? deerChip.textContent : activeObsSighting.deer_type,
     behavior:  behChip  ? behChip.textContent  : activeObsSighting.behavior,
-    buck_name: isBuck ? (document.getElementById('obsEditBuckName').value.trim() || null) : null,
+    buck_name: obsEditBuckName,
+    buck_id: obsEditBuckId,
     notes:     document.getElementById('obsEditNotes').value.trim() || null
   };
   const {error} = await sb.from('sightings').update(updates).eq('id', activeObsSighting.id);
