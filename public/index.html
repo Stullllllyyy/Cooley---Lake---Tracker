@@ -2360,11 +2360,13 @@ async function handleSignUp() {
 
   // Claim invite and add to property_members
   const newUserId = signUpData.user?.id;
+  console.log('[DIAG] newUserId:', newUserId, 'invite.id:', invite.id);
   if(newUserId) {
-    await sb.from('invites').update({
+    const { data: claimData, error: claimErr } = await sb.from('invites').update({
       claimed_by: newUserId,
       claimed_at: new Date().toISOString()
-    }).eq('id', invite.id);
+    }).eq('id', invite.id).select();
+    console.log('[DIAG] invite claim update - data:', JSON.stringify(claimData), 'error:', JSON.stringify(claimErr));
 
     await sb.from('property_members').insert({
       property_id: invite.property_id,
