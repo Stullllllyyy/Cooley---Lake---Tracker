@@ -32,9 +32,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* Filter FAB + Panel */
-.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(140,115,85,0.25);border:1px solid rgba(140,115,85,0.5);color:#8C7355;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid rgba(140,115,85,0.6);color:#BCC6CC;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
 .filter-fab:active{transform:scale(0.9)}
-.filter-fab.active{background:rgba(140,115,85,0.35);border-color:#8C7355;color:#8C7355}
+.filter-fab.active{background:rgba(18,20,21,0.92);border-color:#8C7355;color:#E5B53B}
 .filter-fab.active svg{transform:rotate(45deg)}
 .filter-fab svg{transition:transform 0.2s ease}
 .filter-fab-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
@@ -663,12 +663,30 @@ textarea{resize:none}
         <div class="mfp-toggle" id="mfpObsToggle">OFF</div>
       </div>
       <div class="marker-toggle-row" onclick="toggleScrapeMarkers();event.stopPropagation()">
-        <span>Scrapes / Rubs</span>
+        <span>Scrapes</span>
         <div class="mfp-toggle" id="mfpScrapeToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleRubMarkers();event.stopPropagation()">
+        <span>Rubs</span>
+        <div class="mfp-toggle" id="mfpRubToggle">OFF</div>
       </div>
       <div class="marker-toggle-row" onclick="toggleBeddingMarkers();event.stopPropagation()">
         <span>Bedding</span>
         <div class="mfp-toggle" id="mfpBeddingToggle">OFF</div>
+      </div>
+    </div>
+  </div>
+  <!-- Map Overlays -->
+  <div class="filter-section" style="border-bottom:none">
+    <div class="filter-section-lbl">Map Overlays</div>
+    <div>
+      <div class="marker-toggle-row" onclick="toggleDotMap();event.stopPropagation()">
+        <span>Dot Map</span>
+        <div class="mfp-toggle" id="mfpDotMapToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleHeatMap();event.stopPropagation()">
+        <span>Heat Map</span>
+        <div class="mfp-toggle" id="mfpHeatMapToggle">OFF</div>
       </div>
     </div>
   </div>
@@ -3224,7 +3242,10 @@ let obsMarkers = [];
 // Marker visibility state — false = hidden by default
 let obsMarkersVisible = false;
 let scrapeMarkersVisible = false;
+let rubMarkersVisible = false;
 let beddingMarkersVisible = false;
+let dotMapActive = false;
+let heatMapActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -3479,6 +3500,14 @@ function toggleScrapeMarkers() {
   renderPropertyMarkers();
   updateMarkersPillState();
 }
+function toggleRubMarkers() {
+  rubMarkersVisible = !rubMarkersVisible;
+  const tog = document.getElementById('mfpRubToggle');
+  tog.textContent = rubMarkersVisible ? 'ON' : 'OFF';
+  tog.classList.toggle('on', rubMarkersVisible);
+  renderPropertyMarkers();
+  updateMarkersPillState();
+}
 function toggleBeddingMarkers() {
   beddingMarkersVisible = !beddingMarkersVisible;
   const tog = document.getElementById('mfpBeddingToggle');
@@ -3486,6 +3515,22 @@ function toggleBeddingMarkers() {
   tog.classList.toggle('on', beddingMarkersVisible);
   renderPropertyMarkers();
   updateMarkersPillState();
+}
+function toggleDotMap() {
+  dotMapActive = !dotMapActive;
+  const tog = document.getElementById('mfpDotMapToggle');
+  tog.textContent = dotMapActive ? 'ON' : 'OFF';
+  tog.classList.toggle('on', dotMapActive);
+  if(dotMapActive) { showDotMap(); } else { hideDotMap(); }
+  updateFilterFabDot();
+}
+function toggleHeatMap() {
+  heatMapActive = !heatMapActive;
+  const tog = document.getElementById('mfpHeatMapToggle');
+  tog.textContent = heatMapActive ? 'ON' : 'OFF';
+  tog.classList.toggle('on', heatMapActive);
+  if(heatMapActive) { showHeatmap(); } else { hideHeatmap(); }
+  updateFilterFabDot();
 }
 function updateMarkersPillState() {
   updateFilterFabDot();
@@ -3534,7 +3579,7 @@ function filterPanelOutsideClick(e) {
 function updateFilterFabDot() {
   const dot = document.getElementById('filterFabDot');
   if(!dot) return;
-  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || obsMarkersVisible || scrapeMarkersVisible || beddingMarkersVisible;
+  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || obsMarkersVisible || scrapeMarkersVisible || rubMarkersVisible || beddingMarkersVisible || dotMapActive || heatMapActive;
   dot.style.display = nonDefault ? 'block' : 'none';
 }
 
@@ -6610,9 +6655,10 @@ function renderPropertyMarkers() {
 
 function addPropertyMarker(m) {
   if(!mapInstance || !m.lat || !m.lng) return;
-  // Visibility: Stand always shown; Scrape/Rub respect scrapeMarkersVisible; Bedding respects beddingMarkersVisible
+  // Visibility: Stand always shown; Scrape, Rub, Bedding each have independent toggles
   const t = m.type;
-  if((t === 'Scrape' || t === 'Rub') && !scrapeMarkersVisible) return;
+  if(t === 'Scrape' && !scrapeMarkersVisible) return;
+  if(t === 'Rub' && !rubMarkersVisible) return;
   if(t === 'Bedding' && !beddingMarkersVisible) return;
   const fill   = m.color || FEAT_COLORS[t]  || '#8C7355';
   const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
