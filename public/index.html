@@ -443,9 +443,7 @@ textarea{resize:none}
 /* north indicator */
 .north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out;box-shadow:0 2px 16px rgba(0,0,0,0.5)}
 
-/* heading cone */
-.heading-cone{pointer-events:none}
-.heading-cone-inner{transition:transform 0.1s linear}
+/* heading cone — rendered as Mapbox fill layer, no DOM styles needed */
 
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
@@ -2250,12 +2248,12 @@ async function loadPropertyContext() {
   }
 }
 
-// --- GPS Blue Dot + Heading Cone ---
+// --- GPS Blue Dot + Heading Cone (Mapbox fill layer) ---
 let geolocateCtrl = null;
-let headingConeMarker = null;
 let headingWatchActive = false;
 let lastUserLngLat = null;
 let lastHeading = null;
+let headingConeLayerAdded = false;
 
 function initGeolocate() {
   if(!mapInstance) return;
@@ -2268,7 +2266,7 @@ function initGeolocate() {
   geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent */ });
   geolocateCtrl.on('geolocate', (e) => {
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
-    updateConePosition();
+    if(lastHeading !== null) updateHeadingConeGeoJSON();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
     removeHeadingCone();
@@ -2292,12 +2290,10 @@ function initGeolocate() {
 
 function requestHeadingPermission() {
   if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    // iOS 13+ requires user gesture for permission
     DeviceOrientationEvent.requestPermission().then(state => {
       if(state === 'granted') startHeadingWatch();
-    }).catch(() => { /* denied — no cone, blue dot still works */ });
+    }).catch(() => { /* denied — no cone */ });
   } else if('DeviceOrientationEvent' in window) {
-    // Android / non-iOS — no permission needed
     startHeadingWatch();
   }
 }
@@ -2307,10 +2303,6 @@ function startHeadingWatch() {
   headingWatchActive = true;
   window.addEventListener('deviceorientationabsolute', onDeviceHeading, true);
   window.addEventListener('deviceorientation', onDeviceHeading);
-  // Update cone rotation when map bearing changes
-  if(mapInstance) {
-    mapInstance.on('rotate', updateConeRotation);
-  }
 }
 
 function onDeviceHeading(e) {
@@ -2323,111 +2315,74 @@ function onDeviceHeading(e) {
     heading = 360 - e.alpha;
   }
   if(heading === null || !lastUserLngLat) return;
-
   lastHeading = heading;
-
-  if(!headingConeMarker) createHeadingCone();
-  updateConeRotation();
-  updateConePosition();
+  updateHeadingConeGeoJSON();
 }
 
-function updateConeRotation() {
-  if(lastHeading === null || !headingConeMarker) return;
-  const mapBearing = mapInstance ? mapInstance.getBearing() : 0;
-  const rotation = lastHeading - mapBearing;
-  const inner = headingConeMarker.getElement()?.querySelector('.heading-cone-inner');
-  if(inner) inner.style.transform = 'rotate(' + rotation + 'deg)';
+// Bearing math: given a point, bearing (degrees), and distance (meters), return [lng, lat]
+function destPoint(lngLat, bearingDeg, distMeters) {
+  const R = 6371000;
+  const lat1 = lngLat[1] * Math.PI / 180;
+  const lng1 = lngLat[0] * Math.PI / 180;
+  const brng = bearingDeg * Math.PI / 180;
+  const d = distMeters / R;
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+  const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  return [lng2 * 180 / Math.PI, lat2 * 180 / Math.PI];
 }
 
-function updateConePosition() {
-  if(headingConeMarker && lastUserLngLat) {
-    headingConeMarker.setLngLat(lastUserLngLat);
+function buildConePolygon(center, headingDeg, lengthMeters, halfAngleDeg) {
+  // Build a triangle: tip at center, two base points at ±halfAngle at distance
+  const steps = 12; // arc segments for smooth curved base
+  const coords = [center];
+  for(let i = 0; i <= steps; i++) {
+    const a = headingDeg - halfAngleDeg + (2 * halfAngleDeg * i / steps);
+    coords.push(destPoint(center, a, lengthMeters));
   }
+  coords.push(center); // close the polygon
+  return coords;
 }
 
-function getConeSizePx() {
-  if(!mapInstance) return 120;
-  const z = mapInstance.getZoom();
-  if(z >= 18) return 200;
-  if(z >= 16) return 160;
-  if(z >= 14) return 120;
-  if(z >= 12) return 90;
-  return 60;
-}
+function updateHeadingConeGeoJSON() {
+  if(!mapInstance || lastHeading === null || !lastUserLngLat) return;
 
-function createHeadingCone() {
-  if(!mapInstance || !lastUserLngLat) return;
-  const size = getConeSizePx();
-  const half = size / 2;
-  // ~50 degree cone: endpoints at ±25 degrees from top center
-  const angL = (-90 - 25) * Math.PI / 180;
-  const angR = (-90 + 25) * Math.PI / 180;
-  const tipX = half, tipY = half;
-  const lx = half + Math.cos(angL) * half;
-  const ly = half + Math.sin(angL) * half;
-  const rx = half + Math.cos(angR) * half;
-  const ry = half + Math.sin(angR) * half;
+  const coneLength = 80; // meters
+  const halfAngle = 25;  // degrees (50 degree cone)
+  const coords = buildConePolygon(lastUserLngLat, lastHeading, coneLength, halfAngle);
 
-  const el = document.createElement('div');
-  el.className = 'heading-cone';
-  el.style.width = size + 'px';
-  el.style.height = size + 'px';
-  el.innerHTML = '<div class="heading-cone-inner" style="width:100%;height:100%">' +
-    '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" fill="none">' +
-    '<defs><radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">' +
-    '<stop offset="0%" stop-color="#4A90D9" stop-opacity="0.45"/>' +
-    '<stop offset="100%" stop-color="#4A90D9" stop-opacity="0.05"/>' +
-    '</radialGradient></defs>' +
-    '<path d="M ' + tipX + ' ' + tipY + ' L ' + lx.toFixed(1) + ' ' + ly.toFixed(1) +
-    ' A ' + half + ' ' + half + ' 0 0 1 ' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' Z"' +
-    ' fill="url(#coneGrad)" stroke="none"/>' +
-    '</svg></div>';
+  const geojson = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [coords] },
+      properties: {}
+    }]
+  };
 
-  headingConeMarker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-    .setLngLat(lastUserLngLat)
-    .addTo(mapInstance);
-
-  // Resize cone on zoom
-  mapInstance.on('zoom', onConeZoom);
-}
-
-function onConeZoom() {
-  if(!headingConeMarker) return;
-  const size = getConeSizePx();
-  const half = size / 2;
-  const angL = (-90 - 25) * Math.PI / 180;
-  const angR = (-90 + 25) * Math.PI / 180;
-  const lx = half + Math.cos(angL) * half;
-  const ly = half + Math.sin(angL) * half;
-  const rx = half + Math.cos(angR) * half;
-  const ry = half + Math.sin(angR) * half;
-
-  const el = headingConeMarker.getElement();
-  el.style.width = size + 'px';
-  el.style.height = size + 'px';
-  const inner = el.querySelector('.heading-cone-inner');
-  if(inner) {
-    inner.innerHTML =
-      '<svg width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '" fill="none">' +
-      '<defs><radialGradient id="coneGrad" cx="50%" cy="50%" r="50%">' +
-      '<stop offset="0%" stop-color="#4A90D9" stop-opacity="0.45"/>' +
-      '<stop offset="100%" stop-color="#4A90D9" stop-opacity="0.05"/>' +
-      '</radialGradient></defs>' +
-      '<path d="M ' + half + ' ' + half + ' L ' + lx.toFixed(1) + ' ' + ly.toFixed(1) +
-      ' A ' + half + ' ' + half + ' 0 0 1 ' + rx.toFixed(1) + ' ' + ry.toFixed(1) + ' Z"' +
-      ' fill="url(#coneGrad)" stroke="none"/>' +
-      '</svg>';
+  if(!headingConeLayerAdded) {
+    // Add source + layer on first call
+    mapInstance.addSource('heading-cone', { type: 'geojson', data: geojson });
+    mapInstance.addLayer({
+      id: 'heading-cone-layer',
+      type: 'fill',
+      source: 'heading-cone',
+      paint: {
+        'fill-color': '#E5B53B',
+        'fill-opacity': 0.35
+      }
+    });
+    headingConeLayerAdded = true;
+  } else {
+    const src = mapInstance.getSource('heading-cone');
+    if(src) src.setData(geojson);
   }
-  updateConeRotation();
 }
 
 function removeHeadingCone() {
-  if(headingConeMarker) {
-    headingConeMarker.remove();
-    headingConeMarker = null;
-  }
-  if(mapInstance) {
-    mapInstance.off('zoom', onConeZoom);
+  if(mapInstance && headingConeLayerAdded) {
+    if(mapInstance.getLayer('heading-cone-layer')) mapInstance.removeLayer('heading-cone-layer');
+    if(mapInstance.getSource('heading-cone')) mapInstance.removeSource('heading-cone');
+    headingConeLayerAdded = false;
   }
   lastHeading = null;
 }
