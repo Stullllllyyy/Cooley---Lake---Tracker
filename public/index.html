@@ -4017,8 +4017,8 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
       fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`;
   });
 
-  // Center dot
-  slices += `<circle cx="${cx}" cy="${cy}" r="3" fill="#444"/>`;
+  // Center dot — covers convergence point of all wedge tips
+  slices += `<circle cx="${cx}" cy="${cy}" r="4" fill="#1a1b1c"/>`;
 
   // Direction labels
   WINDS.forEach((w, i) => {
