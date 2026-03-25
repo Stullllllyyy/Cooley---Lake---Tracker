@@ -2411,8 +2411,6 @@ async function bootApp() {
     .limit(1)
     .single();
 
-  console.log('[DIAG] user.id:', user.id, 'membership:', JSON.stringify(membership), 'memErr:', JSON.stringify(memErr));
-
   if(memErr || !membership) {
     // User has an account but no property access
     document.getElementById('authGate').style.display = 'flex';
@@ -2433,7 +2431,6 @@ async function bootApp() {
   PROPERTY_ID = membership.property_id;
 
   document.getElementById('authGate').style.display = 'none';
-  loadBuckRegistry();
   loadSightings();
   updateMapWeather();
   startMap();
