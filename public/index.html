@@ -2336,11 +2336,13 @@ async function handleSignUp() {
 
   // Validate invite code against invites table
   btn.disabled = true; btn.textContent = 'Validating invite...';
+  console.log('[DIAG] invite code from input:', JSON.stringify(code));
   const { data: invite, error: invErr } = await sb.from('invites')
     .select('*')
     .eq('code', code)
     .is('claimed_by', null)
     .single();
+  console.log('[DIAG] invite query result - data:', JSON.stringify(invite), 'error:', JSON.stringify(invErr));
   if(invErr || !invite) {
     btn.disabled = false; btn.textContent = 'Create Account';
     errEl.textContent = 'Invalid or already used invite code.';
