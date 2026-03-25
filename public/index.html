@@ -2006,10 +2006,11 @@ async function saveIntelEdit() {
     existing.push({ text: newText, date: new Date().toISOString().slice(0, 10) });
     const serialized = serializeIntelEntries(existing);
 
-    await sb.from('property_context').upsert(
+    const { error } = await sb.from('property_context').upsert(
       { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
-      { onConflict: 'category' }
+      { onConflict: 'property_id,category' }
     );
+    if (error) throw error;
 
     // Update cache
     if (!propertyContextCache) propertyContextCache = {};
@@ -2168,10 +2169,11 @@ async function finishIntelWizard() {
       const existing = parseIntelEntries(propertyContextCache?.[key]);
       existing.push({ text: value, date: new Date().toISOString().slice(0, 10) });
       const serialized = serializeIntelEntries(existing);
-      await sb.from('property_context').upsert(
+      const { error } = await sb.from('property_context').upsert(
         { category: key, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
-        { onConflict: 'category' }
+        { onConflict: 'property_id,category' }
       );
+      if (error) throw error;
       if (!propertyContextCache) propertyContextCache = {};
       propertyContextCache[key] = serialized;
     }
