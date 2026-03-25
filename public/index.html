@@ -2695,6 +2695,7 @@ async function submitSighting() {
   obsLatLng = null;
 
   sightings.unshift(data);
+  if(buckId && data.date) updateBuckDates(buckId, data.date);
   // Reset form
   formImgFile = null; wxApplied = null;
   document.getElementById("fnotes").value = "";
@@ -2741,6 +2742,7 @@ async function saveEdit() {
   syncDot(false);
   if(error) { showToast('Save failed: ' + error.message); return; }
   Object.assign(s, updates);
+  if(editBuckId && s.date) updateBuckDates(editBuckId, s.date);
   document.getElementById("editModal").style.display = "none";
   renderLog(); renderDash(); refreshMapPins(); buildMapFilters(); buildMapLegend();
 }
@@ -5897,7 +5899,8 @@ async function bulkSaveNameValue(name) {
   const { error } = await sb.from('sightings').update({ buck_name: name, buck_id: bulkBuckId }).eq('id', s.id);
   if(error) { showToast('Save failed: ' + error.message); return; }
   const local = sightings.find(x => x.id === s.id);
-  if(local) local.buck_name = name;
+  if(local) { local.buck_name = name; local.buck_id = bulkBuckId; }
+  if(bulkBuckId && local && local.date) updateBuckDates(bulkBuckId, local.date);
   showToast(`Saved: ${name}`);
   refreshBucknameList();
   buildMapFilters();
@@ -6135,6 +6138,7 @@ async function applyWhoEdit() {
   if(error) { showToast('Save failed: ' + error.message); return; }
   const s = sightings.find(x => x.id === sightingId);
   if(s) { s.buck_name = name; s.buck_id = whoEditBuckId; }
+  if(whoEditBuckId && s && s.date) updateBuckDates(whoEditBuckId, s.date);
   modal.style.display = 'none';
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
   showToast(`ID updated: ${name}`);
@@ -6158,6 +6162,7 @@ async function applyWhoMatch() {
   // Update local
   const s = sightings.find(x => x.id === sightingId);
   if(s) { s.buck_name = whoMatchResult.match; s.buck_id = whoMatchBuckId; }
+  if(whoMatchBuckId && s && s.date) updateBuckDates(whoMatchBuckId, s.date);
   modal.style.display = "none";
   renderLog(); renderDash(); buildMapFilters(); buildMapLegend();
   refreshBucknameList(); refreshMapPins();
@@ -6877,6 +6882,7 @@ async function submitObsEdit() {
   if(error) { showToast('Save failed'); return; }
   const idx = sightings.findIndex(x => x.id === activeObsSighting.id);
   if(idx >= 0) Object.assign(sightings[idx], updates);
+  if(obsEditBuckId && activeObsSighting.date) updateBuckDates(obsEditBuckId, activeObsSighting.date);
   activeObsSighting = null;
   document.getElementById('obsEditModal').classList.remove('on');
   addObsMarkers();
@@ -7265,6 +7271,7 @@ async function submitObsSighting() {
   tapToPlaceLngLat = null; obsFormLngLat = null; obsFormImgFile = null;
   document.getElementById('ttpObsModal').classList.remove('on');
   sightings.unshift(data);
+  if(obsBuckId && data.date) updateBuckDates(obsBuckId, data.date);
   btn.textContent = 'Log Field Observation'; obsCheckSub();
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Field observation logged!');
@@ -7652,6 +7659,7 @@ async function submitTrailCamSighting() {
     } catch(e) { syncDot(false); console.error('Tcam photo upload:', e); }
   }
   sightings.unshift(data);
+  if(tcamBuckId && data.date) updateBuckDates(tcamBuckId, data.date);
   closeSheet('trail-cam');
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Camera sighting logged!');
