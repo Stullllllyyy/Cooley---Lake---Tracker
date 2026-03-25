@@ -4833,22 +4833,28 @@ function renderActivityChart(filteredSightings) {
     intelActivityChartInstance = null;
   }
 
-  const buckets = {
-    'Dawn (4-7a)':  [4, 7],
-    'Morning (7-10a)': [7, 10],
-    'Midday (10a-2p)': [10, 14],
-    'Afternoon (2-5p)': [14, 17],
-    'Evening (5-8p)': [17, 20],
-    'Night (8p-4a)': [20, 4]
-  };
-  const counts = {};
-  Object.keys(buckets).forEach(k => counts[k] = 0);
+  // Hourly buckets 0-23
+  const hourly = new Array(24).fill(0);
   filteredSightings.forEach(s => {
     if(!s.time) return;
     const h = parseInt(s.time);
-    Object.entries(buckets).forEach(([label, [start, end]]) => {
-      if(start < end ? (h >= start && h < end) : (h >= start || h < end)) counts[label]++;
-    });
+    if(h >= 0 && h < 24) hourly[h]++;
+  });
+
+  // 12hr labels
+  const labels = hourly.map((_, h) => {
+    if(h === 0) return '12a';
+    if(h < 12) return h + 'a';
+    if(h === 12) return '12p';
+    return (h - 12) + 'p';
+  });
+
+  // Color bars by time period
+  const barColors = hourly.map((_, h) => {
+    if(h >= 5 && h < 10) return '#7a9275';   // dawn/morning
+    if(h >= 10 && h < 16) return '#e87a3a';  // midday
+    if(h >= 16 && h < 20) return '#c8a951';  // dusk/evening
+    return '#4A4D4E';                          // night
   });
 
   // Insert canvas if not already there
@@ -4861,12 +4867,12 @@ function renderActivityChart(filteredSightings) {
   intelActivityChartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: Object.keys(counts).map(k => k.replace(/\(.+\)/, '').trim()),
+      labels: labels,
       datasets: [{
-        data: Object.values(counts),
-        backgroundColor: '#8C7355',
-        borderRadius: 4,
-        maxBarThickness: 28
+        data: hourly,
+        backgroundColor: barColors,
+        borderRadius: 2,
+        maxBarThickness: 14
       }]
     },
     options: {
@@ -4881,14 +4887,24 @@ function renderActivityChart(filteredSightings) {
           borderColor: '#2a2c2e',
           borderWidth: 1,
           callbacks: {
-            title: (items) => Object.keys(counts)[items[0].dataIndex],
+            title: (items) => {
+              const h = items[0].dataIndex;
+              const suffix = h < 12 ? 'AM' : 'PM';
+              const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+              return hr + ':00 ' + suffix;
+            },
             label: (item) => item.raw + ' sighting' + (item.raw !== 1 ? 's' : '')
           }
         }
       },
       scales: {
         x: {
-          ticks: { color: '#8a9199', font: { family: "'Roboto',sans-serif", size: 9 } },
+          ticks: {
+            color: '#8a9199',
+            font: { family: "'Roboto',sans-serif", size: 8 },
+            maxRotation: 0,
+            callback: function(val, i) { return i % 3 === 0 ? labels[i] : ''; }
+          },
           grid: { display: false },
           border: { display: false }
         },
