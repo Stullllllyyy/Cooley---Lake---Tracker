@@ -2463,6 +2463,8 @@ const simpleDir = windDir => {
   return simple.find(d => windDir.startsWith(d)) || "";
 };
 function getNamedBucks() {
+  if(buckRegistry.length > 0) return buckRegistry.map(b => b.name);
+  // Fallback: scan sightings if registry not yet loaded
   return [...new Set(sightings.filter(s=>s.buck_name&&s.buck_name.trim()).map(s=>s.buck_name.trim()))];
 }
 function buckColor(name) {
