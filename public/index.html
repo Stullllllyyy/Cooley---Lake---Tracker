@@ -2664,12 +2664,9 @@ async function submitSighting() {
     };
   }
 
-  console.log('[DIAG] buckNameVal:', buckNameVal, 'buckId:', buckId, 'buckRegistry:', JSON.stringify(buckRegistry.map(b=>({id:b.id,name:b.name}))));
-  console.log('[DIAG] newSighting:', JSON.stringify(newSighting, null, 2));
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
   syncDot(false);
-  console.log('[DIAG] insert result - data:', JSON.stringify(data), 'error:', error);
   if(error) {
     console.error('Insert error:', error);
     btn.textContent = "Error: " + error.message.slice(0,35);
@@ -7250,12 +7247,9 @@ async function submitObsSighting() {
     image_url: null,
     property_id: PROPERTY_ID,
   };
-  console.log('[DIAG] obsBuckName:', obsBuckName, 'obsBuckId:', obsBuckId, 'buckRegistry:', JSON.stringify(buckRegistry.map(b=>({id:b.id,name:b.name}))));
-  console.log('[DIAG] newSighting:', JSON.stringify(newSighting, null, 2));
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
   syncDot(false);
-  console.log('[DIAG] insert result - data:', JSON.stringify(data), 'error:', error);
   if(error) {
     console.error('submitObsSighting error:', error);
     btn.textContent = 'Error: ' + error.message.slice(0,30);
@@ -7646,12 +7640,9 @@ async function submitTrailCamSighting() {
     image_url: null,
     property_id: PROPERTY_ID,
   };
-  console.log('[DIAG] tcamBuckNameVal:', tcamBuckNameVal, 'tcamBuckId:', tcamBuckId, 'buckRegistry:', JSON.stringify(buckRegistry.map(b=>({id:b.id,name:b.name}))));
-  console.log('[DIAG] newSighting:', JSON.stringify(newSighting, null, 2));
   syncDot(true);
   const {data, error} = await sb.from('sightings').insert(newSighting).select().single();
   syncDot(false);
-  console.log('[DIAG] insert result - data:', JSON.stringify(data), 'error:', error);
   if(error) {
     console.error('submitTrailCamSighting error:', error);
     btn.textContent = 'Error: ' + error.message.slice(0,30);
