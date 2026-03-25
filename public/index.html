@@ -2300,7 +2300,6 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
 
 // --- Auth gate ---
-const AUTH_INVITE_CODE = 'COOLEY2025';
 let appBooted = false;
 
 function showAuthView(view) {
@@ -2325,19 +2324,68 @@ async function handleSignIn() {
 }
 
 async function handleSignUp() {
-  const code = document.getElementById('authInviteCode').value.trim();
+  const code = document.getElementById('authInviteCode').value.trim().toUpperCase();
   const email = document.getElementById('authSignUpEmail').value.trim();
   const pass = document.getElementById('authSignUpPass').value;
   const errEl = document.getElementById('authSignUpError');
   const btn = document.getElementById('authSignUpBtn');
   errEl.textContent = '';
-  if(code !== AUTH_INVITE_CODE) { errEl.textContent = 'Invalid invite code.'; return; }
+  if(!code) { errEl.textContent = 'Enter your invite code.'; return; }
   if(!email || !pass) { errEl.textContent = 'Enter email and password.'; return; }
   if(pass.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
-  btn.disabled = true; btn.textContent = 'Creating account...';
-  const { error } = await sb.auth.signUp({ email, password: pass });
+
+  // Validate invite code against invites table
+  btn.disabled = true; btn.textContent = 'Validating invite...';
+  const { data: invite, error: invErr } = await sb.from('invites')
+    .select('*')
+    .eq('code', code)
+    .is('claimed_by', null)
+    .is('claimed_at', null)
+    .single();
+  if(invErr || !invite) {
+    btn.disabled = false; btn.textContent = 'Create Account';
+    errEl.textContent = 'Invalid or already used invite code.';
+    return;
+  }
+
+  // Pre-claim invite while still anon (RLS allows anon UPDATE)
+  // Use email as a temporary claim marker so the code can't be reused during signup
+  const { error: preClaimErr } = await sb.from('invites').update({
+    claimed_at: new Date().toISOString()
+  }).eq('id', invite.id);
+  if(preClaimErr) {
+    btn.disabled = false; btn.textContent = 'Create Account';
+    errEl.textContent = 'Failed to reserve invite. Try again.';
+    return;
+  }
+
+  // Create account
+  btn.textContent = 'Creating account...';
+  const { data: signUpData, error: signUpErr } = await sb.auth.signUp({ email, password: pass });
+  if(signUpErr) {
+    // Roll back pre-claim
+    await sb.from('invites').update({ claimed_at: null }).eq('id', invite.id);
+    btn.disabled = false; btn.textContent = 'Create Account';
+    errEl.textContent = signUpErr.message;
+    return;
+  }
+
+  // Finalize claim with user ID and add to property_members
+  const newUserId = signUpData.user?.id;
+  if(newUserId) {
+    // claimed_by update may fail if auth role switched — that's OK, claimed_at is already set
+    await sb.from('invites').update({ claimed_by: newUserId }).eq('id', invite.id);
+
+    await sb.from('property_members').insert({
+      property_id: invite.property_id,
+      user_id: newUserId,
+      role: invite.role,
+      invited_at: invite.created_at,
+      accepted_at: new Date().toISOString()
+    });
+  }
+
   btn.disabled = false; btn.textContent = 'Create Account';
-  if(error) { errEl.textContent = error.message; return; }
   errEl.textContent = '';
   showAuthView('signin');
   document.getElementById('authSignInError').innerHTML = '<span style="color:var(--bronze)">Check your email to confirm your account, then sign in.</span>';
@@ -2361,9 +2409,39 @@ async function handleLogout() {
   await sb.auth.signOut();
 }
 
-function bootApp() {
+async function bootApp() {
   if(appBooted) return;
   appBooted = true;
+
+  // Check property membership for this user
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) { showAuthGate(); return; }
+
+  const { data: membership, error: memErr } = await sb.from('property_members')
+    .select('property_id, role')
+    .eq('user_id', user.id)
+    .limit(1)
+    .single();
+
+  if(memErr || !membership) {
+    // User has an account but no property access
+    document.getElementById('authGate').style.display = 'flex';
+    document.getElementById('authSignIn').style.display = 'none';
+    document.getElementById('authSignUp').style.display = 'none';
+    document.getElementById('authSignInError').textContent = '';
+    const card = document.querySelector('.auth-card');
+    if(!document.getElementById('authNoAccess')) {
+      const msg = document.createElement('div');
+      msg.id = 'authNoAccess';
+      msg.innerHTML = '<div class="auth-title">No Property Access</div><div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Your account is confirmed but you don\'t have access to any property yet. Contact the property owner for an invite.</div><div class="auth-link" onclick="handleLogout()">Sign out</div>';
+      card.appendChild(msg);
+    }
+    return;
+  }
+
+  // Set PROPERTY_ID from membership
+  PROPERTY_ID = membership.property_id;
+
   document.getElementById('authGate').style.display = 'none';
   loadBuckRegistry();
   loadSightings();
@@ -2374,6 +2452,9 @@ function bootApp() {
 function showAuthGate() {
   appBooted = false;
   document.getElementById('authGate').style.display = 'flex';
+  // Remove no-access message if present
+  const noAccess = document.getElementById('authNoAccess');
+  if(noAccess) noAccess.remove();
   showAuthView('signin');
   // Clear sensitive form fields
   document.getElementById('authEmail').value = '';
@@ -2396,7 +2477,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
 });
 
 const CLAT = 45.0200, CLNG = -88.2756;
-const PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1
+let PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1 (default, overwritten by membership check)
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
 const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
