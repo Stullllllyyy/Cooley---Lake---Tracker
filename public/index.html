@@ -4612,7 +4612,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     slices += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#2a2a2a" stroke-width="0.5"/>`;
   });
 
-  // Draw filled wedges
+  // Draw filled wedges — exact half-step angles, zero overdraw
   WINDS.forEach((w, i) => {
     const cnt = windCounts[w] || 0;
     if(cnt === 0) return;
@@ -4621,22 +4621,18 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const isTop = topWinds[0] === w;
     const isHigh = topWinds.includes(w);
 
-    // Proportional overdraw: large segments need less, small segments need more
-    const total = Object.values(windCounts).reduce((a,b) => a+b, 0) || 1;
-    const segPct = cnt / total;
-    const overdraw = segPct > 0.5 ? 0.01 : segPct > 0.1 ? 0.03 : 0.05;
-    const angle1 = startAngle + i * angleStep - angleStep * 0.5 - overdraw;
-    const angle2 = startAngle + i * angleStep + angleStep * 0.5 + overdraw;
+    // Exact midpoints between adjacent directions — no overdraw, no gaps
+    const angle1 = startAngle + i * angleStep - angleStep / 2;
+    const angle2 = startAngle + i * angleStep + angleStep / 2;
     const x1 = cx + Math.cos(angle1) * r;
     const y1 = cy + Math.sin(angle1) * r;
     const x2 = cx + Math.cos(angle2) * r;
     const y2 = cy + Math.sin(angle2) * r;
 
-    // Gradient color: top = gold, high = muted, normal = dark (full opacity)
     const fill = isTop ? '#c8a951' : isHigh ? '#6e6e6e' : '#333333';
 
     slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
-      fill="${fill}" stroke="${fill}" stroke-width="2" stroke-linejoin="round"/>`;
+      fill="${fill}" stroke="${fill}" stroke-width="1" stroke-linejoin="round"/>`;
   });
 
   // Center dot — covers convergence point of all wedge tips
@@ -7250,9 +7246,11 @@ function confirmTapToPlace() {
 function cancelTapToPlace() {
   tapToPlaceActive = false;
   tapToPlaceLngLat = null;
+  ttpAfterConfirm = null;
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
   document.getElementById('ttpLocModal').classList.remove('on');
   document.getElementById('ttpTypeModal').classList.remove('on');
+  if(ttpOnCancel) { const cb = ttpOnCancel; ttpOnCancel = null; cb(); }
 }
 
 function showEventTypeModal() {
@@ -7639,21 +7637,34 @@ function cancelFeatEdit() {
   document.getElementById('featEditModal').classList.remove('on');
 }
 
+let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
+
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
   const m = activeFeatureMarker;
   const oldLat = m.lat;
   const oldLng = m.lng;
+  console.log('Move initiated for marker ID:', m.id);
   closePopup();
+
+  // Hide all property marker pins so only the sulfur teardrop is visible
+  propertyMarkerInstances.forEach(inst => {
+    const el = inst.getElement();
+    if(el) el.style.display = 'none';
+  });
+
   ttpAfterConfirm = () => {
     const newLoc = tapToPlaceLngLat;
     cancelTapToPlace();
-    // Build location_history entry with old coordinates
     const historyEntry = { lat: oldLat, lng: oldLng, moved_at: new Date().toISOString() };
     const oldHistory = m.location_history || [];
     const newHistory = [...oldHistory, historyEntry];
     sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng, location_history: newHistory }).eq('id', m.id).then(({error}) => {
-      if(error) { showToast('Move failed — try again'); return; }
+      if(error) {
+        showToast('Move failed — try again');
+        renderPropertyMarkers();
+        return;
+      }
       const idx = propertyMarkers.findIndex(x => x.id === m.id);
       if(idx >= 0) {
         propertyMarkers[idx].lat = newLoc.lat;
@@ -7661,11 +7672,15 @@ function moveFeatMarker() {
         propertyMarkers[idx].location_history = newHistory;
       }
       renderPropertyMarkers();
-      showToast((m.name || m.type) + ' location updated');
+      showToast((m.name || m.type) + ' moved');
     });
     activeFeatureMarker = null;
   };
-  // Place pin at existing marker location, not map center
+
+  // On cancel, restore hidden pins
+  ttpOnCancel = () => { renderPropertyMarkers(); };
+
+  // Place sulfur teardrop at the pin's current location
   enterTapToPlaceModeAt(m.lng, m.lat);
 }
 
