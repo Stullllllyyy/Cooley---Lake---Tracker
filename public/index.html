@@ -1611,7 +1611,7 @@ function updateMapWeather() {
   const now = new Date();
   const date = now.toISOString().split('T')[0];
   const hour = now.getHours();
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
   fetch(url).then(r=>r.json()).then(j=>{
     if(!j.hourly) return;
     const temp = Math.round(j.hourly.temperature_2m[hour]);
@@ -2883,25 +2883,32 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
-  // Hide onboarding overlay to show the map, init map if needed
+  // Hide onboarding overlay to show the map
   document.getElementById('onboardOverlay').style.opacity = '0';
   document.getElementById('onboardOverlay').style.pointerEvents = 'none';
 
   // Ensure map is initialized
   if(!mapInstance) {
     const container = document.getElementById('map');
-    if(container && container.offsetWidth > 0) {
-      mapInstance = new mapboxgl.Map({
-        container: 'map',
-        style: 'mapbox://styles/mapbox/satellite-streets-v12',
-        center: [-98.5, 39.5],
-        zoom: 4,
-        fadeDuration: 0
-      });
-      mapInstance.on('load', () => { placeOnboardPin(); });
-    }
+    // Force container to be visible and sized before map init
+    container.style.position = 'fixed';
+    container.style.inset = '0';
+    container.style.zIndex = '1';
+
+    mapInstance = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/satellite-streets-v12',
+      center: [-98.5, 39.5],
+      zoom: 4,
+      fadeDuration: 0
+    });
+    mapInstance.on('load', () => {
+      mapInstance.resize();
+      placeOnboardPin();
+    });
   } else {
-    placeOnboardPin();
+    mapInstance.resize();
+    setTimeout(() => placeOnboardPin(), 100);
   }
 }
 
@@ -2911,16 +2918,24 @@ function placeOnboardPin() {
 
   const center = mapInstance.getCenter();
 
-  // Create sulfur draggable pin (same pattern as tap-to-place)
-  const pinEl = document.createElement('div');
-  pinEl.innerHTML = '<svg width="36" height="44" viewBox="0 0 36 44"><path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/></svg>';
-  pinEl.style.cursor = 'grab';
+  // Pulsating sulfur teardrop — exact same architecture as tap-to-place
+  const el = document.createElement('div');
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
+  el.innerHTML =
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite">' +
+    '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#f0c75a" stroke-width="1.5"/>' +
+    '</svg>' +
+    '<div style="position:relative;z-index:1;padding-bottom:10px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '</div></div>';
 
-  onboardPinMarker = new mapboxgl.Marker({ element: pinEl, draggable: true, anchor: 'bottom' })
+  onboardPinMarker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'bottom' })
     .setLngLat(center)
     .addTo(mapInstance);
 
-  // Show confirm card
+  // Show confirm card with updated copy
   showOnboardPinConfirm(center.lat, center.lng);
 
   onboardPinMarker.on('drag', () => {
@@ -2934,16 +2949,18 @@ function placeOnboardPin() {
 }
 
 function showOnboardPinConfirm(lat, lng) {
-  // Floating confirm card at bottom of screen
   let card = document.getElementById('onboardPinCard');
   if(!card) {
     card = document.createElement('div');
     card.id = 'onboardPinCard';
-    card.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:16px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center;width:min(320px,calc(100vw - 32px))';
+    card.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:18px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center;width:min(340px,calc(100vw - 32px))';
     document.body.appendChild(card);
   }
-  card.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Drag pin to your property center</div>' +
-    '<div id="onboardPinCoords" style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:12px">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</div>' +
+  card.innerHTML =
+    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Drop Your Property Pin</div>' +
+    '<div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px">Place this pin at the heart of your hunting area \u2014 the center of your property, your main stand, or wherever you spend the most time. This anchors your map and helps Huginn build your first intel.</div>' +
+    '<div style="font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:10px">As you log sightings and add cameras and stands, your data will get more precise automatically.</div>' +
+    '<div id="onboardPinCoords" style="font-size:11px;color:var(--gold);font-family:monospace;margin-bottom:12px">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</div>' +
     '<div style="display:flex;gap:10px">' +
     '<button onclick="cancelOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancel</button>' +
     '<button onclick="confirmOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--gold);background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Confirm</button>' +
@@ -3019,8 +3036,12 @@ async function onboardCreateProperty() {
 
     if(memErr) throw memErr;
 
-    // Set the global PROPERTY_ID and boot the app
+    // Set globals and boot the app
     PROPERTY_ID = prop.id;
+    CLAT = lat;
+    CLNG = lng;
+    PROPERTY_CENTER[0] = lng;
+    PROPERTY_CENTER[1] = lat;
     document.getElementById('onboardOverlay').classList.remove('on');
     document.getElementById('authGate').style.display = 'none';
     loadBuckRegistry();
@@ -3048,7 +3069,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
   // If no session, authGate is already visible (default display:flex)
 });
 
-const CLAT = 45.0200, CLNG = -88.2756;
+let CLAT = 45.0200, CLNG = -88.2756;
 let PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1 (default, overwritten by membership check)
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
@@ -3558,7 +3579,7 @@ function applyWx() {
 // --- map (Mapbox) -
 // Mapbox token set after DOM ready (see init below)
 
-const PROPERTY_CENTER = [-88.2756, 45.0200];
+let PROPERTY_CENTER = [-88.2756, 45.0200];
 const PROPERTY_BOUNDS = [[-88.295, 45.010], [-88.258, 45.035]];
 
 // Camera locations - stored in Supabase, editable via drag
@@ -4885,7 +4906,7 @@ async function loadHuntForecast() {
   const el = document.getElementById('forecastContent');
   if(!el) return;
   try {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756' +
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + CLAT + '&longitude=' + CLNG +
       '&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,winddirection_10m_dominant,precipitation_sum,weathercode' +
       '&hourly=surface_pressure' +
       '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
@@ -8950,9 +8971,26 @@ function renderDash() {
     <div class="sbox"><div class="snum">${matureCount}</div><div class="slbl">Mature</div></div>
   </div>`;
 
+  const emptyMsg = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 8px;line-height:1.6">Log your first sighting to unlock this insight</div>';
+
   if(!totalCount) {
-    html += `<div class="card"><p style="color:#4A4D4E;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    // Show full Intel structure with empty state placeholders
+    html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Analytics</div>`;
+    html += `<div class="intel-4grid" style="margin-bottom:32px">
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg> Activity by Time</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Recent Camera Activity</div><div class="intel-box-body">${emptyMsg}</div></div>
+    </div>`;
+
+    // Still show forecast for new users
+    html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">7-Day Forecast</div>`;
+    html += `<div class="prop-stat" style="margin-bottom:32px">
+      <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+    </div>`;
+
     document.getElementById("intelContent").innerHTML = html;
+    loadHuntForecast();
     return;
   }
 
