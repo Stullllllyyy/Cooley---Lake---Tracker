@@ -2890,17 +2890,19 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
-  console.log('drop pin clicked, mapInstance:', !!mapInstance);
   if(!mapInstance) { showToast('Map not ready — try again in a moment'); return; }
   onboardingMode = true;
-  document.getElementById('onboardOverlay').style.opacity = '0';
-  document.getElementById('onboardOverlay').style.pointerEvents = 'none';
-  mapInstance.resize();
-  if(mapInstance.loaded()) {
-    placeOnboardPin();
-  } else {
-    mapInstance.once('idle', () => placeOnboardPin());
-  }
+
+  // Hide onboarding overlay
+  document.getElementById('onboardOverlay').style.display = 'none';
+
+  // Wait for next animation frame + 100ms so container has real dimensions before resize
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      mapInstance.resize();
+      placeOnboardPin();
+    }, 100);
+  });
 }
 
 function placeOnboardPin() {
@@ -2974,9 +2976,7 @@ function confirmOnboardPin() {
   const card = document.getElementById('onboardPinCard');
   if(card) card.remove();
 
-  const overlay = document.getElementById('onboardOverlay');
-  overlay.style.opacity = '';
-  overlay.style.pointerEvents = '';
+  document.getElementById('onboardOverlay').style.display = '';
 
   // Update pin button text
   document.getElementById('onboardPinBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg> Pin placed';
@@ -2988,9 +2988,7 @@ function cancelOnboardPin() {
   if(card) card.remove();
   onboardingMode = false;
 
-  const overlay = document.getElementById('onboardOverlay');
-  overlay.style.opacity = '';
-  overlay.style.pointerEvents = '';
+  document.getElementById('onboardOverlay').style.display = '';
 }
 
 async function onboardCreateProperty() {
