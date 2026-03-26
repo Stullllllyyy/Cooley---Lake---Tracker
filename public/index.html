@@ -7638,50 +7638,131 @@ function cancelFeatEdit() {
 }
 
 let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
+let ttpMoveMarkerId = null; // ID of marker being moved
+let ttpMoveMarkerInst = null; // Mapbox marker instance being moved
+let ttpMoveOldLat = null;
+let ttpMoveOldLng = null;
 
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
   const m = activeFeatureMarker;
-  const oldLat = m.lat;
-  const oldLng = m.lng;
-  console.log('Move initiated for marker ID:', m.id);
+  ttpMoveMarkerId = m.id;
+  ttpMoveOldLat = m.lat;
+  ttpMoveOldLng = m.lng;
+  console.log('Move initiated for marker ID:', ttpMoveMarkerId);
   closePopup();
 
-  // Hide all property marker pins so only the sulfur teardrop is visible
-  propertyMarkerInstances.forEach(inst => {
-    const el = inst.getElement();
-    if(el) el.style.display = 'none';
-  });
+  // Find the rendered Mapbox marker instance for this pin
+  const markerIdx = propertyMarkers.findIndex(x => x.id === m.id);
+  // propertyMarkerInstances is parallel to the rendered subset — find by matching lngLat
+  let targetInst = null;
+  for(const inst of propertyMarkerInstances) {
+    const ll = inst.getLngLat();
+    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
+      targetInst = inst;
+      break;
+    }
+  }
 
+  if(!targetInst) {
+    showToast('Could not find pin on map');
+    return;
+  }
+
+  ttpMoveMarkerInst = targetInst;
+
+  // Make the existing pin draggable and add pulse animation
+  targetInst.setDraggable(true);
+  const pinEl = targetInst.getElement();
+  if(pinEl) {
+    pinEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
+    pinEl.style.cursor = 'grab';
+    pinEl.style.zIndex = '10';
+  }
+
+  // Track drag position
+  targetInst.on('drag', onMoveDrag);
+  targetInst.on('dragend', onMoveDrag);
+
+  // Show the location confirm card with current coordinates
+  tapToPlaceActive = true;
+  tapToPlaceLngLat = { lat: m.lat, lng: m.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = m.lat.toFixed(5) + ', ' + m.lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+
+  // Set confirm callback
   ttpAfterConfirm = () => {
-    const newLoc = tapToPlaceLngLat;
-    cancelTapToPlace();
-    const historyEntry = { lat: oldLat, lng: oldLng, moved_at: new Date().toISOString() };
+    const ll = targetInst.getLngLat();
+    const newLat = ll.lat;
+    const newLng = ll.lng;
+
+    // Stop dragging, remove pulse
+    targetInst.setDraggable(false);
+    targetInst.off('drag', onMoveDrag);
+    targetInst.off('dragend', onMoveDrag);
+    if(pinEl) { pinEl.style.animation = ''; pinEl.style.cursor = ''; pinEl.style.zIndex = ''; }
+
+    // Clean up TTP state without firing ttpOnCancel
+    tapToPlaceActive = false;
+    tapToPlaceLngLat = null;
+    ttpAfterConfirm = null;
+    document.getElementById('ttpLocModal').classList.remove('on');
+
+    console.log('Move save attempt:', { ttpMoveMarkerId, newLat, newLng, hasId: !!ttpMoveMarkerId });
+
+    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
     const oldHistory = m.location_history || [];
     const newHistory = [...oldHistory, historyEntry];
-    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng, location_history: newHistory }).eq('id', m.id).then(({error}) => {
+
+    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).then(({error}) => {
       if(error) {
+        console.error('Move save error:', error);
         showToast('Move failed — try again');
+        // Restore original position
+        targetInst.setLngLat([ttpMoveOldLng, ttpMoveOldLat]);
+      } else {
+        const idx = propertyMarkers.findIndex(x => x.id === ttpMoveMarkerId);
+        if(idx >= 0) {
+          propertyMarkers[idx].lat = newLat;
+          propertyMarkers[idx].lng = newLng;
+          propertyMarkers[idx].location_history = newHistory;
+        }
         renderPropertyMarkers();
-        return;
+        showToast((m.name || m.type) + ' moved');
       }
-      const idx = propertyMarkers.findIndex(x => x.id === m.id);
-      if(idx >= 0) {
-        propertyMarkers[idx].lat = newLoc.lat;
-        propertyMarkers[idx].lng = newLoc.lng;
-        propertyMarkers[idx].location_history = newHistory;
-      }
-      renderPropertyMarkers();
-      showToast((m.name || m.type) + ' moved');
+      ttpMoveMarkerId = null;
+      ttpMoveMarkerInst = null;
+      ttpMoveOldLat = null;
+      ttpMoveOldLng = null;
+      activeFeatureMarker = null;
     });
-    activeFeatureMarker = null;
   };
 
-  // On cancel, restore hidden pins
-  ttpOnCancel = () => { renderPropertyMarkers(); };
+  // Set cancel callback
+  ttpOnCancel = () => {
+    // Restore original position, stop dragging, remove pulse
+    if(ttpMoveMarkerInst) {
+      ttpMoveMarkerInst.setLngLat([ttpMoveOldLng, ttpMoveOldLat]);
+      ttpMoveMarkerInst.setDraggable(false);
+      ttpMoveMarkerInst.off('drag', onMoveDrag);
+      ttpMoveMarkerInst.off('dragend', onMoveDrag);
+      const el = ttpMoveMarkerInst.getElement();
+      if(el) { el.style.animation = ''; el.style.cursor = ''; el.style.zIndex = ''; }
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+}
 
-  // Place sulfur teardrop at the pin's current location
-  enterTapToPlaceModeAt(m.lng, m.lat);
+function onMoveDrag() {
+  if(!ttpMoveMarkerInst) return;
+  const pos = ttpMoveMarkerInst.getLngLat();
+  tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
 }
 
 function deleteFeatMarker(btnEl) {
