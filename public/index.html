@@ -1671,6 +1671,7 @@ let wxPopupOpen = false;
 let wxPopupSource = 'gps'; // 'gps' or 'map'
 let wxMapMoved = false; // track if map panned since last Map Center fetch
 let wxDismissHandler = null;
+let lastKnownGPS = null; // persists across tracking state changes — never cleared
 
 function toggleWxPopup() {
   const card = document.getElementById('wxPopupCard');
@@ -1679,7 +1680,7 @@ function toggleWxPopup() {
   card.classList.remove('closing');
   card.style.display = 'block';
   // Default to GPS if available, Map Center otherwise
-  if(lastUserLngLat) { wxPopupSource = 'gps'; }
+  if(lastKnownGPS) { wxPopupSource = 'gps'; }
   else { wxPopupSource = 'map'; }
   updateWxToggleUI();
   loadWxPopupData();
@@ -1705,8 +1706,14 @@ function closeWxPopup() {
 }
 
 function setWxSource(src) {
-  if(src === 'gps' && !lastUserLngLat) {
-    showToast('GPS not available — enable location');
+  if(src === 'gps' && !lastKnownGPS) {
+    // Try to trigger a fresh GPS request
+    if(geolocateCtrl) {
+      try { geolocateCtrl.trigger(); } catch(_) {}
+      showToast('Requesting GPS position...');
+    } else {
+      showToast('GPS not available — enable location');
+    }
     return;
   }
   wxPopupSource = src;
@@ -1728,8 +1735,8 @@ function refreshWxForMapCenter() {
 }
 
 function getWxCoords() {
-  if(wxPopupSource === 'gps' && lastUserLngLat) {
-    return { lat: lastUserLngLat[1], lng: lastUserLngLat[0] };
+  if(wxPopupSource === 'gps' && lastKnownGPS) {
+    return { lat: lastKnownGPS.lat, lng: lastKnownGPS.lng };
   }
   if(mapInstance) {
     const c = mapInstance.getCenter();
@@ -2588,6 +2595,7 @@ function initGeolocate() {
   geolocateCtrl.on('error', (err) => { dbg('geolocate error: ' + (err?.message || JSON.stringify(err))); });
   geolocateCtrl.on('geolocate', (e) => {
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
+    lastKnownGPS = { lat: e.coords.latitude, lng: e.coords.longitude };
     dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
     if(compassConeActive && lastHeading !== null) updateHeadingConeGeoJSON();
   });
