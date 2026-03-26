@@ -128,9 +128,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
 .sheet{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h) + env(safe-area-inset-bottom,0px)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
 .sheet.open{transform:translateY(0) !important}
-#sheet-chat,#sheet-intel,#sheet-sightings{max-height:calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92dvh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+#sheet-chat,#sheet-intel,#sheet-sightings,#sheet-trail-cam{max-height:calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92dvh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
 @supports not (height: 100dvh) {
-  #sheet-chat,#sheet-intel,#sheet-sightings{max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+  #sheet-chat,#sheet-intel,#sheet-sightings,#sheet-trail-cam{max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
 }
 
 /* Hunt AI Chat */
@@ -4377,7 +4377,7 @@ async function showPin(camName) {
       Delete
     </button>`;
   // Remove any extra rows left from a previous popup type
-  ['camColorRow','camFacingRow','camSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   // Show popup immediately
   popup.classList.add('show');
   // Color row — synchronous (camLocations already loaded), visible right away
@@ -5426,65 +5426,8 @@ function renderWindRose(filteredSightings) {
     if(s.wind_dir && counts[s.wind_dir] !== undefined) counts[s.wind_dir]++;
   });
   const maxCount = Math.max(...Object.values(counts), 1);
-  const topDir = DIRS.reduce((a, b) => counts[a] >= counts[b] ? a : b, DIRS[0]);
-
-  const size = 100, cx = size, cy = size, maxR = size * 0.75;
-  const step = (Math.PI * 2) / 8;
-  const start = -Math.PI / 2;
-
-  let rings = '', wedges = '', labels = '';
-
-  // Guide rings
-  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
-    rings += `<circle cx="${cx}" cy="${cy}" r="${maxR * pct}" fill="none" stroke="#2a2d2e" stroke-width="0.5"/>`;
-  });
-
-  // Axis lines
-  DIRS.forEach((_, i) => {
-    const a = start + i * step;
-    wedges += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a) * maxR}" y2="${cy + Math.sin(a) * maxR}" stroke="#2a2d2e" stroke-width="0.5"/>`;
-  });
-
-  // Filled wedges
-  DIRS.forEach((d, i) => {
-    const cnt = counts[d];
-    if(!cnt) return;
-    const pct = cnt / maxCount;
-    const r = Math.max(8, maxR * pct);
-    const a1 = start + i * step - step * 0.42;
-    const a2 = start + i * step + step * 0.42;
-    const isTop = d === topDir;
-    const isHigh = counts[d] >= maxCount * 0.5;
-    const fill = isTop ? '#8C7355' : isHigh ? '#BCC6CC' : '#4A4D4E';
-    const opacity = isTop ? 1 : isHigh ? 0.7 : 0.45;
-    wedges += `<path d="M ${cx} ${cy} L ${cx + Math.cos(a1)*r} ${cy + Math.sin(a1)*r} A ${r} ${r} 0 0 1 ${cx + Math.cos(a2)*r} ${cy + Math.sin(a2)*r} Z" fill="${fill}" fill-opacity="${opacity}"/>`;
-  });
-
-  // Center dot
-  wedges += `<circle cx="${cx}" cy="${cy}" r="3" fill="#4A4D4E"/>`;
-
-  // Direction labels + counts
-  DIRS.forEach((d, i) => {
-    const a = start + i * step;
-    const lr = maxR + 14;
-    const lx = cx + Math.cos(a) * lr;
-    const ly = cy + Math.sin(a) * lr + 3.5;
-    const isTop = d === topDir;
-    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" font-family="'Roboto',sans-serif" fill="${isTop ? '#8C7355' : '#8a9199'}" font-weight="${isTop ? 'bold' : 'normal'}">${d}</text>`;
-    if(counts[d] > 0) {
-      const cr = Math.max(14, maxR * (counts[d]/maxCount) * 0.6);
-      const nx = cx + Math.cos(a) * cr;
-      const ny = cy + Math.sin(a) * cr + 3.5;
-      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="8" font-family="'Roboto',sans-serif" fill="${isTop ? '#121415' : '#BCC6CC'}" font-weight="bold">${counts[d]}</text>`;
-    }
-  });
-
-  const svgW = size * 2, svgH = size * 2 + 16;
-  el.innerHTML = `<div style="display:flex;justify-content:center">
-    <svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;max-width:${svgW}px">
-      ${rings}${wedges}${labels}
-    </svg>
-  </div>`;
+  const topWinds = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+  el.innerHTML = buildWindRoseSVG(counts, maxCount, topWinds, 100);
 }
 
 // Box 2: Activity by Time of Day (Chart.js)
@@ -7520,7 +7463,7 @@ function showFeaturePopup(m) {
     ' Delete</button>';
 
   pendingFeatColor = null;
-  ['camColorRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   popup.classList.add('show');
   // Color swatch row for feature marker
   const featColorRow = buildColorSwatchRow(
@@ -7533,7 +7476,7 @@ function showFeaturePopup(m) {
   const featSaveRow = document.createElement('div');
   featSaveRow.id = 'featSaveRow';
   featSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
-  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings(${m.id})" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings('${m.id}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
   actions.parentNode.appendChild(featSaveRow);
 }
 
