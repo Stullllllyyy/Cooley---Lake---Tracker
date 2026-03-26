@@ -2888,37 +2888,16 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
+  if(!mapInstance) { showToast('Map not ready — try again in a moment'); return; }
   onboardingMode = true;
-  // Hide onboarding overlay to reveal the map
   document.getElementById('onboardOverlay').style.opacity = '0';
   document.getElementById('onboardOverlay').style.pointerEvents = 'none';
-
-  if(mapInstance) {
-    // Map already exists — just resize and place pin
-    mapInstance.resize();
-    if(mapInstance.loaded()) {
-      placeOnboardPin();
-    } else {
-      mapInstance.once('idle', () => placeOnboardPin());
-    }
-    return;
-  }
-
-  // No map yet — set token and create one directly (not via initMap to avoid side effects)
-  if(typeof mapboxgl !== 'undefined' && !mapboxgl.accessToken) {
-    mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
-  }
-  mapInstance = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: [-98.5, 39.5],
-    zoom: 4,
-    fadeDuration: 0
-  });
-  mapInstance.once('load', () => {
-    mapInstance.resize();
+  mapInstance.resize();
+  if(mapInstance.loaded()) {
     placeOnboardPin();
-  });
+  } else {
+    mapInstance.once('idle', () => placeOnboardPin());
+  }
 }
 
 function placeOnboardPin() {
