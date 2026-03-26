@@ -556,6 +556,17 @@ textarea{resize:none}
 .tcam-add-new-wrap{padding:10px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .tcam-add-new-note{font-size:10px;color:var(--text3);line-height:1.5}
 /* Markers filter pill */
+/* confirm modal */
+.confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center}
+.confirm-overlay.on{display:flex}
+.confirm-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px 22px 20px;width:min(340px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center}
+.confirm-msg{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:20px;font-family:var(--font)}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btn{flex:1;padding:12px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:none;transition:opacity 0.15s}
+.confirm-btn.cancel{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.confirm-btn.danger{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3)}
+.confirm-btn.archive{background:rgba(140,115,85,0.2);color:var(--gold);border:1px solid rgba(140,115,85,0.4)}
+
 .marker-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--font)}
 .marker-toggle-row:last-child{border-bottom:none}
 .mfp-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--surface2);color:var(--text3);transition:background 0.15s,color 0.15s;min-width:32px;text-align:center}
@@ -947,6 +958,17 @@ textarea{resize:none}
       <div class="intel-cards-view" id="intelCardsView"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Confirm Modal (replaces confirm()) -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirmModal()">
+  <div class="confirm-card" onclick="event.stopPropagation()">
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" onclick="closeConfirmModal()">Cancel</button>
+      <button class="confirm-btn archive" id="confirmActionBtn" onclick="confirmModalAction()">Archive</button>
+    </div>
   </div>
 </div>
 
@@ -2809,6 +2831,28 @@ function showToast(msg, duration = 2500) {
   setTimeout(() => t.remove(), duration);
 }
 
+// --- Confirm Modal (replaces confirm()) ---
+let _confirmResolve = null;
+
+function showConfirmModal(msg, actionLabel, actionClass) {
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.textContent = actionLabel || 'Archive';
+  btn.className = 'confirm-btn ' + (actionClass || 'archive');
+  document.getElementById('confirmOverlay').classList.add('on');
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+
+function confirmModalAction() {
+  document.getElementById('confirmOverlay').classList.remove('on');
+  if(_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirmOverlay').classList.remove('on');
+  if(_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
+}
+
 // Wrapper for /api/claude fetch — handles 429 rate limit with toast
 async function claudeFetch(body) {
   const res = await fetch('/api/claude', {
@@ -3136,7 +3180,8 @@ async function saveEdit() {
 }
 
 async function deleteSighting() {
-  if(!confirm("Delete this sighting?")) return;
+  const ok = await showConfirmModal('Delete this sighting? This cannot be undone.', 'Delete', 'danger');
+  if(!ok) return;
   syncDot(true);
   await sb.from('sightings').delete().eq('id', editId);
   syncDot(false);
@@ -4207,7 +4252,8 @@ async function confirmDeleteCamera(camName) {
   const msg = cs > 0
     ? 'Archive camera "' + camName + '"? It has ' + cs + ' sightings. Your sighting history will be preserved.'
     : 'Archive camera "' + camName + '"? You can restore it later.';
-  if(!confirm(msg)) return;
+  const ok = await showConfirmModal(msg, 'Archive', 'archive');
+  if(!ok) return;
   await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', camName);
   delete camLocations[camName];
   closePopup();
@@ -5707,7 +5753,8 @@ async function renameCameraFromMenu() {
 async function deleteCameraFromMenu() {
   if(!menuTargetCam) return;
   closePinMenu();
-  if(!confirm(`Archive camera "${menuTargetCam}"? Your sighting history will be preserved.`)) return;
+  const ok = await showConfirmModal('Archive camera "' + menuTargetCam + '"? Your sighting history will be preserved.', 'Archive', 'archive');
+  if(!ok) return;
   try {
     await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', menuTargetCam);
   } catch(e) { console.error(e); }
