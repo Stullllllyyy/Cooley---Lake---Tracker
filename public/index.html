@@ -2848,6 +2848,7 @@ function showAuthGate() {
 // --- Onboarding: New User Property Setup ---
 let onboardUserId = null;
 let onboardPinMarker = null;
+let onboardingMode = false;
 
 function showOnboarding(userId) {
   onboardUserId = userId;
@@ -2884,6 +2885,7 @@ function onboardDetectGPS() {
 
 function onboardDropPin() {
   // Hide onboarding overlay to reveal the map
+  onboardingMode = true;
   document.getElementById('onboardOverlay').style.opacity = '0';
   document.getElementById('onboardOverlay').style.pointerEvents = 'none';
 
@@ -2991,6 +2993,7 @@ function cancelOnboardPin() {
   if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
   const card = document.getElementById('onboardPinCard');
   if(card) card.remove();
+  onboardingMode = false;
 
   const overlay = document.getElementById('onboardOverlay');
   overlay.style.opacity = '';
@@ -3012,17 +3015,20 @@ async function onboardCreateProperty() {
   errEl.textContent = '';
 
   try {
-    // Create property record (columns: name, lat, lng, owner_id)
+    // Create property record
+    // NOTE: requires RLS policy: CREATE POLICY "auth_insert_properties" ON properties FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
+    // NOTE: requires RLS policy: CREATE POLICY "auth_select_own_properties" ON properties FOR SELECT TO authenticated USING (id IN (SELECT property_id FROM property_members WHERE user_id = auth.uid()) OR owner_id = auth.uid());
     const { data: prop, error: propErr } = await sb.from('properties').insert({
       name: name,
-      lat: lat,
-      lng: lng,
+      center_lat: lat,
+      center_lng: lng,
       owner_id: onboardUserId
     }).select().single();
 
     if(propErr) throw propErr;
 
     // Add user as owner in property_members
+    // NOTE: requires RLS policy: CREATE POLICY "auth_insert_property_members" ON property_members FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
     const { error: memErr } = await sb.from('property_members').insert({
       property_id: prop.id,
       user_id: onboardUserId,
@@ -3038,6 +3044,7 @@ async function onboardCreateProperty() {
     CLNG = lng;
     PROPERTY_CENTER[0] = lng;
     PROPERTY_CENTER[1] = lat;
+    onboardingMode = false;
     document.getElementById('onboardOverlay').classList.remove('on');
     document.getElementById('authGate').style.display = 'none';
     loadBuckRegistry();
@@ -3644,13 +3651,16 @@ function initMap() {
   mapInstance.on('style.load', () => {
     addLineLayer();
     lineLayerAdded = true;
-    addCamMarkers();
-    addObsMarkers();
-    renderPropertyMarkers();
-    updateBuckLines();
-    // Restore heatmap and core area if a buck filter is active
-    if(heatmapOn) showHeatmap();
-    if(curMapFilter && curMapFilter !== 'all') showCoreArea(curMapFilter);
+    // Skip loading pins/markers during onboarding — map should be clean
+    if(!onboardingMode) {
+      addCamMarkers();
+      addObsMarkers();
+      renderPropertyMarkers();
+      updateBuckLines();
+      // Restore heatmap and core area if a buck filter is active
+      if(heatmapOn) showHeatmap();
+      if(curMapFilter && curMapFilter !== 'all') showCoreArea(curMapFilter);
+    }
   });
   mapInstance.on('error', e => {
     console.error('Mapbox error:', e.error);
