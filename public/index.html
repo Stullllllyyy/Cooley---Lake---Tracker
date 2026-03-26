@@ -7646,11 +7646,27 @@ let ttpMoveOldLng = null;
 
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
+  if(ttpMoveMarkerId) { console.log('Move already in progress, ignoring duplicate call'); return; }
   const m = activeFeatureMarker;
   ttpMoveMarkerId = m.id;
   ttpMoveOldLat = m.lat;
   ttpMoveOldLng = m.lng;
-  console.log('Move initiated:', { id: ttpMoveMarkerId, lat: ttpMoveOldLat, lng: ttpMoveOldLng });
+
+  // Find existing marker instance for expanded log
+  let logInst = null;
+  for(const inst of propertyMarkerInstances) {
+    const ll = inst.getLngLat();
+    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
+      logInst = inst;
+      break;
+    }
+  }
+  console.log('Move initiated:', {
+    id: ttpMoveMarkerId,
+    lat: logInst ? logInst.getLngLat().lat : m.lat,
+    lng: logInst ? logInst.getLngLat().lng : m.lng,
+    isDraggable: logInst ? logInst.isDraggable() : 'no instance found'
+  });
   closePopup();
 
   // Find the rendered Mapbox marker instance for this pin
