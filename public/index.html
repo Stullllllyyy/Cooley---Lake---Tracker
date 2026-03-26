@@ -4621,8 +4621,10 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const isTop = topWinds[0] === w;
     const isHigh = topWinds.includes(w);
 
-    // Overdraw 0.05 rad each side + matching stroke to guarantee gapless edges
-    const overdraw = 0.05;
+    // Proportional overdraw: large segments need less, small segments need more
+    const total = Object.values(windCounts).reduce((a,b) => a+b, 0) || 1;
+    const segPct = cnt / total;
+    const overdraw = segPct > 0.5 ? 0.01 : segPct > 0.1 ? 0.03 : 0.05;
     const angle1 = startAngle + i * angleStep - angleStep * 0.5 - overdraw;
     const angle2 = startAngle + i * angleStep + angleStep * 0.5 + overdraw;
     const x1 = cx + Math.cos(angle1) * r;
@@ -7148,6 +7150,45 @@ let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
 let ttpAfterConfirm = null; // optional callback after confirmTapToPlace — bypasses event type modal
 
+function enterTapToPlaceModeAt(lng, lat) {
+  tapToPlaceActive = true;
+  if(!mapInstance) return;
+  tapToPlaceLngLat = { lat: lat, lng: lng };
+  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
+  const el = document.createElement('div');
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
+  el.innerHTML =
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite" id="ttpPinInner">' +
+    '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#f0c75a" stroke-width="1.5"/>' +
+    '</svg>' +
+    '<div style="position:relative;z-index:1;padding-bottom:10px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '</div></div>';
+  tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', draggable: true })
+    .setLngLat([lng, lat])
+    .addTo(mapInstance);
+  tapToPlacePreviewMarker.on('drag', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  });
+  tapToPlacePreviewMarker.on('dragend', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  });
+  // Show location confirm card
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+  // Pan map to the pin location
+  mapInstance.panTo([lng, lat]);
+}
+
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
   if(!mapInstance) return;
@@ -7601,20 +7642,31 @@ function cancelFeatEdit() {
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
   const m = activeFeatureMarker;
+  const oldLat = m.lat;
+  const oldLng = m.lng;
   closePopup();
   ttpAfterConfirm = () => {
     const newLoc = tapToPlaceLngLat;
     cancelTapToPlace();
-    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng }).eq('id', m.id).then(({error}) => {
+    // Build location_history entry with old coordinates
+    const historyEntry = { lat: oldLat, lng: oldLng, moved_at: new Date().toISOString() };
+    const oldHistory = m.location_history || [];
+    const newHistory = [...oldHistory, historyEntry];
+    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng, location_history: newHistory }).eq('id', m.id).then(({error}) => {
       if(error) { showToast('Move failed — try again'); return; }
       const idx = propertyMarkers.findIndex(x => x.id === m.id);
-      if(idx >= 0) { propertyMarkers[idx].lat = newLoc.lat; propertyMarkers[idx].lng = newLoc.lng; }
+      if(idx >= 0) {
+        propertyMarkers[idx].lat = newLoc.lat;
+        propertyMarkers[idx].lng = newLoc.lng;
+        propertyMarkers[idx].location_history = newHistory;
+      }
       renderPropertyMarkers();
       showToast((m.name || m.type) + ' location updated');
     });
     activeFeatureMarker = null;
   };
-  enterTapToPlaceMode();
+  // Place pin at existing marker location, not map center
+  enterTapToPlaceModeAt(m.lng, m.lat);
 }
 
 function deleteFeatMarker(btnEl) {
