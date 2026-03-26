@@ -32,9 +32,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* Filter FAB + Panel */
-.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(140,115,85,0.25);border:1px solid rgba(140,115,85,0.5);color:#8C7355;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid rgba(140,115,85,0.6);color:#BCC6CC;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
 .filter-fab:active{transform:scale(0.9)}
-.filter-fab.active{background:rgba(140,115,85,0.35);border-color:#8C7355;color:#8C7355}
+.filter-fab.active{background:rgba(18,20,21,0.92);border-color:#8C7355;color:#E5B53B}
 .filter-fab.active svg{transform:rotate(45deg)}
 .filter-fab svg{transition:transform 0.2s ease}
 .filter-fab-dot{position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:var(--gold);pointer-events:none}
@@ -47,6 +47,21 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-section:last-child{border-bottom:none}
 .filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
 .fp-select{flex:1;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);appearance:auto;-webkit-appearance:auto;cursor:pointer;outline:none}
+/* map display panel */
+.map-display-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);right:68px;width:240px;max-width:calc(100vw - 82px);background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom right}
+.map-display-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
+.mdp-style-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px}
+.mdp-style-btn{padding:8px 0;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;text-align:center;transition:all 0.15s;letter-spacing:0.5px}
+.mdp-style-btn.active{background:rgba(140,115,85,0.25);border-color:var(--gold);color:var(--gold)}
+.mdp-compass-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 12px}
+.mdp-compass-lbl{font-size:12px;color:var(--text2);font-family:var(--font)}
+.mdp-toggle{width:40px;height:22px;border-radius:11px;background:var(--surface2);border:1px solid var(--border2);position:relative;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0}
+.mdp-toggle.on{background:var(--gold);border-color:var(--gold)}
+.mdp-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.2s}
+.mdp-toggle.on::after{transform:translateX(18px)}
+.mdp-compass-denied{font-size:10px;color:var(--red);margin-top:4px;display:none}
+
+/* map display panel */
 .map-style-lbl{position:absolute;bottom:2px;right:2px;font-size:7px;font-weight:800;color:var(--text3);letter-spacing:0.5px;line-height:1;pointer-events:none}
 /* heatmap small fab */
 .map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
@@ -113,9 +128,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .overlay.on{background:rgba(0,0,0,0.55);pointer-events:auto}
 .sheet{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px));left:0;right:0;z-index:400;background:var(--surface);border-radius:20px 20px 0 0;border-top:1px solid var(--border2);transform:translateY(calc(100% + var(--tab-h) + env(safe-area-inset-bottom,0px)));transition:transform 0.35s cubic-bezier(0.32,0.72,0,1);max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;box-shadow:0 -8px 48px rgba(0,0,0,0.7);overflow:hidden}
 .sheet.open{transform:translateY(0) !important}
-#sheet-chat{max-height:calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92dvh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+#sheet-chat,#sheet-intel,#sheet-sightings,#sheet-trail-cam{max-height:calc(100dvh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92dvh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
 @supports not (height: 100dvh) {
-  #sheet-chat{max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
+  #sheet-chat,#sheet-intel,#sheet-sightings,#sheet-trail-cam{max-height:calc(100vh - var(--tab-h) - env(safe-area-inset-bottom,0px));height:calc(92vh - var(--tab-h) - env(safe-area-inset-bottom,0px))}
 }
 
 /* Hunt AI Chat */
@@ -386,6 +401,32 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .profile-last{font-size:11px;color:var(--text2)}
 .profile-count{font-size:16px;font-weight:700;color:var(--bronze);text-align:right;flex-shrink:0;min-width:32px}
 .profile-count-lbl{font-size:9px;color:var(--text3);text-align:right}
+/* buck profile dossier */
+.bp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.bp-overlay.on{display:flex}
+.bp-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:calc(92dvh - var(--tab-h));overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px)}
+@supports not (height:100dvh){.bp-sheet{max-height:calc(92vh - var(--tab-h))}}
+.bp-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.bp-name{font-size:18px;font-weight:700}
+.bp-section{padding:14px 18px;border-bottom:1px solid var(--border)}
+.bp-section:last-child{border-bottom:none}
+.bp-section-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.bp-stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.bp-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 8px;text-align:center}
+.bp-stat-val{font-size:16px;font-weight:700;color:var(--text)}
+.bp-stat-lbl{font-size:9px;color:var(--text3);margin-top:2px}
+.bp-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bp-bar-lbl{font-size:11px;color:var(--text2);width:70px;text-align:right;flex-shrink:0}
+.bp-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.bp-bar-fill{height:100%;border-radius:3px}
+.bp-bar-cnt{font-size:10px;color:var(--text3);width:24px;text-align:right;flex-shrink:0}
+.bp-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bp-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
+.bp-feed-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.bp-feed-item:last-child{border-bottom:none}
+.bp-feed-date{font-size:10px;color:var(--text3);width:65px;flex-shrink:0}
+.bp-notes-area{width:100%;min-height:60px;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical}
+.bp-save-btn{margin-top:8px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .group-hdr{padding:10px 14px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 
 /* log form */
@@ -439,6 +480,11 @@ textarea{resize:none}
 .modal-x{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:none;color:var(--text2);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .save-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
 .del-btn{width:100%;padding:11px;border:1px solid rgba(224,85,85,0.3);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px}
+
+/* north indicator */
+.north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out;box-shadow:0 2px 16px rgba(0,0,0,0.5)}
+
+/* heading cone — rendered as Mapbox fill layer, no DOM styles needed */
 
 /* mapbox overrides */
 .mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
@@ -536,6 +582,17 @@ textarea{resize:none}
 .tcam-add-new-wrap{padding:10px 12px;background:var(--bg);border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
 .tcam-add-new-note{font-size:10px;color:var(--text3);line-height:1.5}
 /* Markers filter pill */
+/* confirm modal */
+.confirm-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:500;display:none;align-items:center;justify-content:center}
+.confirm-overlay.on{display:flex}
+.confirm-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px 22px 20px;width:min(340px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center}
+.confirm-msg{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:20px;font-family:var(--font)}
+.confirm-btns{display:flex;gap:10px}
+.confirm-btn{flex:1;padding:12px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font);border:none;transition:opacity 0.15s}
+.confirm-btn.cancel{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}
+.confirm-btn.danger{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3)}
+.confirm-btn.archive{background:rgba(140,115,85,0.2);color:var(--gold);border:1px solid rgba(140,115,85,0.4)}
+
 .marker-toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px;color:var(--text2);font-family:var(--font)}
 .marker-toggle-row:last-child{border-bottom:none}
 .mfp-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--surface2);color:var(--text3);transition:background 0.15s,color 0.15s;min-width:32px;text-align:center}
@@ -544,6 +601,8 @@ textarea{resize:none}
 
 /* Auth gate */
 #authGate{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.onboard-overlay{position:fixed;inset:0;z-index:99999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column}
+.onboard-overlay.on{display:flex}
 .auth-card{width:100%;max-width:360px;padding:32px 24px;text-align:center}
 .auth-logo{width:80px;height:auto;margin:0 auto 16px;display:block;filter:drop-shadow(0 2px 12px rgba(140,115,85,0.3))}
 .auth-tagline{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--bronze);font-weight:600;margin-bottom:32px}
@@ -603,8 +662,40 @@ textarea{resize:none}
   </div>
 </div>
 
+<!-- Onboarding: Property Setup (new users with no property) -->
+<div class="onboard-overlay" id="onboardOverlay">
+  <div class="auth-card" style="max-width:380px">
+    <img src="HuginnLogo.svg" class="auth-logo" alt="Huginn"/>
+    <div class="auth-tagline">Know More. Hunt Smarter.</div>
+    <div class="auth-title">Set Up Your Property</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Welcome to Huginn! Name your hunting property and set its center point to get started.</div>
+    <input class="auth-input" type="text" id="onboardPropName" placeholder="e.g., Home Farm, Ridge Property"/>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:600">Property Center</div>
+    <button class="auth-btn" id="onboardDetectBtn" onclick="onboardDetectGPS()" style="margin-bottom:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> Use My Location
+    </button>
+    <button class="auth-btn" id="onboardPinBtn" onclick="onboardDropPin()" style="margin-bottom:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Drop a Pin on Map
+    </button>
+    <div id="onboardCoords" style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:8px;min-height:16px;text-align:center"></div>
+    <input type="hidden" id="onboardLat"/>
+    <input type="hidden" id="onboardLng"/>
+    <div id="onboardError" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
+    <button class="auth-btn" id="onboardCreateBtn" onclick="onboardCreateProperty()">Create Property</button>
+    <div class="auth-link" onclick="handleLogout()" style="margin-top:12px">Sign out</div>
+  </div>
+</div>
+
 <div id="map"></div>
 
+<!-- North Indicator -->
+<div class="north-indicator" id="northIndicator">
+  <span style="font-size:10px;font-weight:700;color:#BCC6CC;font-family:'Roboto',sans-serif;line-height:1">N</span>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <polygon points="12,2 7,14 12,10 17,14" fill="#e04040"/>
+    <polygon points="12,22 7,14 12,18 17,14" fill="#4A4D4E"/>
+  </svg>
+</div>
 
 <!-- Map header -->
 <div class="map-hdr">
@@ -663,12 +754,30 @@ textarea{resize:none}
         <div class="mfp-toggle" id="mfpObsToggle">OFF</div>
       </div>
       <div class="marker-toggle-row" onclick="toggleScrapeMarkers();event.stopPropagation()">
-        <span>Scrapes / Rubs</span>
+        <span>Scrapes</span>
         <div class="mfp-toggle" id="mfpScrapeToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleRubMarkers();event.stopPropagation()">
+        <span>Rubs</span>
+        <div class="mfp-toggle" id="mfpRubToggle">OFF</div>
       </div>
       <div class="marker-toggle-row" onclick="toggleBeddingMarkers();event.stopPropagation()">
         <span>Bedding</span>
         <div class="mfp-toggle" id="mfpBeddingToggle">OFF</div>
+      </div>
+    </div>
+  </div>
+  <!-- Map Overlays -->
+  <div class="filter-section" style="border-bottom:none">
+    <div class="filter-section-lbl">Map Overlays</div>
+    <div>
+      <div class="marker-toggle-row" onclick="toggleDotMap();event.stopPropagation()">
+        <span>Dot Map</span>
+        <div class="mfp-toggle" id="mfpDotMapToggle">OFF</div>
+      </div>
+      <div class="marker-toggle-row" onclick="toggleHeatMap();event.stopPropagation()">
+        <span>Heat Map</span>
+        <div class="mfp-toggle" id="mfpHeatMapToggle">OFF</div>
       </div>
     </div>
   </div>
@@ -730,7 +839,7 @@ textarea{resize:none}
     <svg id="fabMainIcon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
   </div>
   <!-- Map Style FAB -->
-  <div class="map-fab" id="mapStyleFab" onclick="cycleMapStyleFab()" title="Map style">
+  <div class="map-fab" id="mapStyleFab" onclick="toggleMapDisplayPanel()" title="Map style">
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
     <span class="map-style-lbl" id="mapStyleFabLbl">SAT</span>
   </div>
@@ -742,6 +851,26 @@ textarea{resize:none}
       <line x1="4.9" y1="4.9" x2="7.1" y2="7.1"/><line x1="16.9" y1="16.9" x2="19.1" y2="19.1"/>
       <line x1="4.9" y1="19.1" x2="7.1" y2="16.9"/><line x1="16.9" y1="7.1" x2="19.1" y2="4.9"/>
     </svg>
+  </div>
+</div>
+
+<!-- Map Display Panel -->
+<div class="map-display-panel" id="mapDisplayPanel" onclick="event.stopPropagation()">
+  <div class="filter-panel-hdr">
+    <span class="filter-panel-title">Map Display</span>
+    <button class="filter-panel-close" onclick="closeMapDisplayPanel()">&times;</button>
+  </div>
+  <div class="filter-section">
+    <div class="filter-section-lbl">Map Style</div>
+    <div class="mdp-style-grid" id="mdpStyleGrid"></div>
+  </div>
+  <div class="filter-section" id="mdpCompassSection" style="display:none;border-bottom:none">
+    <div class="filter-section-lbl">Compass</div>
+    <div class="mdp-compass-row">
+      <span class="mdp-compass-lbl">Heading Cone</span>
+      <div class="mdp-toggle" id="mdpCompassToggle" onclick="toggleCompassHeading()"></div>
+    </div>
+    <div class="mdp-compass-denied" id="mdpCompassDenied">Permission denied in iOS Settings</div>
   </div>
 </div>
 
@@ -881,6 +1010,28 @@ textarea{resize:none}
       <div class="intel-cards-view" id="intelCardsView"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Buck Profile Dossier -->
+<div class="bp-overlay" id="bpOverlay" onclick="closeBuckProfile()">
+  <div class="bp-sheet" onclick="event.stopPropagation()">
+    <div class="bp-hdr">
+      <div class="bp-name" id="bpName"></div>
+      <button class="modal-x" onclick="closeBuckProfile()">&#215;</button>
+    </div>
+    <div id="bpContent"></div>
+  </div>
+</div>
+
+<!-- Confirm Modal (replaces confirm()) -->
+<div class="confirm-overlay" id="confirmOverlay" onclick="closeConfirmModal()">
+  <div class="confirm-card" onclick="event.stopPropagation()">
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-btns">
+      <button class="confirm-btn cancel" onclick="closeConfirmModal()">Cancel</button>
+      <button class="confirm-btn archive" id="confirmActionBtn" onclick="confirmModalAction()">Archive</button>
+    </div>
   </div>
 </div>
 
@@ -1460,7 +1611,7 @@ function updateMapWeather() {
   const now = new Date();
   const date = now.toISOString().split('T')[0];
   const hour = now.getHours();
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
   fetch(url).then(r=>r.json()).then(j=>{
     if(!j.hourly) return;
     const temp = Math.round(j.hourly.temperature_2m[hour]);
@@ -2006,10 +2157,11 @@ async function saveIntelEdit() {
     existing.push({ text: newText, date: new Date().toISOString().slice(0, 10) });
     const serialized = serializeIntelEntries(existing);
 
-    await sb.from('property_context').upsert(
+    const { error } = await sb.from('property_context').upsert(
       { category: intelEditCategory, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
-      { onConflict: 'category' }
+      { onConflict: 'property_id,category' }
     );
+    if (error) throw error;
 
     // Update cache
     if (!propertyContextCache) propertyContextCache = {};
@@ -2168,10 +2320,11 @@ async function finishIntelWizard() {
       const existing = parseIntelEntries(propertyContextCache?.[key]);
       existing.push({ text: value, date: new Date().toISOString().slice(0, 10) });
       const serialized = serializeIntelEntries(existing);
-      await sb.from('property_context').upsert(
+      const { error } = await sb.from('property_context').upsert(
         { category: key, content: serialized, updated_at: new Date().toISOString(), property_id: PROPERTY_ID },
-        { onConflict: 'category' }
+        { onConflict: 'property_id,category' }
       );
+      if (error) throw error;
       if (!propertyContextCache) propertyContextCache = {};
       propertyContextCache[key] = serialized;
     }
@@ -2215,29 +2368,140 @@ async function loadPropertyContext() {
   }
 }
 
-// --- GPS Blue Dot ---
+// --- GPS Blue Dot + Heading Cone (Mapbox fill layer) ---
 let geolocateCtrl = null;
+let headingWatchActive = false;
+let lastUserLngLat = null;
+let lastHeading = null;
+let headingConeLayerAdded = false;
+
+function dbg(msg) { console.log('[HEADING] ' + msg); }
+
 function initGeolocate() {
   if(!mapInstance) return;
+  dbg('initGeolocate called');
   geolocateCtrl = new mapboxgl.GeolocateControl({
     positionOptions: { enableHighAccuracy: true },
     trackUserLocation: true,
-    showUserHeading: true,
+    showUserHeading: false,
     showAccuracyCircle: true
   });
-  geolocateCtrl.on('error', () => { /* permission denied or unavailable — silent, map stays at PROPERTY_CENTER */ });
-  // After geolocation starts tracking, request iOS DeviceOrientation permission for heading cone
-  geolocateCtrl.on('trackuserlocationstart', () => {
-    if(typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-      DeviceOrientationEvent.requestPermission().catch(() => { /* denied — blue dot still shows, no heading cone */ });
-    }
+  geolocateCtrl.on('error', (err) => { dbg('geolocate error: ' + (err?.message || JSON.stringify(err))); });
+  geolocateCtrl.on('geolocate', (e) => {
+    lastUserLngLat = [e.coords.longitude, e.coords.latitude];
+    dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
+    if(compassConeActive && lastHeading !== null) updateHeadingConeGeoJSON();
+  });
+  geolocateCtrl.on('trackuserlocationend', () => {
+    dbg('trackuserlocationend');
+    removeHeadingCone();
+    lastUserLngLat = null;
   });
   mapInstance.addControl(geolocateCtrl, 'bottom-right');
+
   // Auto-trigger geolocation after control is added to the map
-  // Wrapped in try/catch + setTimeout so a denial never breaks map load
   setTimeout(() => {
-    try { geolocateCtrl.trigger(); } catch(e) { /* silent */ }
+    try { geolocateCtrl.trigger(); dbg('auto-trigger fired'); } catch(e) { dbg('auto-trigger error: ' + e.message); }
   }, 500);
+}
+
+function startHeadingWatch() {
+  if(headingWatchActive) { dbg('heading watch already active'); return; }
+  headingWatchActive = true;
+  dbg('startHeadingWatch — adding listeners');
+  window.addEventListener('deviceorientationabsolute', onDeviceHeading, true);
+  window.addEventListener('deviceorientation', onDeviceHeading);
+}
+
+let _orientCount = 0;
+function onDeviceHeading(e) {
+  _orientCount++;
+  // Log first 5 events then every 50th to avoid spam
+  if(_orientCount <= 5 || _orientCount % 50 === 0) {
+    dbg('orientation #' + _orientCount + ': alpha=' + e.alpha + ' webkitCH=' + e.webkitCompassHeading + ' absolute=' + e.absolute + ' type=' + e.type);
+  }
+  let heading = null;
+  if(typeof e.webkitCompassHeading === 'number') {
+    heading = e.webkitCompassHeading;
+  } else if(e.absolute && typeof e.alpha === 'number') {
+    heading = 360 - e.alpha;
+  } else if(typeof e.alpha === 'number') {
+    heading = 360 - e.alpha;
+  }
+  if(heading === null || !lastUserLngLat) return;
+  lastHeading = heading;
+  if(compassConeActive) updateHeadingConeGeoJSON();
+}
+
+// Bearing math: given a point, bearing (degrees), and distance (meters), return [lng, lat]
+function destPoint(lngLat, bearingDeg, distMeters) {
+  const R = 6371000;
+  const lat1 = lngLat[1] * Math.PI / 180;
+  const lng1 = lngLat[0] * Math.PI / 180;
+  const brng = bearingDeg * Math.PI / 180;
+  const d = distMeters / R;
+  const lat2 = Math.asin(Math.sin(lat1) * Math.cos(d) + Math.cos(lat1) * Math.sin(d) * Math.cos(brng));
+  const lng2 = lng1 + Math.atan2(Math.sin(brng) * Math.sin(d) * Math.cos(lat1), Math.cos(d) - Math.sin(lat1) * Math.sin(lat2));
+  return [lng2 * 180 / Math.PI, lat2 * 180 / Math.PI];
+}
+
+function buildConePolygon(center, headingDeg, lengthMeters, halfAngleDeg) {
+  // Build a triangle: tip at center, two base points at ±halfAngle at distance
+  const steps = 12; // arc segments for smooth curved base
+  const coords = [center];
+  for(let i = 0; i <= steps; i++) {
+    const a = headingDeg - halfAngleDeg + (2 * halfAngleDeg * i / steps);
+    coords.push(destPoint(center, a, lengthMeters));
+  }
+  coords.push(center); // close the polygon
+  return coords;
+}
+
+function updateHeadingConeGeoJSON() {
+  if(!mapInstance || lastHeading === null || !lastUserLngLat) return;
+
+  const coneLength = 80; // meters
+  const halfAngle = 25;  // degrees (50 degree cone)
+  const coords = buildConePolygon(lastUserLngLat, lastHeading, coneLength, halfAngle);
+
+  const geojson = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: { type: 'Polygon', coordinates: [coords] },
+      properties: {}
+    }]
+  };
+
+  if(!headingConeLayerAdded) {
+    // Add source + layer on first call
+    dbg('Adding cone layer — heading=' + lastHeading.toFixed(1) + ' pos=' + lastUserLngLat[1].toFixed(5) + ',' + lastUserLngLat[0].toFixed(5));
+    dbg('Cone coords[0]=' + JSON.stringify(coords[0]) + ' coords[1]=' + JSON.stringify(coords[1]));
+    mapInstance.addSource('heading-cone', { type: 'geojson', data: geojson });
+    mapInstance.addLayer({
+      id: 'heading-cone-layer',
+      type: 'fill',
+      source: 'heading-cone',
+      paint: {
+        'fill-color': '#E63946',
+        'fill-opacity': 0.4
+      }
+    });
+    headingConeLayerAdded = true;
+    dbg('Cone layer added successfully');
+  } else {
+    const src = mapInstance.getSource('heading-cone');
+    if(src) src.setData(geojson);
+  }
+}
+
+function removeHeadingCone() {
+  if(mapInstance && headingConeLayerAdded) {
+    if(mapInstance.getLayer('heading-cone-layer')) mapInstance.removeLayer('heading-cone-layer');
+    if(mapInstance.getSource('heading-cone')) mapInstance.removeSource('heading-cone');
+    headingConeLayerAdded = false;
+  }
+  lastHeading = null;
 }
 
 // Compatibility shim - old showView calls still work
@@ -2286,6 +2550,134 @@ function cycleMapStyleFab() {
 function updateMapStyleFabLabel() {
   const lbl = document.getElementById('mapStyleFabLbl');
   if(lbl) lbl.textContent = MAP_STYLES[mapStyleIdx].label;
+}
+
+// --- Map Display Panel ---
+let mapDisplayPanelOpen = false;
+let compassPermissionGranted = false;
+let compassDenied = false;
+let compassConeActive = false;
+
+function toggleMapDisplayPanel() {
+  if(mapDisplayPanelOpen) closeMapDisplayPanel();
+  else openMapDisplayPanel();
+}
+
+function openMapDisplayPanel() {
+  const panel = document.getElementById('mapDisplayPanel');
+  panel.classList.add('open');
+  mapDisplayPanelOpen = true;
+  renderStyleGrid();
+  initCompassSection();
+  // Close on outside tap
+  setTimeout(() => document.addEventListener('click', onMapDisplayOutsideClick), 10);
+}
+
+function closeMapDisplayPanel() {
+  const panel = document.getElementById('mapDisplayPanel');
+  panel.classList.remove('open');
+  mapDisplayPanelOpen = false;
+  document.removeEventListener('click', onMapDisplayOutsideClick);
+}
+
+function onMapDisplayOutsideClick(e) {
+  const panel = document.getElementById('mapDisplayPanel');
+  const fab = document.getElementById('mapStyleFab');
+  if(!panel.contains(e.target) && !fab.contains(e.target)) {
+    closeMapDisplayPanel();
+  }
+}
+
+function renderStyleGrid() {
+  const grid = document.getElementById('mdpStyleGrid');
+  grid.innerHTML = MAP_STYLES.map((s, i) =>
+    '<button class="mdp-style-btn' + (i === mapStyleIdx ? ' active' : '') + '" onclick="selectMapStyle(' + i + ')">' + s.label + '</button>'
+  ).join('');
+}
+
+function selectMapStyle(idx) {
+  if(!mapInstance) return;
+  mapStyleIdx = idx;
+  const style = MAP_STYLES[mapStyleIdx];
+  mapInstance.setStyle(style.url);
+  updateMapStyleFabLabel();
+  updateFilterFabDot();
+  lineLayerAdded = false;
+  // Re-add heading cone layer after style change if active
+  if(compassConeActive) {
+    headingConeLayerAdded = false;
+    mapInstance.once('style.load', () => {
+      if(lastHeading !== null && lastUserLngLat) updateHeadingConeGeoJSON();
+    });
+  }
+  renderStyleGrid();
+}
+
+function initCompassSection() {
+  const section = document.getElementById('mdpCompassSection');
+  // Only show on iOS devices where requestPermission is available
+  const isIOS = /iPhone|iPad/i.test(navigator.userAgent);
+  const hasPermissionAPI = typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function';
+  if(isIOS && hasPermissionAPI) {
+    section.style.display = '';
+  } else {
+    section.style.display = 'none';
+    return;
+  }
+  const toggle = document.getElementById('mdpCompassToggle');
+  toggle.classList.toggle('on', compassConeActive);
+}
+
+function toggleCompassHeading() {
+  dbg('compass btn tapped — coneActive=' + compassConeActive + ' permGranted=' + compassPermissionGranted + ' denied=' + compassDenied);
+  const toggle = document.getElementById('mdpCompassToggle');
+  const deniedMsg = document.getElementById('mdpCompassDenied');
+
+  if(compassConeActive) {
+    // Turn off
+    compassConeActive = false;
+    toggle.classList.remove('on');
+    removeHeadingCone();
+    dbg('compass cone disabled');
+    return;
+  }
+
+  if(compassDenied) {
+    deniedMsg.style.display = 'block';
+    dbg('compass previously denied');
+    return;
+  }
+
+  if(compassPermissionGranted) {
+    // Already have permission — just enable
+    compassConeActive = true;
+    toggle.classList.add('on');
+    if(!headingWatchActive) startHeadingWatch();
+    dbg('compass cone enabled (permission already granted)');
+    return;
+  }
+
+  // First time — request permission synchronously in this tap handler
+  dbg('permission requested');
+  DeviceOrientationEvent.requestPermission().then(state => {
+    dbg('permission result: ' + state);
+    if(state === 'granted') {
+      compassPermissionGranted = true;
+      compassConeActive = true;
+      toggle.classList.add('on');
+      startHeadingWatch();
+      deniedMsg.style.display = 'none';
+    } else {
+      compassDenied = true;
+      toggle.classList.remove('on');
+      deniedMsg.style.display = 'block';
+    }
+  }).catch(err => {
+    dbg('permission error: ' + err);
+    compassDenied = true;
+    toggle.classList.remove('on');
+    deniedMsg.style.display = 'block';
+  });
 }
 
 // cam popup helpers
@@ -2376,13 +2768,17 @@ async function handleSignUp() {
     // claimed_by update may fail if auth role switched — that's OK, claimed_at is already set
     await sb.from('invites').update({ claimed_by: newUserId }).eq('id', invite.id);
 
-    await sb.from('property_members').insert({
-      property_id: invite.property_id,
-      user_id: newUserId,
-      role: invite.role,
-      invited_at: invite.created_at,
-      accepted_at: new Date().toISOString()
-    });
+    // Only create property_members if invite has a property_id
+    // New-property invites (property_id null) skip this — user will go through onboarding
+    if(invite.property_id) {
+      await sb.from('property_members').insert({
+        property_id: invite.property_id,
+        user_id: newUserId,
+        role: invite.role,
+        invited_at: invite.created_at,
+        accepted_at: new Date().toISOString()
+      });
+    }
   }
 
   btn.disabled = false; btn.textContent = 'Create Account';
@@ -2421,21 +2817,14 @@ async function bootApp() {
     .select('property_id, role')
     .eq('user_id', user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if(memErr || !membership) {
-    // User has an account but no property access
-    document.getElementById('authGate').style.display = 'flex';
-    document.getElementById('authSignIn').style.display = 'none';
-    document.getElementById('authSignUp').style.display = 'none';
-    document.getElementById('authSignInError').textContent = '';
-    const card = document.querySelector('.auth-card');
-    if(!document.getElementById('authNoAccess')) {
-      const msg = document.createElement('div');
-      msg.id = 'authNoAccess';
-      msg.innerHTML = '<div class="auth-title">No Property Access</div><div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Your account is confirmed but you don\'t have access to any property yet. Contact the property owner for an invite.</div><div class="auth-link" onclick="handleLogout()">Sign out</div>';
-      card.appendChild(msg);
-    }
+  if(!membership || !membership.property_id) {
+    // New user with no property — init map (no data) then show onboarding
+    onboardingMode = true;
+    document.getElementById('authGate').style.display = 'none';
+    startMap();
+    showOnboarding(user.id);
     return;
   }
 
@@ -2452,9 +2841,7 @@ async function bootApp() {
 function showAuthGate() {
   appBooted = false;
   document.getElementById('authGate').style.display = 'flex';
-  // Remove no-access message if present
-  const noAccess = document.getElementById('authNoAccess');
-  if(noAccess) noAccess.remove();
+  document.getElementById('onboardOverlay').classList.remove('on');
   showAuthView('signin');
   // Clear sensitive form fields
   document.getElementById('authEmail').value = '';
@@ -2462,6 +2849,217 @@ function showAuthGate() {
   document.getElementById('authSignUpEmail').value = '';
   document.getElementById('authSignUpPass').value = '';
   document.getElementById('authInviteCode').value = '';
+}
+
+// --- Onboarding: New User Property Setup ---
+let onboardUserId = null;
+let onboardPinMarker = null;
+let onboardingMode = false;
+
+function showOnboarding(userId) {
+  onboardUserId = userId;
+  document.getElementById('onboardOverlay').classList.add('on');
+  document.getElementById('onboardError').textContent = '';
+  document.getElementById('onboardCoords').textContent = '';
+  document.getElementById('onboardLat').value = '';
+  document.getElementById('onboardLng').value = '';
+}
+
+function onboardDetectGPS() {
+  const btn = document.getElementById('onboardDetectBtn');
+  if(!navigator.geolocation) { showToast('GPS not available on this device'); return; }
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Detecting...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('onboardLat').value = lat;
+      document.getElementById('onboardLng').value = lng;
+      document.getElementById('onboardCoords').textContent = lat + ', ' + lng;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg> Location set';
+      btn.disabled = false;
+    },
+    () => {
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> Use My Location';
+      btn.disabled = false;
+      showToast('GPS unavailable — try Drop a Pin instead');
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+
+function onboardDropPin() {
+  if(!mapInstance) { showToast('Map not ready — try again in a moment'); return; }
+  onboardingMode = true;
+
+  // Hide onboarding overlay
+  document.getElementById('onboardOverlay').style.display = 'none';
+
+  // Wait for next animation frame + 100ms so container has real dimensions before resize
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      mapInstance.resize();
+      placeOnboardPin();
+    }, 100);
+  });
+}
+
+function placeOnboardPin() {
+  // Remove existing pin if any
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+
+  const center = mapInstance.getCenter();
+
+  // Pulsating sulfur teardrop — exact same architecture as tap-to-place
+  const el = document.createElement('div');
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
+  el.innerHTML =
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite">' +
+    '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#f0c75a" stroke-width="1.5"/>' +
+    '</svg>' +
+    '<div style="position:relative;z-index:1;padding-bottom:10px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '</div></div>';
+
+  onboardPinMarker = new mapboxgl.Marker({ element: el, draggable: true, anchor: 'bottom' })
+    .setLngLat(center)
+    .addTo(mapInstance);
+
+  // Show confirm card with updated copy
+  showOnboardPinConfirm(center.lat, center.lng);
+
+  onboardPinMarker.on('drag', () => {
+    const ll = onboardPinMarker.getLngLat();
+    updateOnboardPinCoords(ll.lat, ll.lng);
+  });
+  onboardPinMarker.on('dragend', () => {
+    const ll = onboardPinMarker.getLngLat();
+    updateOnboardPinCoords(ll.lat, ll.lng);
+  });
+}
+
+function showOnboardPinConfirm(lat, lng) {
+  let card = document.getElementById('onboardPinCard');
+  if(!card) {
+    card = document.createElement('div');
+    card.id = 'onboardPinCard';
+    card.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:18px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center;width:min(340px,calc(100vw - 32px))';
+    document.body.appendChild(card);
+  }
+  card.innerHTML =
+    '<div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px">Drop Your Property Pin</div>' +
+    '<div style="font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:10px">Place this pin at the heart of your hunting area \u2014 the center of your property, your main stand, or wherever you spend the most time. This anchors your map and helps Huginn build your first intel.</div>' +
+    '<div style="font-size:10px;color:var(--text3);line-height:1.5;margin-bottom:10px">As you log sightings and add cameras and stands, your data will get more precise automatically.</div>' +
+    '<div id="onboardPinCoords" style="font-size:11px;color:var(--gold);font-family:monospace;margin-bottom:12px">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</div>' +
+    '<div style="display:flex;gap:10px">' +
+    '<button onclick="cancelOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancel</button>' +
+    '<button onclick="confirmOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--gold);background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Confirm</button>' +
+    '</div>';
+}
+
+function updateOnboardPinCoords(lat, lng) {
+  const el = document.getElementById('onboardPinCoords');
+  if(el) el.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+}
+
+function confirmOnboardPin() {
+  const ll = onboardPinMarker.getLngLat();
+  document.getElementById('onboardLat').value = ll.lat.toFixed(6);
+  document.getElementById('onboardLng').value = ll.lng.toFixed(6);
+  document.getElementById('onboardCoords').textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+
+  // Clean up pin and card, show onboarding overlay again
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+  const card = document.getElementById('onboardPinCard');
+  if(card) card.remove();
+
+  document.getElementById('onboardOverlay').style.display = '';
+
+  // Update pin button text
+  document.getElementById('onboardPinBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg> Pin placed';
+}
+
+function cancelOnboardPin() {
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+  const card = document.getElementById('onboardPinCard');
+  if(card) card.remove();
+  onboardingMode = false;
+
+  document.getElementById('onboardOverlay').style.display = '';
+}
+
+async function onboardCreateProperty() {
+  const name = document.getElementById('onboardPropName').value.trim();
+  const lat = parseFloat(document.getElementById('onboardLat').value);
+  const lng = parseFloat(document.getElementById('onboardLng').value);
+  const errEl = document.getElementById('onboardError');
+  const btn = document.getElementById('onboardCreateBtn');
+
+  if(!name) { errEl.textContent = 'Enter a property name.'; return; }
+  if(isNaN(lat) || isNaN(lng)) { errEl.textContent = 'Set your property center using GPS or Drop a Pin.'; return; }
+  if(!onboardUserId) { errEl.textContent = 'Session error. Please sign out and try again.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Creating...';
+  errEl.textContent = '';
+
+  try {
+    // Create property record (existing columns: id, name, description, owner_id, invite_code, created_at)
+    // center_lat/center_lng require migration — see commit message for SQL
+    // NOTE: requires RLS policy: CREATE POLICY "auth_insert_properties" ON properties FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
+    // NOTE: requires RLS policy: CREATE POLICY "auth_select_own_properties" ON properties FOR SELECT TO authenticated USING (id IN (SELECT property_id FROM property_members WHERE user_id = auth.uid()) OR owner_id = auth.uid());
+    const { data: prop, error: propErr } = await sb.from('properties').insert({
+      name: name,
+      owner_id: onboardUserId,
+      center_lat: lat,
+      center_lng: lng
+    }).select().single();
+
+    if(propErr) throw propErr;
+
+    // Add user as owner in property_members
+    // NOTE: requires RLS policy: CREATE POLICY "auth_insert_property_members" ON property_members FOR INSERT TO authenticated WITH CHECK (user_id = auth.uid());
+    const { error: memErr } = await sb.from('property_members').insert({
+      property_id: prop.id,
+      user_id: onboardUserId,
+      role: 'owner',
+      accepted_at: new Date().toISOString()
+    });
+
+    if(memErr) throw memErr;
+
+    // Set globals and boot the app
+    PROPERTY_ID = prop.id;
+    CLAT = lat;
+    CLNG = lng;
+    PROPERTY_CENTER[0] = lng;
+    PROPERTY_CENTER[1] = lat;
+    onboardingMode = false;
+    document.getElementById('onboardOverlay').classList.remove('on');
+    document.getElementById('authGate').style.display = 'none';
+    loadBuckRegistry();
+    loadSightings();
+    updateMapWeather();
+    // Map already exists from Drop a Pin — set up data layers and fly to property
+    if(mapInstance) {
+      mapInstance.flyTo({ center: [lng, lat], zoom: 15, duration: 1500 });
+      loadCamLocations();
+      loadPropertyMarkers();
+      addLineLayer();
+      lineLayerAdded = true;
+      initGeolocate();
+    } else {
+      startMap();
+    }
+    showToast('Welcome to Huginn! Your property is ready.');
+
+  } catch(e) {
+    console.error('Onboarding error:', e);
+    errEl.textContent = 'Failed to create property: ' + (e.message || 'Unknown error');
+    btn.disabled = false; btn.textContent = 'Create Property';
+  }
 }
 
 // Auth state listener
@@ -2476,7 +3074,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
   // If no session, authGate is already visible (default display:flex)
 });
 
-const CLAT = 45.0200, CLNG = -88.2756;
+let CLAT = 45.0200, CLNG = -88.2756;
 let PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1 (default, overwritten by membership check)
 const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
 const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
@@ -2500,6 +3098,28 @@ function showToast(msg, duration = 2500) {
   t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), duration);
+}
+
+// --- Confirm Modal (replaces confirm()) ---
+let _confirmResolve = null;
+
+function showConfirmModal(msg, actionLabel, actionClass) {
+  document.getElementById('confirmMsg').textContent = msg;
+  const btn = document.getElementById('confirmActionBtn');
+  btn.textContent = actionLabel || 'Archive';
+  btn.className = 'confirm-btn ' + (actionClass || 'archive');
+  document.getElementById('confirmOverlay').classList.add('on');
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+
+function confirmModalAction() {
+  document.getElementById('confirmOverlay').classList.remove('on');
+  if(_confirmResolve) { _confirmResolve(true); _confirmResolve = null; }
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirmOverlay').classList.remove('on');
+  if(_confirmResolve) { _confirmResolve(false); _confirmResolve = null; }
 }
 
 // Wrapper for /api/claude fetch — handles 429 rate limit with toast
@@ -2615,6 +3235,7 @@ async function updateBuckDates(buckId, sightingDate) {
 
 // --- data -
 async function loadSightings() {
+  if(onboardingMode) return;
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
     .eq('property_id', PROPERTY_ID)
@@ -2829,7 +3450,8 @@ async function saveEdit() {
 }
 
 async function deleteSighting() {
-  if(!confirm("Delete this sighting?")) return;
+  const ok = await showConfirmModal('Delete this sighting? This cannot be undone.', 'Delete', 'danger');
+  if(!ok) return;
   syncDot(true);
   await sb.from('sightings').delete().eq('id', editId);
   syncDot(false);
@@ -2963,7 +3585,7 @@ function applyWx() {
 // --- map (Mapbox) -
 // Mapbox token set after DOM ready (see init below)
 
-const PROPERTY_CENTER = [-88.2756, 45.0200];
+let PROPERTY_CENTER = [-88.2756, 45.0200];
 const PROPERTY_BOUNDS = [[-88.295, 45.010], [-88.258, 45.035]];
 
 // Camera locations - stored in Supabase, editable via drag
@@ -2981,6 +3603,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
+  if(onboardingMode) return;
   const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).is('deleted_at', null).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
@@ -3000,8 +3623,7 @@ async function saveCamLocation(name, lng, lat) {
 }
 
 function initMap() {
-  
-  if(mapInstance) { refreshMapPins(); mapInstance.resize(); return; }
+  if(mapInstance) return; // Map initialized exactly once per page load
   const container = document.getElementById('map');
   if(!container || container.offsetWidth === 0) {
     setTimeout(initMap, 100);
@@ -3010,25 +3632,38 @@ function initMap() {
   mapInstance = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
-    center: PROPERTY_CENTER,
-    zoom: 15,
+    center: [-98.5, 39.5],
+    zoom: 4,
     fadeDuration: 0,
   });
   mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
     mapInstance.resize();
     initGeolocate();
+    // Fly to GPS if available, otherwise stay on continental US view
+    if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          mapInstance.flyTo({ center: [pos.coords.longitude, pos.coords.latitude], zoom: 15, duration: 1500 });
+        },
+        () => { /* GPS denied/dismissed — stay on zoomed-out continental view */ },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    }
   });
   mapInstance.on('style.load', () => {
     addLineLayer();
     lineLayerAdded = true;
-    addCamMarkers();
-    addObsMarkers();
-    renderPropertyMarkers();
-    updateBuckLines();
-    // Restore heatmap and core area if a buck filter is active
-    if(heatmapOn) showHeatmap();
-    if(curMapFilter && curMapFilter !== 'all') showCoreArea(curMapFilter);
+    // Skip loading pins/markers during onboarding — map should be clean
+    if(!onboardingMode) {
+      addCamMarkers();
+      addObsMarkers();
+      renderPropertyMarkers();
+      updateBuckLines();
+      // Restore heatmap and core area if a buck filter is active
+      if(heatmapOn) showHeatmap();
+      if(curMapFilter && curMapFilter !== 'all') showCoreArea(curMapFilter);
+    }
   });
   mapInstance.on('error', e => {
     console.error('Mapbox error:', e.error);
@@ -3036,6 +3671,10 @@ function initMap() {
     if(el) { el.style.display='block'; el.style.color='#e87a4a'; el.textContent = 'Map error: ' + (e.error?.message || JSON.stringify(e.error)); }
   });
   mapInstance.on('idle', () => { const el = document.getElementById('mapLoadText'); if(el) el.style.display='none'; });
+  mapInstance.on('rotate', () => {
+    const ni = document.getElementById('northIndicator');
+    if(ni) ni.style.transform = 'rotate(' + (-mapInstance.getBearing()) + 'deg)';
+  });
   [500, 1500].forEach(t => setTimeout(() => { if(mapInstance) mapInstance.resize(); }, t));
 }
 
@@ -3222,7 +3861,10 @@ let obsMarkers = [];
 // Marker visibility state — false = hidden by default
 let obsMarkersVisible = false;
 let scrapeMarkersVisible = false;
+let rubMarkersVisible = false;
 let beddingMarkersVisible = false;
+let dotMapActive = false;
+let heatMapActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -3477,6 +4119,14 @@ function toggleScrapeMarkers() {
   renderPropertyMarkers();
   updateMarkersPillState();
 }
+function toggleRubMarkers() {
+  rubMarkersVisible = !rubMarkersVisible;
+  const tog = document.getElementById('mfpRubToggle');
+  tog.textContent = rubMarkersVisible ? 'ON' : 'OFF';
+  tog.classList.toggle('on', rubMarkersVisible);
+  renderPropertyMarkers();
+  updateMarkersPillState();
+}
 function toggleBeddingMarkers() {
   beddingMarkersVisible = !beddingMarkersVisible;
   const tog = document.getElementById('mfpBeddingToggle');
@@ -3484,6 +4134,22 @@ function toggleBeddingMarkers() {
   tog.classList.toggle('on', beddingMarkersVisible);
   renderPropertyMarkers();
   updateMarkersPillState();
+}
+function toggleDotMap() {
+  dotMapActive = !dotMapActive;
+  const tog = document.getElementById('mfpDotMapToggle');
+  tog.textContent = dotMapActive ? 'ON' : 'OFF';
+  tog.classList.toggle('on', dotMapActive);
+  if(dotMapActive) { showDotMap(); } else { hideDotMap(); }
+  updateFilterFabDot();
+}
+function toggleHeatMap() {
+  heatMapActive = !heatMapActive;
+  const tog = document.getElementById('mfpHeatMapToggle');
+  tog.textContent = heatMapActive ? 'ON' : 'OFF';
+  tog.classList.toggle('on', heatMapActive);
+  if(heatMapActive) { showHeatmap(); } else { hideHeatmap(); }
+  updateFilterFabDot();
 }
 function updateMarkersPillState() {
   updateFilterFabDot();
@@ -3532,7 +4198,7 @@ function filterPanelOutsideClick(e) {
 function updateFilterFabDot() {
   const dot = document.getElementById('filterFabDot');
   if(!dot) return;
-  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || obsMarkersVisible || scrapeMarkersVisible || beddingMarkersVisible;
+  const nonDefault = curYear !== 'all' || curMapMonth !== 'all' || (curMapFilter !== 'none') || obsMarkersVisible || scrapeMarkersVisible || rubMarkersVisible || beddingMarkersVisible || dotMapActive || heatMapActive;
   dot.style.display = nonDefault ? 'block' : 'none';
 }
 
@@ -3711,7 +4377,7 @@ async function showPin(camName) {
       Delete
     </button>`;
   // Remove any extra rows left from a previous popup type
-  ['camColorRow','camFacingRow','camSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   // Show popup immediately
   popup.classList.add('show');
   // Color row — synchronous (camLocations already loaded), visible right away
@@ -3859,7 +4525,8 @@ async function confirmDeleteCamera(camName) {
   const msg = cs > 0
     ? 'Archive camera "' + camName + '"? It has ' + cs + ' sightings. Your sighting history will be preserved.'
     : 'Archive camera "' + camName + '"? You can restore it later.';
-  if(!confirm(msg)) return;
+  const ok = await showConfirmModal(msg, 'Archive', 'archive');
+  if(!ok) return;
   await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', camName);
   delete camLocations[camName];
   closePopup();
@@ -3945,7 +4612,7 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     slices += `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="#2a2a2a" stroke-width="0.5"/>`;
   });
 
-  // Draw filled wedges
+  // Draw filled wedges — exact half-step angles, zero overdraw
   WINDS.forEach((w, i) => {
     const cnt = windCounts[w] || 0;
     if(cnt === 0) return;
@@ -3954,23 +4621,22 @@ function buildWindRoseSVG(windCounts, maxWind, topWinds, size) {
     const isTop = topWinds[0] === w;
     const isHigh = topWinds.includes(w);
 
-    const angle1 = startAngle + i * angleStep - angleStep * 0.45;
-    const angle2 = startAngle + i * angleStep + angleStep * 0.45;
+    // Exact midpoints between adjacent directions — no overdraw, no gaps
+    const angle1 = startAngle + i * angleStep - angleStep / 2;
+    const angle2 = startAngle + i * angleStep + angleStep / 2;
     const x1 = cx + Math.cos(angle1) * r;
     const y1 = cy + Math.sin(angle1) * r;
     const x2 = cx + Math.cos(angle2) * r;
     const y2 = cy + Math.sin(angle2) * r;
 
-    // Gradient color: top = gold, high = light gray, normal = dark gray
-    const fill = isTop ? '#c8a951' : isHigh ? '#888888' : '#444444';
-    const opacity = isTop ? '1' : isHigh ? '0.85' : '0.6';
+    const fill = isTop ? '#c8a951' : isHigh ? '#6e6e6e' : '#333333';
 
     slices += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2} Z"
-      fill="${fill}" fill-opacity="${opacity}" stroke="none"/>`;
+      fill="${fill}" stroke="${fill}" stroke-width="1" stroke-linejoin="round"/>`;
   });
 
-  // Center dot
-  slices += `<circle cx="${cx}" cy="${cy}" r="3" fill="#444"/>`;
+  // Center dot — covers convergence point of all wedge tips
+  slices += `<circle cx="${cx}" cy="${cy}" r="4" fill="#1a1b1c"/>`;
 
   // Direction labels
   WINDS.forEach((w, i) => {
@@ -4247,7 +4913,7 @@ async function loadHuntForecast() {
   const el = document.getElementById('forecastContent');
   if(!el) return;
   try {
-    const url = 'https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756' +
+    const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + CLAT + '&longitude=' + CLNG +
       '&daily=temperature_2m_max,temperature_2m_min,windspeed_10m_max,winddirection_10m_dominant,precipitation_sum,weathercode' +
       '&hourly=surface_pressure' +
       '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
@@ -4758,65 +5424,8 @@ function renderWindRose(filteredSightings) {
     if(s.wind_dir && counts[s.wind_dir] !== undefined) counts[s.wind_dir]++;
   });
   const maxCount = Math.max(...Object.values(counts), 1);
-  const topDir = DIRS.reduce((a, b) => counts[a] >= counts[b] ? a : b, DIRS[0]);
-
-  const size = 100, cx = size, cy = size, maxR = size * 0.75;
-  const step = (Math.PI * 2) / 8;
-  const start = -Math.PI / 2;
-
-  let rings = '', wedges = '', labels = '';
-
-  // Guide rings
-  [0.25, 0.5, 0.75, 1.0].forEach(pct => {
-    rings += `<circle cx="${cx}" cy="${cy}" r="${maxR * pct}" fill="none" stroke="#2a2d2e" stroke-width="0.5"/>`;
-  });
-
-  // Axis lines
-  DIRS.forEach((_, i) => {
-    const a = start + i * step;
-    wedges += `<line x1="${cx}" y1="${cy}" x2="${cx + Math.cos(a) * maxR}" y2="${cy + Math.sin(a) * maxR}" stroke="#2a2d2e" stroke-width="0.5"/>`;
-  });
-
-  // Filled wedges
-  DIRS.forEach((d, i) => {
-    const cnt = counts[d];
-    if(!cnt) return;
-    const pct = cnt / maxCount;
-    const r = Math.max(8, maxR * pct);
-    const a1 = start + i * step - step * 0.42;
-    const a2 = start + i * step + step * 0.42;
-    const isTop = d === topDir;
-    const isHigh = counts[d] >= maxCount * 0.5;
-    const fill = isTop ? '#8C7355' : isHigh ? '#BCC6CC' : '#4A4D4E';
-    const opacity = isTop ? 1 : isHigh ? 0.7 : 0.45;
-    wedges += `<path d="M ${cx} ${cy} L ${cx + Math.cos(a1)*r} ${cy + Math.sin(a1)*r} A ${r} ${r} 0 0 1 ${cx + Math.cos(a2)*r} ${cy + Math.sin(a2)*r} Z" fill="${fill}" fill-opacity="${opacity}"/>`;
-  });
-
-  // Center dot
-  wedges += `<circle cx="${cx}" cy="${cy}" r="3" fill="#4A4D4E"/>`;
-
-  // Direction labels + counts
-  DIRS.forEach((d, i) => {
-    const a = start + i * step;
-    const lr = maxR + 14;
-    const lx = cx + Math.cos(a) * lr;
-    const ly = cy + Math.sin(a) * lr + 3.5;
-    const isTop = d === topDir;
-    labels += `<text x="${lx}" y="${ly}" text-anchor="middle" font-size="10" font-family="'Roboto',sans-serif" fill="${isTop ? '#8C7355' : '#8a9199'}" font-weight="${isTop ? 'bold' : 'normal'}">${d}</text>`;
-    if(counts[d] > 0) {
-      const cr = Math.max(14, maxR * (counts[d]/maxCount) * 0.6);
-      const nx = cx + Math.cos(a) * cr;
-      const ny = cy + Math.sin(a) * cr + 3.5;
-      labels += `<text x="${nx}" y="${ny}" text-anchor="middle" font-size="8" font-family="'Roboto',sans-serif" fill="${isTop ? '#121415' : '#BCC6CC'}" font-weight="bold">${counts[d]}</text>`;
-    }
-  });
-
-  const svgW = size * 2, svgH = size * 2 + 16;
-  el.innerHTML = `<div style="display:flex;justify-content:center">
-    <svg width="100%" viewBox="0 0 ${svgW} ${svgH}" style="overflow:visible;max-width:${svgW}px">
-      ${rings}${wedges}${labels}
-    </svg>
-  </div>`;
+  const topWinds = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+  el.innerHTML = buildWindRoseSVG(counts, maxCount, topWinds, 100);
 }
 
 // Box 2: Activity by Time of Day (Chart.js)
@@ -4831,22 +5440,28 @@ function renderActivityChart(filteredSightings) {
     intelActivityChartInstance = null;
   }
 
-  const buckets = {
-    'Dawn (4-7a)':  [4, 7],
-    'Morning (7-10a)': [7, 10],
-    'Midday (10a-2p)': [10, 14],
-    'Afternoon (2-5p)': [14, 17],
-    'Evening (5-8p)': [17, 20],
-    'Night (8p-4a)': [20, 4]
-  };
-  const counts = {};
-  Object.keys(buckets).forEach(k => counts[k] = 0);
+  // Hourly buckets 0-23
+  const hourly = new Array(24).fill(0);
   filteredSightings.forEach(s => {
     if(!s.time) return;
     const h = parseInt(s.time);
-    Object.entries(buckets).forEach(([label, [start, end]]) => {
-      if(start < end ? (h >= start && h < end) : (h >= start || h < end)) counts[label]++;
-    });
+    if(h >= 0 && h < 24) hourly[h]++;
+  });
+
+  // 12hr labels
+  const labels = hourly.map((_, h) => {
+    if(h === 0) return '12a';
+    if(h < 12) return h + 'a';
+    if(h === 12) return '12p';
+    return (h - 12) + 'p';
+  });
+
+  // Color bars by time period
+  const barColors = hourly.map((_, h) => {
+    if(h >= 5 && h < 10) return '#7a9275';   // dawn/morning
+    if(h >= 10 && h < 16) return '#e87a3a';  // midday
+    if(h >= 16 && h < 20) return '#c8a951';  // dusk/evening
+    return '#4A4D4E';                          // night
   });
 
   // Insert canvas if not already there
@@ -4859,12 +5474,12 @@ function renderActivityChart(filteredSightings) {
   intelActivityChartInstance = new Chart(canvas, {
     type: 'bar',
     data: {
-      labels: Object.keys(counts).map(k => k.replace(/\(.+\)/, '').trim()),
+      labels: labels,
       datasets: [{
-        data: Object.values(counts),
-        backgroundColor: '#8C7355',
-        borderRadius: 4,
-        maxBarThickness: 28
+        data: hourly,
+        backgroundColor: barColors,
+        borderRadius: 2,
+        maxBarThickness: 14
       }]
     },
     options: {
@@ -4879,14 +5494,24 @@ function renderActivityChart(filteredSightings) {
           borderColor: '#2a2c2e',
           borderWidth: 1,
           callbacks: {
-            title: (items) => Object.keys(counts)[items[0].dataIndex],
+            title: (items) => {
+              const h = items[0].dataIndex;
+              const suffix = h < 12 ? 'AM' : 'PM';
+              const hr = h === 0 ? 12 : h > 12 ? h - 12 : h;
+              return hr + ':00 ' + suffix;
+            },
             label: (item) => item.raw + ' sighting' + (item.raw !== 1 ? 's' : '')
           }
         }
       },
       scales: {
         x: {
-          ticks: { color: '#8a9199', font: { family: "'Roboto',sans-serif", size: 9 } },
+          ticks: {
+            color: '#8a9199',
+            font: { family: "'Roboto',sans-serif", size: 8 },
+            maxRotation: 0,
+            callback: function(val, i) { return i % 3 === 0 ? labels[i] : ''; }
+          },
           grid: { display: false },
           border: { display: false }
         },
@@ -4908,7 +5533,9 @@ function renderActivityChart(filteredSightings) {
 
 // Box 3: Key Insights (wrapper around fetchAiInsights)
 function renderKeyInsights(filteredSightings) {
-  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  // Cache key includes property context hash so cache invalidates when intel cards change
+  const ctxHash = propertyContextCache ? Object.values(propertyContextCache).join('').length : 0;
+  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length + '_ctx' + ctxHash;
   fetchAiInsights(filteredSightings, cacheKey);
 }
 
@@ -4964,26 +5591,95 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
   }
   if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
 
-  // Build a compact summary of sightings for the AI
+  // Build rich context summary for the AI
   const buckSightings = filteredSightings.filter(s => s.deer_type && s.deer_type.includes('Buck'));
   const cameras = [...new Set(filteredSightings.map(s => s.camera_name).filter(Boolean))];
   const namedBucks = [...new Set(filteredSightings.filter(s => s.buck_name).map(s => s.buck_name))];
   const recentDates = filteredSightings.map(s => s.date).filter(Boolean).sort().reverse().slice(0, 10);
+
+  // Wind breakdown
   const winds = {};
   filteredSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
-  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,3).map(([w]) => w);
+  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,5).map(([w,c]) => w+':'+c);
+
+  // Behavior breakdown
   const behaviors = {};
   filteredSightings.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
 
-  const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
+  // Hourly activity breakdown
+  const hourly = new Array(24).fill(0);
+  filteredSightings.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h >= 0 && h < 24) hourly[h]++; } });
+  const peakHours = hourly.map((c,h) => ({h,c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).slice(0,5).map(x => x.h + ':00(' + x.c + ')');
+
+  // Weather conditions from sightings
+  const temps = filteredSightings.filter(s => s.temp_f).map(s => s.temp_f);
+  const avgTemp = temps.length ? Math.round(temps.reduce((a,b) => a+b, 0) / temps.length) : null;
+  const pressures = filteredSightings.filter(s => s.pressure).map(s => s.pressure);
+  const avgPressure = pressures.length ? Math.round(pressures.reduce((a,b) => a+b, 0) / pressures.length) : null;
+  const precipCount = filteredSightings.filter(s => s.precip && parseFloat(s.precip) > 0).length;
+
+  // Moon phases
+  const moons = {};
+  filteredSightings.forEach(s => { if(s.moon_phase) moons[s.moon_phase] = (moons[s.moon_phase]||0)+1; });
+  const topMoons = Object.entries(moons).sort((a,b) => b[1]-a[1]).slice(0,3).map(([m,c]) => m+':'+c);
+
+  // Monthly breakdown
+  const months = new Array(12).fill(0);
+  const MNAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  filteredSightings.forEach(s => { if(s.date) { const m = parseInt(s.date.slice(5,7)) - 1; if(m >= 0 && m < 12) months[m]++; } });
+  const activeMonths = months.map((c,i) => ({m:MNAMES[i],c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).map(x => x.m+':'+x.c);
+
+  // Property markers
+  const stands = propertyMarkers.filter(m => m.type === 'Stand');
+  const scrapes = propertyMarkers.filter(m => m.type === 'Scrape');
+  const rubs = propertyMarkers.filter(m => m.type === 'Rub');
+  const bedding = propertyMarkers.filter(m => m.type === 'Bedding');
+  const markerSummary = 'Stands: ' + (stands.map(s => s.name || 'unnamed').join(', ') || 'none') +
+    '. Scrapes: ' + scrapes.length + '. Rubs: ' + rubs.length + '. Bedding areas: ' + bedding.length + '.';
+
+  // Property context (user-entered intel cards)
+  let propContext = '';
+  if(propertyContextCache) {
+    propContext = Object.entries(propertyContextCache)
+      .filter(([_,v]) => v)
+      .map(([k,v]) => {
+        const entries = parseIntelEntries(v);
+        const text = entries.map(e => e.text).join(' ');
+        return k + ': ' + text;
+      }).join('. ');
+  }
+
+  // Dynamic property name
+  let propName = 'this property';
+  try {
+    const { data: propData } = await sb.from('properties').select('name, description').eq('id', PROPERTY_ID).maybeSingle();
+    if(propData) propName = propData.name + (propData.description ? ' (' + propData.description + ')' : '');
+  } catch(_) {}
+
+  const summary = 'Property: ' + propName + '. ' +
+    filteredSightings.length + ' total sightings, ' + buckSightings.length + ' bucks. ' +
+    'Named bucks: ' + (namedBucks.join(', ') || 'none') + '. ' +
+    'Cameras: ' + cameras.join(', ') + '. ' +
+    markerSummary + ' ' +
+    'Wind dirs: ' + (topWinds.join(', ') || 'none') + '. ' +
+    'Peak hours: ' + (peakHours.join(', ') || 'none') + '. ' +
+    'Active months: ' + (activeMonths.join(', ') || 'none') + '. ' +
+    (avgTemp !== null ? 'Avg temp: ' + avgTemp + 'F. ' : '') +
+    (avgPressure !== null ? 'Avg pressure: ' + avgPressure + 'mb. ' : '') +
+    (precipCount ? 'Sightings with precip: ' + precipCount + '. ' : '') +
+    (topMoons.length ? 'Moon phases: ' + topMoons.join(', ') + '. ' : '') +
+    'Behaviors: ' + (Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ') || 'none') + '. ' +
+    'Recent dates: ' + recentDates.join(', ') + '. ' +
+    (propContext ? 'Property intel: ' + propContext : '');
 
   try {
     const resp = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 400,
+        max_tokens: 800,
+        system: 'You are a whitetail deer hunting intelligence analyst for Huginn. You analyze property-specific sighting data and deliver sharp, actionable hunting insights. Be specific to this property and this data — never give generic hunting advice. Reference named bucks, specific cameras, and actual patterns in the data. Respond in 4-6 concise insight bullets, each one actionable.',
         messages: [{
           role: 'user',
-          content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
+          content: 'Analyze this property data and provide 4-6 actionable hunting insights. Format as a JSON array of strings.\n\nData: ' + summary
         }]
     });
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
@@ -5342,7 +6038,8 @@ async function renameCameraFromMenu() {
 async function deleteCameraFromMenu() {
   if(!menuTargetCam) return;
   closePinMenu();
-  if(!confirm(`Archive camera "${menuTargetCam}"? Your sighting history will be preserved.`)) return;
+  const ok = await showConfirmModal('Archive camera "' + menuTargetCam + '"? Your sighting history will be preserved.', 'Archive', 'archive');
+  if(!ok) return;
   try {
     await sb.from('cameras').update({ deleted_at: new Date().toISOString() }).eq('name', menuTargetCam);
   } catch(e) { console.error(e); }
@@ -5355,7 +6052,7 @@ async function deleteCameraFromMenu() {
 
 // --- Conditions overlay -
 function updateConditionsOverlay() {
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756" +
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG +
     "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph" +
     "&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1")
   .then(r => r.json()).then(j => {
@@ -5815,10 +6512,155 @@ function renderProfiles(fil, sl) {
 }
 
 function openBuckProfile(bname) {
-  const deerSel = document.getElementById('sfDeer');
-  if(deerSel) deerSel.value = bname;
-  setSightView('feed');
-  showSightBack(bname);
+  const bc = buckColor(bname);
+  const bs = sightings.filter(s => s.buck_name === bname).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if(!bs.length) return;
+
+  document.getElementById('bpName').textContent = bname;
+  document.getElementById('bpName').style.color = bc;
+
+  // --- Stats ---
+  const firstSeen = bs[bs.length - 1]?.date;
+  const lastSeen = bs[0]?.date;
+  const camCount = bs.filter(s => s.source === 'camera' || !s.source).length;
+  const obsCount = bs.filter(s => s.source === 'observation').length;
+  const ageClass = bs[0]?.deer_type || 'Buck';
+
+  let html = `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7"/><path d="M12 14 L15 10 L17 7"/></svg> Overview</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${ageClass}</div>
+    <div class="bp-stat-grid">
+      <div class="bp-stat"><div class="bp-stat-val">${bs.length}</div><div class="bp-stat-lbl">Total</div></div>
+      <div class="bp-stat"><div class="bp-stat-val">${camCount}</div><div class="bp-stat-lbl">Camera</div></div>
+      <div class="bp-stat"><div class="bp-stat-val">${obsCount}</div><div class="bp-stat-lbl">Field Obs</div></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text3)">
+      <span>First: ${fmtD(firstSeen)}</span><span>Last: ${fmtD(lastSeen)}</span>
+    </div>
+  </div>`;
+
+  // --- Top Cameras ---
+  const camCounts = {};
+  bs.forEach(s => { if(s.camera_name) camCounts[s.camera_name] = (camCounts[s.camera_name]||0) + 1; });
+  const topCams = Object.entries(camCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const maxCam = topCams[0]?.[1] || 1;
+  if(topCams.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> Top Cameras</div>
+      ${topCams.map(([cam, cnt]) => `<div class="bp-bar-row">
+        <div class="bp-bar-lbl">${cam}</div>
+        <div class="bp-bar-track"><div class="bp-bar-fill" style="width:${Math.round(cnt/maxCam*100)}%;background:${bc}"></div></div>
+        <div class="bp-bar-cnt">${cnt}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // --- Activity by Hour (mini timeline) ---
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Activity by Hour</div>
+    ${build24HrTimeline(bs, true)}
+  </div>`;
+
+  // --- Wind Rose ---
+  const windCounts = {};
+  bs.forEach(s => { if(s.wind_dir) windCounts[s.wind_dir] = (windCounts[s.wind_dir]||0) + 1; });
+  const maxWind = Math.max(...Object.values(windCounts), 1);
+  const topWinds = Object.entries(windCounts).sort((a,b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+  if(Object.keys(windCounts).length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div>
+      ${buildWindRoseSVG(windCounts, maxWind, topWinds, 80)}
+    </div>`;
+  }
+
+  // --- Behavior Breakdown ---
+  const behCounts = {};
+  bs.forEach(s => { if(s.behavior) behCounts[s.behavior] = (behCounts[s.behavior]||0) + 1; });
+  const behEntries = Object.entries(behCounts).sort((a,b) => b[1] - a[1]);
+  const maxBeh = behEntries[0]?.[1] || 1;
+  if(behEntries.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Behavior</div>
+      ${behEntries.map(([beh, cnt]) => `<div class="bp-bar-row">
+        <div class="bp-bar-lbl">${beh}</div>
+        <div class="bp-bar-track"><div class="bp-bar-fill" style="width:${Math.round(cnt/maxBeh*100)}%;background:${bc}"></div></div>
+        <div class="bp-bar-cnt">${cnt}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // --- Seasonal Activity (monthly) ---
+  const monthCounts = new Array(12).fill(0);
+  bs.forEach(s => { if(s.date) { const m = parseInt(s.date.slice(5,7)) - 1; if(m >= 0 && m < 12) monthCounts[m]++; } });
+  const maxMonth = Math.max(...monthCounts, 1);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Seasonal Activity</div>
+    <div style="display:flex;gap:2px;align-items:flex-end;height:50px">
+      ${monthCounts.map((cnt, i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="width:100%;background:${cnt ? bc : 'var(--border)'};height:${Math.max(2, Math.round(cnt/maxMonth*40))}px;border-radius:2px;opacity:${cnt ? 1 : 0.3}"></div>
+        <div style="font-size:7px;color:var(--text3)">${MONTHS[i]}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  // --- Photos ---
+  const photos = bs.filter(s => s.image_url).map(s => s.image_url);
+  if(photos.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photos (${photos.length})</div>
+      <div class="bp-photo-grid">
+        ${photos.slice(0, 12).map(url => `<img src="${url}" loading="lazy" onclick="window.open('${url}','_blank')"/>`).join('')}
+      </div>
+      ${photos.length > 12 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">+ ${photos.length - 12} more</div>` : ''}
+    </div>`;
+  }
+
+  // --- Notes ---
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Notes</div>
+    <textarea class="bp-notes-area" id="bpNotesArea" placeholder="Add notes about this buck...">${''}</textarea>
+    <button class="bp-save-btn" onclick="saveBuckNotes('${bname.replace(/'/g,"\\'")}')">Save Notes</button>
+  </div>`;
+
+  // --- Recent Sightings Feed ---
+  const recent10 = bs.slice(0, 10);
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Recent Sightings</div>
+    ${recent10.map(s => `<div class="bp-feed-item">
+      <div class="bp-feed-date">${fmtD(s.date)}</div>
+      <div style="flex:1">${s.camera_name || 'Field Obs'} ${s.time ? '· ' + fmtT(s.time) : ''} ${s.behavior ? '· ' + s.behavior : ''}</div>
+    </div>`).join('')}
+  </div>`;
+
+  document.getElementById('bpContent').innerHTML = html;
+
+  // Load buck notes from bucks table
+  loadBuckNotes(bname);
+
+  document.getElementById('bpOverlay').classList.add('on');
+}
+
+function closeBuckProfile() {
+  document.getElementById('bpOverlay').classList.remove('on');
+}
+
+async function loadBuckNotes(bname) {
+  try {
+    const { data } = await sb.from('bucks').select('notes').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    const ta = document.getElementById('bpNotesArea');
+    if(ta && data?.notes) ta.value = data.notes;
+  } catch(e) { /* silent */ }
+}
+
+async function saveBuckNotes(bname) {
+  const notes = document.getElementById('bpNotesArea')?.value || '';
+  try {
+    await sb.from('bucks').update({ notes }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    showToast('Notes saved');
+  } catch(e) {
+    showToast('Failed to save notes');
+  }
 }
 
 function openUnknownBucks() {
@@ -6304,6 +7146,45 @@ let tapToPlaceLngLat = null;
 let tapToPlacePreviewMarker = null;
 let ttpAfterConfirm = null; // optional callback after confirmTapToPlace — bypasses event type modal
 
+function enterTapToPlaceModeAt(lng, lat) {
+  tapToPlaceActive = true;
+  if(!mapInstance) return;
+  tapToPlaceLngLat = { lat: lat, lng: lng };
+  if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
+  const el = document.createElement('div');
+  el.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:grab';
+  el.innerHTML =
+    '<div style="width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center;animation:ttpGlow 1.4s ease-in-out infinite" id="ttpPinInner">' +
+    '<svg style="position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.8))" viewBox="0 0 36 44" fill="none">' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+    '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="#f0c75a" stroke-width="1.5"/>' +
+    '</svg>' +
+    '<div style="position:relative;z-index:1;padding-bottom:10px">' +
+    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>' +
+    '</div></div>';
+  tapToPlacePreviewMarker = new mapboxgl.Marker({ element: el, anchor: 'bottom', draggable: true })
+    .setLngLat([lng, lat])
+    .addTo(mapInstance);
+  tapToPlacePreviewMarker.on('drag', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  });
+  tapToPlacePreviewMarker.on('dragend', () => {
+    const pos = tapToPlacePreviewMarker.getLngLat();
+    tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+    const coordEl = document.getElementById('ttpLocCoords');
+    if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  });
+  // Show location confirm card
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = lat.toFixed(5) + ', ' + lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+  // Pan map to the pin location
+  mapInstance.panTo([lng, lat]);
+}
+
 function enterTapToPlaceMode() {
   tapToPlaceActive = true;
   if(!mapInstance) return;
@@ -6365,9 +7246,11 @@ function confirmTapToPlace() {
 function cancelTapToPlace() {
   tapToPlaceActive = false;
   tapToPlaceLngLat = null;
+  ttpAfterConfirm = null;
   if(tapToPlacePreviewMarker) { tapToPlacePreviewMarker.remove(); tapToPlacePreviewMarker = null; }
   document.getElementById('ttpLocModal').classList.remove('on');
   document.getElementById('ttpTypeModal').classList.remove('on');
+  if(ttpOnCancel) { const cb = ttpOnCancel; ttpOnCancel = null; cb(); }
 }
 
 function showEventTypeModal() {
@@ -6576,6 +7459,7 @@ async function submitFeatureMarker() {
 }
 
 async function loadPropertyMarkers() {
+  if(onboardingMode) return;
   try {
     const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID).is('deleted_at', null);
     if(error || !data) return;
@@ -6592,9 +7476,10 @@ function renderPropertyMarkers() {
 
 function addPropertyMarker(m) {
   if(!mapInstance || !m.lat || !m.lng) return;
-  // Visibility: Stand always shown; Scrape/Rub respect scrapeMarkersVisible; Bedding respects beddingMarkersVisible
+  // Visibility: Stand always shown; Scrape, Rub, Bedding each have independent toggles
   const t = m.type;
-  if((t === 'Scrape' || t === 'Rub') && !scrapeMarkersVisible) return;
+  if(t === 'Scrape' && !scrapeMarkersVisible) return;
+  if(t === 'Rub' && !rubMarkersVisible) return;
   if(t === 'Bedding' && !beddingMarkersVisible) return;
   const fill   = m.color || FEAT_COLORS[t]  || '#8C7355';
   const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
@@ -6688,7 +7573,7 @@ function showFeaturePopup(m) {
     ' Delete</button>';
 
   pendingFeatColor = null;
-  ['camColorRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
+  ['camColorRow','camFacingRow','camSaveRow','featSaveRow'].forEach(id => { const el = document.getElementById(id); if(el) el.remove(); });
   popup.classList.add('show');
   // Color swatch row for feature marker
   const featColorRow = buildColorSwatchRow(
@@ -6701,7 +7586,7 @@ function showFeaturePopup(m) {
   const featSaveRow = document.createElement('div');
   featSaveRow.id = 'featSaveRow';
   featSaveRow.style.cssText = 'padding:8px 12px 12px;border-top:1px solid var(--border)';
-  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings(${m.id})" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
+  featSaveRow.innerHTML = `<button onclick="saveFeatPinSettings('${m.id}')" style="width:100%;padding:9px;border-radius:8px;border:1px solid var(--border2);background:var(--surface2);color:var(--text1);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save Changes</button>`;
   actions.parentNode.appendChild(featSaveRow);
 }
 
@@ -6752,23 +7637,157 @@ function cancelFeatEdit() {
   document.getElementById('featEditModal').classList.remove('on');
 }
 
+let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
+let ttpMoveMarkerId = null; // ID of marker being moved
+let ttpMoveMarkerInst = null; // existing marker instance (hidden during move)
+let ttpMoveTempMarker = null; // temporary draggable marker
+let ttpMoveOldLat = null;
+let ttpMoveOldLng = null;
+
 function moveFeatMarker() {
   if(!activeFeatureMarker) return;
+  if(ttpMoveMarkerId) { console.log('Move already in progress, ignoring duplicate call'); return; }
   const m = activeFeatureMarker;
+  ttpMoveMarkerId = m.id;
+  ttpMoveOldLat = m.lat;
+  ttpMoveOldLng = m.lng;
+
+  // Find existing marker instance for expanded log
+  let logInst = null;
+  for(const inst of propertyMarkerInstances) {
+    const ll = inst.getLngLat();
+    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
+      logInst = inst;
+      break;
+    }
+  }
+  console.log('Move initiated:', {
+    id: ttpMoveMarkerId,
+    lat: logInst ? logInst.getLngLat().lat : m.lat,
+    lng: logInst ? logInst.getLngLat().lng : m.lng,
+    isDraggable: logInst ? logInst.isDraggable() : 'no instance found'
+  });
   closePopup();
+
+  // Find the rendered Mapbox marker instance for this pin
+  let targetInst = null;
+  for(const inst of propertyMarkerInstances) {
+    const ll = inst.getLngLat();
+    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
+      targetInst = inst;
+      break;
+    }
+  }
+  if(!targetInst) { showToast('Could not find pin on map'); return; }
+  ttpMoveMarkerInst = targetInst;
+
+  // Hide the existing marker (opacity 0, do not remove)
+  const existingEl = targetInst.getElement();
+  if(existingEl) existingEl.style.opacity = '0';
+
+  // Build temporary draggable marker with SAME SVG/color as existing pin + pulse
+  const t = m.type;
+  const fill = m.color || FEAT_COLORS[t] || '#8C7355';
+  const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
+  const icon = FEAT_ICONS[t] || '';
+  const lbl = m.name || t;
+
+  const tempEl = document.createElement('div');
+  tempEl.className = 'cam-marker';
+  tempEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
+  tempEl.innerHTML =
+    '<div class="cam-lbl">' + lbl + '</div>' +
+    '<div class="cam-pin">' +
+      '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+      '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+      '</svg>' +
+      '<div class="cam-pin-content"><div class="cam-pin-ico">' + icon + '</div></div>' +
+    '</div>';
+
+  ttpMoveTempMarker = new mapboxgl.Marker({ element: tempEl, anchor: 'bottom', offset: [0, 0], draggable: true })
+    .setLngLat([m.lng, m.lat])
+    .addTo(mapInstance);
+
+  // Track drag position
+  ttpMoveTempMarker.on('drag', onMoveDrag);
+  ttpMoveTempMarker.on('dragend', onMoveDrag);
+
+  // Show location confirm card
+  tapToPlaceActive = true;
+  tapToPlaceLngLat = { lat: m.lat, lng: m.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = m.lat.toFixed(5) + ', ' + m.lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+
+  // Confirm callback
   ttpAfterConfirm = () => {
-    const newLoc = tapToPlaceLngLat;
-    cancelTapToPlace();
-    sb.from('property_markers').update({ lat: newLoc.lat, lng: newLoc.lng }).eq('id', m.id).then(({error}) => {
-      if(error) { showToast('Move failed — try again'); return; }
-      const idx = propertyMarkers.findIndex(x => x.id === m.id);
-      if(idx >= 0) { propertyMarkers[idx].lat = newLoc.lat; propertyMarkers[idx].lng = newLoc.lng; }
-      renderPropertyMarkers();
-      showToast((m.name || m.type) + ' location updated');
+    const ll = ttpMoveTempMarker.getLngLat();
+    const newLat = ll.lat;
+    const newLng = ll.lng;
+    console.log('Move confirm:', { newLat, newLng, ttpMoveMarkerId });
+
+    // Clean up TTP state (do not call cancelTapToPlace)
+    tapToPlaceActive = false;
+    tapToPlaceLngLat = null;
+    ttpAfterConfirm = null;
+    document.getElementById('ttpLocModal').classList.remove('on');
+
+    // Remove temp marker
+    ttpMoveTempMarker.remove();
+    ttpMoveTempMarker = null;
+
+    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
+    const oldHistory = m.location_history || [];
+    const newHistory = [...oldHistory, historyEntry];
+
+    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).then(({error}) => {
+      if(error) {
+        console.error('Move save error:', error);
+        showToast('Move failed — try again');
+        // Restore existing marker visibility at original position
+        if(existingEl) existingEl.style.opacity = '1';
+      } else {
+        const idx = propertyMarkers.findIndex(x => x.id === ttpMoveMarkerId);
+        if(idx >= 0) {
+          propertyMarkers[idx].lat = newLat;
+          propertyMarkers[idx].lng = newLng;
+          propertyMarkers[idx].location_history = newHistory;
+        }
+        renderPropertyMarkers();
+        showToast((m.name || m.type) + ' moved');
+      }
+      ttpMoveMarkerId = null;
+      ttpMoveMarkerInst = null;
+      ttpMoveTempMarker = null;
+      ttpMoveOldLat = null;
+      ttpMoveOldLng = null;
+      activeFeatureMarker = null;
     });
-    activeFeatureMarker = null;
   };
-  enterTapToPlaceMode();
+
+  // Cancel callback
+  ttpOnCancel = () => {
+    if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
+    if(ttpMoveMarkerInst) {
+      const el = ttpMoveMarkerInst.getElement();
+      if(el) el.style.opacity = '1';
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+}
+
+function onMoveDrag() {
+  if(!ttpMoveTempMarker) return;
+  const pos = ttpMoveTempMarker.getLngLat();
+  tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
 }
 
 function deleteFeatMarker(btnEl) {
@@ -8149,9 +9168,26 @@ function renderDash() {
     <div class="sbox"><div class="snum">${matureCount}</div><div class="slbl">Mature</div></div>
   </div>`;
 
+  const emptyMsg = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 8px;line-height:1.6">Log your first sighting to unlock this insight</div>';
+
   if(!totalCount) {
-    html += `<div class="card"><p style="color:#4A4D4E;font-size:13px;text-align:center;padding:20px">Log your first sighting to see intelligence data.</p></div>`;
+    // Show full Intel structure with empty state placeholders
+    html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Analytics</div>`;
+    html += `<div class="intel-4grid" style="margin-bottom:32px">
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="12" width="4" height="9" rx="1"/><rect x="10" y="7" width="4" height="14" rx="1"/><rect x="17" y="3" width="4" height="18" rx="1"/></svg> Activity by Time</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div><div class="intel-box-body">${emptyMsg}</div></div>
+      <div class="intel-box"><div class="intel-box-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Recent Camera Activity</div><div class="intel-box-body">${emptyMsg}</div></div>
+    </div>`;
+
+    // Still show forecast for new users
+    html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">7-Day Forecast</div>`;
+    html += `<div class="prop-stat" style="margin-bottom:32px">
+      <div id="forecastContent" style="font-size:11px;color:var(--text3);padding:4px 0">Loading forecast...</div>
+    </div>`;
+
     document.getElementById("intelContent").innerHTML = html;
+    loadHuntForecast();
     return;
   }
 
