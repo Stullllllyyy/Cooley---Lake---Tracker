@@ -2820,8 +2820,10 @@ async function bootApp() {
     .maybeSingle();
 
   if(!membership || !membership.property_id) {
-    // New user with no property — route to onboarding setup
+    // New user with no property — init map (no data) then show onboarding
+    onboardingMode = true;
     document.getElementById('authGate').style.display = 'none';
+    startMap();
     showOnboarding(user.id);
     return;
   }
@@ -2888,6 +2890,7 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
+  console.log('drop pin clicked, mapInstance:', !!mapInstance);
   if(!mapInstance) { showToast('Map not ready — try again in a moment'); return; }
   onboardingMode = true;
   document.getElementById('onboardOverlay').style.opacity = '0';
@@ -3234,6 +3237,7 @@ async function updateBuckDates(buckId, sightingDate) {
 
 // --- data -
 async function loadSightings() {
+  if(onboardingMode) return;
   syncDot(true);
   const {data, error} = await sb.from('sightings').select('*')
     .eq('property_id', PROPERTY_ID)
@@ -3601,6 +3605,7 @@ let lineLayerAdded = false;
 let editMode = false;
 
 async function loadCamLocations() {
+  if(onboardingMode) return;
   const { data, error } = await sb.from('cameras').select('name, lng, lat, color').eq('property_id', PROPERTY_ID).is('deleted_at', null).order('id');
   if(error) { console.error('loadCamLocations error:', error); return; }
   if(data && data.length) {
@@ -7403,6 +7408,7 @@ async function submitFeatureMarker() {
 }
 
 async function loadPropertyMarkers() {
+  if(onboardingMode) return;
   try {
     const {data, error} = await sb.from('property_markers').select('*').eq('property_id', PROPERTY_ID).is('deleted_at', null);
     if(error || !data) return;
