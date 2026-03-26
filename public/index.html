@@ -401,6 +401,32 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .profile-last{font-size:11px;color:var(--text2)}
 .profile-count{font-size:16px;font-weight:700;color:var(--bronze);text-align:right;flex-shrink:0;min-width:32px}
 .profile-count-lbl{font-size:9px;color:var(--text3);text-align:right}
+/* buck profile dossier */
+.bp-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.75);z-index:500;display:none;align-items:flex-end;justify-content:center}
+.bp-overlay.on{display:flex}
+.bp-sheet{background:var(--surface);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:calc(92dvh - var(--tab-h));overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px)}
+@supports not (height:100dvh){.bp-sheet{max-height:calc(92vh - var(--tab-h))}}
+.bp-hdr{display:flex;align-items:center;justify-content:space-between;padding:16px 18px 12px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:1}
+.bp-name{font-size:18px;font-weight:700}
+.bp-section{padding:14px 18px;border-bottom:1px solid var(--border)}
+.bp-section:last-child{border-bottom:none}
+.bp-section-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.bp-stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.bp-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 8px;text-align:center}
+.bp-stat-val{font-size:16px;font-weight:700;color:var(--text)}
+.bp-stat-lbl{font-size:9px;color:var(--text3);margin-top:2px}
+.bp-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bp-bar-lbl{font-size:11px;color:var(--text2);width:70px;text-align:right;flex-shrink:0}
+.bp-bar-track{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.bp-bar-fill{height:100%;border-radius:3px}
+.bp-bar-cnt{font-size:10px;color:var(--text3);width:24px;text-align:right;flex-shrink:0}
+.bp-photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.bp-photo-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid var(--border);cursor:pointer}
+.bp-feed-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.bp-feed-item:last-child{border-bottom:none}
+.bp-feed-date{font-size:10px;color:var(--text3);width:65px;flex-shrink:0}
+.bp-notes-area{width:100%;min-height:60px;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical}
+.bp-save-btn{margin-top:8px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
 .group-hdr{padding:10px 14px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 
 /* log form */
@@ -958,6 +984,17 @@ textarea{resize:none}
       <div class="intel-cards-view" id="intelCardsView"></div>
     </div>
 
+  </div>
+</div>
+
+<!-- Buck Profile Dossier -->
+<div class="bp-overlay" id="bpOverlay" onclick="closeBuckProfile()">
+  <div class="bp-sheet" onclick="event.stopPropagation()">
+    <div class="bp-hdr">
+      <div class="bp-name" id="bpName"></div>
+      <button class="modal-x" onclick="closeBuckProfile()">&#215;</button>
+    </div>
+    <div id="bpContent"></div>
   </div>
 </div>
 
@@ -6227,10 +6264,155 @@ function renderProfiles(fil, sl) {
 }
 
 function openBuckProfile(bname) {
-  const deerSel = document.getElementById('sfDeer');
-  if(deerSel) deerSel.value = bname;
-  setSightView('feed');
-  showSightBack(bname);
+  const bc = buckColor(bname);
+  const bs = sightings.filter(s => s.buck_name === bname).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  if(!bs.length) return;
+
+  document.getElementById('bpName').textContent = bname;
+  document.getElementById('bpName').style.color = bc;
+
+  // --- Stats ---
+  const firstSeen = bs[bs.length - 1]?.date;
+  const lastSeen = bs[0]?.date;
+  const camCount = bs.filter(s => s.source === 'camera' || !s.source).length;
+  const obsCount = bs.filter(s => s.source === 'observation').length;
+  const ageClass = bs[0]?.deer_type || 'Buck';
+
+  let html = `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7"/><path d="M12 14 L15 10 L17 7"/></svg> Overview</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${ageClass}</div>
+    <div class="bp-stat-grid">
+      <div class="bp-stat"><div class="bp-stat-val">${bs.length}</div><div class="bp-stat-lbl">Total</div></div>
+      <div class="bp-stat"><div class="bp-stat-val">${camCount}</div><div class="bp-stat-lbl">Camera</div></div>
+      <div class="bp-stat"><div class="bp-stat-val">${obsCount}</div><div class="bp-stat-lbl">Field Obs</div></div>
+    </div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:11px;color:var(--text3)">
+      <span>First: ${fmtD(firstSeen)}</span><span>Last: ${fmtD(lastSeen)}</span>
+    </div>
+  </div>`;
+
+  // --- Top Cameras ---
+  const camCounts = {};
+  bs.forEach(s => { if(s.camera_name) camCounts[s.camera_name] = (camCounts[s.camera_name]||0) + 1; });
+  const topCams = Object.entries(camCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+  const maxCam = topCams[0]?.[1] || 1;
+  if(topCams.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> Top Cameras</div>
+      ${topCams.map(([cam, cnt]) => `<div class="bp-bar-row">
+        <div class="bp-bar-lbl">${cam}</div>
+        <div class="bp-bar-track"><div class="bp-bar-fill" style="width:${Math.round(cnt/maxCam*100)}%;background:${bc}"></div></div>
+        <div class="bp-bar-cnt">${cnt}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // --- Activity by Hour (mini timeline) ---
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Activity by Hour</div>
+    ${build24HrTimeline(bs, true)}
+  </div>`;
+
+  // --- Wind Rose ---
+  const windCounts = {};
+  bs.forEach(s => { if(s.wind_dir) windCounts[s.wind_dir] = (windCounts[s.wind_dir]||0) + 1; });
+  const maxWind = Math.max(...Object.values(windCounts), 1);
+  const topWinds = Object.entries(windCounts).sort((a,b) => b[1] - a[1]).slice(0, 3).map(e => e[0]);
+  if(Object.keys(windCounts).length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Rose</div>
+      ${buildWindRoseSVG(windCounts, maxWind, topWinds, 80)}
+    </div>`;
+  }
+
+  // --- Behavior Breakdown ---
+  const behCounts = {};
+  bs.forEach(s => { if(s.behavior) behCounts[s.behavior] = (behCounts[s.behavior]||0) + 1; });
+  const behEntries = Object.entries(behCounts).sort((a,b) => b[1] - a[1]);
+  const maxBeh = behEntries[0]?.[1] || 1;
+  if(behEntries.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Behavior</div>
+      ${behEntries.map(([beh, cnt]) => `<div class="bp-bar-row">
+        <div class="bp-bar-lbl">${beh}</div>
+        <div class="bp-bar-track"><div class="bp-bar-fill" style="width:${Math.round(cnt/maxBeh*100)}%;background:${bc}"></div></div>
+        <div class="bp-bar-cnt">${cnt}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+
+  // --- Seasonal Activity (monthly) ---
+  const monthCounts = new Array(12).fill(0);
+  bs.forEach(s => { if(s.date) { const m = parseInt(s.date.slice(5,7)) - 1; if(m >= 0 && m < 12) monthCounts[m]++; } });
+  const maxMonth = Math.max(...monthCounts, 1);
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Seasonal Activity</div>
+    <div style="display:flex;gap:2px;align-items:flex-end;height:50px">
+      ${monthCounts.map((cnt, i) => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+        <div style="width:100%;background:${cnt ? bc : 'var(--border)'};height:${Math.max(2, Math.round(cnt/maxMonth*40))}px;border-radius:2px;opacity:${cnt ? 1 : 0.3}"></div>
+        <div style="font-size:7px;color:var(--text3)">${MONTHS[i]}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+
+  // --- Photos ---
+  const photos = bs.filter(s => s.image_url).map(s => s.image_url);
+  if(photos.length) {
+    html += `<div class="bp-section">
+      <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Photos (${photos.length})</div>
+      <div class="bp-photo-grid">
+        ${photos.slice(0, 12).map(url => `<img src="${url}" loading="lazy" onclick="window.open('${url}','_blank')"/>`).join('')}
+      </div>
+      ${photos.length > 12 ? `<div style="font-size:10px;color:var(--text3);margin-top:6px;text-align:center">+ ${photos.length - 12} more</div>` : ''}
+    </div>`;
+  }
+
+  // --- Notes ---
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Notes</div>
+    <textarea class="bp-notes-area" id="bpNotesArea" placeholder="Add notes about this buck...">${''}</textarea>
+    <button class="bp-save-btn" onclick="saveBuckNotes('${bname.replace(/'/g,"\\'")}')">Save Notes</button>
+  </div>`;
+
+  // --- Recent Sightings Feed ---
+  const recent10 = bs.slice(0, 10);
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Recent Sightings</div>
+    ${recent10.map(s => `<div class="bp-feed-item">
+      <div class="bp-feed-date">${fmtD(s.date)}</div>
+      <div style="flex:1">${s.camera_name || 'Field Obs'} ${s.time ? '· ' + fmtT(s.time) : ''} ${s.behavior ? '· ' + s.behavior : ''}</div>
+    </div>`).join('')}
+  </div>`;
+
+  document.getElementById('bpContent').innerHTML = html;
+
+  // Load buck notes from bucks table
+  loadBuckNotes(bname);
+
+  document.getElementById('bpOverlay').classList.add('on');
+}
+
+function closeBuckProfile() {
+  document.getElementById('bpOverlay').classList.remove('on');
+}
+
+async function loadBuckNotes(bname) {
+  try {
+    const { data } = await sb.from('bucks').select('notes').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    const ta = document.getElementById('bpNotesArea');
+    if(ta && data?.notes) ta.value = data.notes;
+  } catch(e) { /* silent */ }
+}
+
+async function saveBuckNotes(bname) {
+  const notes = document.getElementById('bpNotesArea')?.value || '';
+  try {
+    await sb.from('bucks').update({ notes }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    showToast('Notes saved');
+  } catch(e) {
+    showToast('Failed to save notes');
+  }
 }
 
 function openUnknownBucks() {
