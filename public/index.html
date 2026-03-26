@@ -7639,7 +7639,8 @@ function cancelFeatEdit() {
 
 let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
 let ttpMoveMarkerId = null; // ID of marker being moved
-let ttpMoveMarkerInst = null; // Mapbox marker instance being moved
+let ttpMoveMarkerInst = null; // existing marker instance (hidden during move)
+let ttpMoveTempMarker = null; // temporary draggable marker
 let ttpMoveOldLat = null;
 let ttpMoveOldLng = null;
 
@@ -7649,12 +7650,10 @@ function moveFeatMarker() {
   ttpMoveMarkerId = m.id;
   ttpMoveOldLat = m.lat;
   ttpMoveOldLng = m.lng;
-  console.log('Move initiated for marker ID:', ttpMoveMarkerId);
+  console.log('Move initiated:', { id: ttpMoveMarkerId, lat: ttpMoveOldLat, lng: ttpMoveOldLng });
   closePopup();
 
   // Find the rendered Mapbox marker instance for this pin
-  const markerIdx = propertyMarkers.findIndex(x => x.id === m.id);
-  // propertyMarkerInstances is parallel to the rendered subset — find by matching lngLat
   let targetInst = null;
   for(const inst of propertyMarkerInstances) {
     const ll = inst.getLngLat();
@@ -7663,53 +7662,66 @@ function moveFeatMarker() {
       break;
     }
   }
-
-  if(!targetInst) {
-    showToast('Could not find pin on map');
-    return;
-  }
-
+  if(!targetInst) { showToast('Could not find pin on map'); return; }
   ttpMoveMarkerInst = targetInst;
 
-  // Make the existing pin draggable and add pulse animation
-  targetInst.setDraggable(true);
-  const pinEl = targetInst.getElement();
-  if(pinEl) {
-    pinEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
-    pinEl.style.cursor = 'grab';
-    pinEl.style.zIndex = '10';
-  }
+  // Hide the existing marker (opacity 0, do not remove)
+  const existingEl = targetInst.getElement();
+  if(existingEl) existingEl.style.opacity = '0';
+
+  // Build temporary draggable marker with SAME SVG/color as existing pin + pulse
+  const t = m.type;
+  const fill = m.color || FEAT_COLORS[t] || '#8C7355';
+  const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
+  const icon = FEAT_ICONS[t] || '';
+  const lbl = m.name || t;
+
+  const tempEl = document.createElement('div');
+  tempEl.className = 'cam-marker';
+  tempEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
+  tempEl.innerHTML =
+    '<div class="cam-lbl">' + lbl + '</div>' +
+    '<div class="cam-pin">' +
+      '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+      '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="' + fill + '" stroke="' + stroke + '" stroke-width="1.5"/>' +
+      '</svg>' +
+      '<div class="cam-pin-content"><div class="cam-pin-ico">' + icon + '</div></div>' +
+    '</div>';
+
+  ttpMoveTempMarker = new mapboxgl.Marker({ element: tempEl, anchor: 'bottom', offset: [0, 0], draggable: true })
+    .setLngLat([m.lng, m.lat])
+    .addTo(mapInstance);
 
   // Track drag position
-  targetInst.on('drag', onMoveDrag);
-  targetInst.on('dragend', onMoveDrag);
+  ttpMoveTempMarker.on('drag', onMoveDrag);
+  ttpMoveTempMarker.on('dragend', onMoveDrag);
 
-  // Show the location confirm card with current coordinates
+  // Show location confirm card
   tapToPlaceActive = true;
   tapToPlaceLngLat = { lat: m.lat, lng: m.lng };
   const coordEl = document.getElementById('ttpLocCoords');
   if(coordEl) coordEl.textContent = m.lat.toFixed(5) + ', ' + m.lng.toFixed(5);
   document.getElementById('ttpLocModal').classList.add('on');
 
-  // Set confirm callback
+  // Confirm callback
   ttpAfterConfirm = () => {
-    const ll = targetInst.getLngLat();
+    const ll = ttpMoveTempMarker.getLngLat();
     const newLat = ll.lat;
     const newLng = ll.lng;
+    console.log('Move confirm:', { newLat, newLng, ttpMoveMarkerId });
 
-    // Stop dragging, remove pulse
-    targetInst.setDraggable(false);
-    targetInst.off('drag', onMoveDrag);
-    targetInst.off('dragend', onMoveDrag);
-    if(pinEl) { pinEl.style.animation = ''; pinEl.style.cursor = ''; pinEl.style.zIndex = ''; }
-
-    // Clean up TTP state without firing ttpOnCancel
+    // Clean up TTP state (do not call cancelTapToPlace)
     tapToPlaceActive = false;
     tapToPlaceLngLat = null;
     ttpAfterConfirm = null;
     document.getElementById('ttpLocModal').classList.remove('on');
 
-    console.log('Move save attempt:', { ttpMoveMarkerId, newLat, newLng, hasId: !!ttpMoveMarkerId });
+    // Remove temp marker
+    ttpMoveTempMarker.remove();
+    ttpMoveTempMarker = null;
 
     const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
     const oldHistory = m.location_history || [];
@@ -7719,8 +7731,8 @@ function moveFeatMarker() {
       if(error) {
         console.error('Move save error:', error);
         showToast('Move failed — try again');
-        // Restore original position
-        targetInst.setLngLat([ttpMoveOldLng, ttpMoveOldLat]);
+        // Restore existing marker visibility at original position
+        if(existingEl) existingEl.style.opacity = '1';
       } else {
         const idx = propertyMarkers.findIndex(x => x.id === ttpMoveMarkerId);
         if(idx >= 0) {
@@ -7733,22 +7745,19 @@ function moveFeatMarker() {
       }
       ttpMoveMarkerId = null;
       ttpMoveMarkerInst = null;
+      ttpMoveTempMarker = null;
       ttpMoveOldLat = null;
       ttpMoveOldLng = null;
       activeFeatureMarker = null;
     });
   };
 
-  // Set cancel callback
+  // Cancel callback
   ttpOnCancel = () => {
-    // Restore original position, stop dragging, remove pulse
+    if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
     if(ttpMoveMarkerInst) {
-      ttpMoveMarkerInst.setLngLat([ttpMoveOldLng, ttpMoveOldLat]);
-      ttpMoveMarkerInst.setDraggable(false);
-      ttpMoveMarkerInst.off('drag', onMoveDrag);
-      ttpMoveMarkerInst.off('dragend', onMoveDrag);
       const el = ttpMoveMarkerInst.getElement();
-      if(el) { el.style.animation = ''; el.style.cursor = ''; el.style.zIndex = ''; }
+      if(el) el.style.opacity = '1';
     }
     ttpMoveMarkerId = null;
     ttpMoveMarkerInst = null;
@@ -7758,8 +7767,8 @@ function moveFeatMarker() {
 }
 
 function onMoveDrag() {
-  if(!ttpMoveMarkerInst) return;
-  const pos = ttpMoveMarkerInst.getLngLat();
+  if(!ttpMoveTempMarker) return;
+  const pos = ttpMoveTempMarker.getLngLat();
   tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
   const coordEl = document.getElementById('ttpLocCoords');
   if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
