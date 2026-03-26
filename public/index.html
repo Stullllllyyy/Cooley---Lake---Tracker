@@ -5535,7 +5535,9 @@ function renderActivityChart(filteredSightings) {
 
 // Box 3: Key Insights (wrapper around fetchAiInsights)
 function renderKeyInsights(filteredSightings) {
-  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length;
+  // Cache key includes property context hash so cache invalidates when intel cards change
+  const ctxHash = propertyContextCache ? Object.values(propertyContextCache).join('').length : 0;
+  const cacheKey = intelYear + '_' + intelBuck + '_' + filteredSightings.length + '_ctx' + ctxHash;
   fetchAiInsights(filteredSightings, cacheKey);
 }
 
@@ -5591,26 +5593,95 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
   }
   if(el) el.innerHTML = `<div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing sightings data...</div>`;
 
-  // Build a compact summary of sightings for the AI
+  // Build rich context summary for the AI
   const buckSightings = filteredSightings.filter(s => s.deer_type && s.deer_type.includes('Buck'));
   const cameras = [...new Set(filteredSightings.map(s => s.camera_name).filter(Boolean))];
   const namedBucks = [...new Set(filteredSightings.filter(s => s.buck_name).map(s => s.buck_name))];
   const recentDates = filteredSightings.map(s => s.date).filter(Boolean).sort().reverse().slice(0, 10);
+
+  // Wind breakdown
   const winds = {};
   filteredSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
-  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,3).map(([w]) => w);
+  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,5).map(([w,c]) => w+':'+c);
+
+  // Behavior breakdown
   const behaviors = {};
   filteredSightings.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
 
-  const summary = `Property: Cooley Lake, Suring WI (~100 acres). ${filteredSightings.length} total sightings, ${buckSightings.length} bucks. Named bucks: ${namedBucks.join(', ') || 'none'}. Cameras: ${cameras.join(', ')}. Top wind dirs: ${topWinds.join(', ')}. Recent dates: ${recentDates.join(', ')}. Behaviors: ${Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ')}.`;
+  // Hourly activity breakdown
+  const hourly = new Array(24).fill(0);
+  filteredSightings.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h >= 0 && h < 24) hourly[h]++; } });
+  const peakHours = hourly.map((c,h) => ({h,c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).slice(0,5).map(x => x.h + ':00(' + x.c + ')');
+
+  // Weather conditions from sightings
+  const temps = filteredSightings.filter(s => s.temp_f).map(s => s.temp_f);
+  const avgTemp = temps.length ? Math.round(temps.reduce((a,b) => a+b, 0) / temps.length) : null;
+  const pressures = filteredSightings.filter(s => s.pressure).map(s => s.pressure);
+  const avgPressure = pressures.length ? Math.round(pressures.reduce((a,b) => a+b, 0) / pressures.length) : null;
+  const precipCount = filteredSightings.filter(s => s.precip && parseFloat(s.precip) > 0).length;
+
+  // Moon phases
+  const moons = {};
+  filteredSightings.forEach(s => { if(s.moon_phase) moons[s.moon_phase] = (moons[s.moon_phase]||0)+1; });
+  const topMoons = Object.entries(moons).sort((a,b) => b[1]-a[1]).slice(0,3).map(([m,c]) => m+':'+c);
+
+  // Monthly breakdown
+  const months = new Array(12).fill(0);
+  const MNAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  filteredSightings.forEach(s => { if(s.date) { const m = parseInt(s.date.slice(5,7)) - 1; if(m >= 0 && m < 12) months[m]++; } });
+  const activeMonths = months.map((c,i) => ({m:MNAMES[i],c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).map(x => x.m+':'+x.c);
+
+  // Property markers
+  const stands = propertyMarkers.filter(m => m.type === 'Stand');
+  const scrapes = propertyMarkers.filter(m => m.type === 'Scrape');
+  const rubs = propertyMarkers.filter(m => m.type === 'Rub');
+  const bedding = propertyMarkers.filter(m => m.type === 'Bedding');
+  const markerSummary = 'Stands: ' + (stands.map(s => s.name || 'unnamed').join(', ') || 'none') +
+    '. Scrapes: ' + scrapes.length + '. Rubs: ' + rubs.length + '. Bedding areas: ' + bedding.length + '.';
+
+  // Property context (user-entered intel cards)
+  let propContext = '';
+  if(propertyContextCache) {
+    propContext = Object.entries(propertyContextCache)
+      .filter(([_,v]) => v)
+      .map(([k,v]) => {
+        const entries = parseIntelEntries(v);
+        const text = entries.map(e => e.text).join(' ');
+        return k + ': ' + text;
+      }).join('. ');
+  }
+
+  // Dynamic property name
+  let propName = 'this property';
+  try {
+    const { data: propData } = await sb.from('properties').select('name, description').eq('id', PROPERTY_ID).maybeSingle();
+    if(propData) propName = propData.name + (propData.description ? ' (' + propData.description + ')' : '');
+  } catch(_) {}
+
+  const summary = 'Property: ' + propName + '. ' +
+    filteredSightings.length + ' total sightings, ' + buckSightings.length + ' bucks. ' +
+    'Named bucks: ' + (namedBucks.join(', ') || 'none') + '. ' +
+    'Cameras: ' + cameras.join(', ') + '. ' +
+    markerSummary + ' ' +
+    'Wind dirs: ' + (topWinds.join(', ') || 'none') + '. ' +
+    'Peak hours: ' + (peakHours.join(', ') || 'none') + '. ' +
+    'Active months: ' + (activeMonths.join(', ') || 'none') + '. ' +
+    (avgTemp !== null ? 'Avg temp: ' + avgTemp + 'F. ' : '') +
+    (avgPressure !== null ? 'Avg pressure: ' + avgPressure + 'mb. ' : '') +
+    (precipCount ? 'Sightings with precip: ' + precipCount + '. ' : '') +
+    (topMoons.length ? 'Moon phases: ' + topMoons.join(', ') + '. ' : '') +
+    'Behaviors: ' + (Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ') || 'none') + '. ' +
+    'Recent dates: ' + recentDates.join(', ') + '. ' +
+    (propContext ? 'Property intel: ' + propContext : '');
 
   try {
     const resp = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 400,
+        max_tokens: 800,
+        system: 'You are a whitetail deer hunting intelligence analyst for Huginn. You analyze property-specific sighting data and deliver sharp, actionable hunting insights. Be specific to this property and this data — never give generic hunting advice. Reference named bucks, specific cameras, and actual patterns in the data. Respond in 4-6 concise insight bullets, each one actionable.',
         messages: [{
           role: 'user',
-          content: `You are a whitetail deer hunting intelligence analyst. Given this sighting data summary, provide exactly 3-4 short actionable hunting insights. Each insight should be 1-2 sentences max. Focus on: best times/conditions to hunt, which cameras to prioritize, wind strategies, or buck behavior patterns. Be specific and practical. Format as a JSON array of strings.\n\nData: ${summary}`
+          content: 'Analyze this property data and provide 4-6 actionable hunting insights. Format as a JSON array of strings.\n\nData: ' + summary
         }]
     });
     if(!resp.ok) throw new Error('HTTP ' + resp.status);
