@@ -1724,12 +1724,12 @@ function showDet(id) {
   openSheet('detail');
 }
 
-// Map weather pill updater — uses GPS if available, then map center, then property center as fallback
+// Map weather pill updater — uses GPS if available, then map center. Never uses CLAT/CLNG.
 function updateMapWeather() {
   let lat, lng;
   if(lastKnownGPS) { lat = lastKnownGPS.lat; lng = lastKnownGPS.lng; }
   else if(mapInstance) { const c = mapInstance.getCenter(); lat = c.lat; lng = c.lng; }
-  else { lat = CLAT; lng = CLNG; }
+  else return; // No coordinates available yet — wait for map load or GPS
   const hour = new Date().getHours();
   const url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lng + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
   fetch(url).then(r=>r.json()).then(j=>{
@@ -1819,13 +1819,14 @@ function getWxCoords() {
     const c = mapInstance.getCenter();
     return { lat: c.lat, lng: c.lng };
   }
-  return { lat: CLAT, lng: CLNG };
+  return null;
 }
 
 function loadWxPopupData() {
   const body = document.getElementById('wxPopupBody');
   body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Loading...</div>';
   const coords = getWxCoords();
+  if(!coords) { body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Waiting for location...</div>'; return; }
   const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords.lat +
     '&longitude=' + coords.lng +
     '&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure' +
@@ -3197,7 +3198,6 @@ async function bootApp() {
   document.getElementById('authGate').style.display = 'none';
   loadBuckRegistry();
   loadSightings();
-  updateMapWeather();
   startMap();
 }
 
@@ -4003,6 +4003,8 @@ function initMap() {
   mapInstance.on('load', () => {
     mapInstance.resize();
     initGeolocate();
+    // Fetch weather using map center now that mapInstance is ready
+    updateMapWeather();
     // Fly to GPS if available, otherwise stay on continental US view
     if(navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
