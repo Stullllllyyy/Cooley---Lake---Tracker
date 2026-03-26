@@ -27,12 +27,12 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-hdr{position:fixed;top:0;left:0;right:0;z-index:50;padding:50px 16px 16px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,transparent 100%);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between}
 .map-title-main{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
 .map-title-sub{font-size:9px;color:rgba(220,210,190,0.85);letter-spacing:2px;text-transform:uppercase;margin-top:1px;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
-.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.3);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.3);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
 
 /* Weather popup card */
-#wxPopupCard{position:fixed;top:100px;right:16px;z-index:80;width:min(340px,calc(100vw - 32px));background:rgba(18,20,21,0.96);border:1px solid rgba(140,115,85,0.35);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:0;display:none;transform-origin:top right;animation:wxPopIn 0.18s ease-out forwards;overflow:hidden}
+#wxPopupCard{position:fixed;top:100px;right:16px;z-index:120;width:min(340px,calc(100vw - 32px));background:rgba(18,20,21,0.96);border:1px solid rgba(140,115,85,0.35);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:0;display:none;transform-origin:top right;animation:wxPopIn 0.18s ease-out forwards;overflow:hidden;-webkit-overflow-scrolling:touch}
 #wxPopupCard.closing{animation:wxPopOut 0.14s ease-in forwards}
 @keyframes wxPopIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
 @keyframes wxPopOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.92)}}
@@ -1724,12 +1724,14 @@ function showDet(id) {
   openSheet('detail');
 }
 
-// Map weather pill updater
+// Map weather pill updater — uses GPS if available, then map center, then property center as fallback
 function updateMapWeather() {
-  const now = new Date();
-  const date = now.toISOString().split('T')[0];
-  const hour = now.getHours();
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
+  let lat, lng;
+  if(lastKnownGPS) { lat = lastKnownGPS.lat; lng = lastKnownGPS.lng; }
+  else if(mapInstance) { const c = mapInstance.getCenter(); lat = c.lat; lng = c.lng; }
+  else { lat = CLAT; lng = CLNG; }
+  const hour = new Date().getHours();
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lng + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
   fetch(url).then(r=>r.json()).then(j=>{
     if(!j.hourly) return;
     const temp = Math.round(j.hourly.temperature_2m[hour]);
@@ -2669,10 +2671,13 @@ function initGeolocate() {
   });
   geolocateCtrl.on('error', (err) => { dbg('geolocate error: ' + (err?.message || JSON.stringify(err))); });
   geolocateCtrl.on('geolocate', (e) => {
+    const hadGPS = !!lastKnownGPS;
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
     lastKnownGPS = { lat: e.coords.latitude, lng: e.coords.longitude };
     dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
     if(compassConeActive && lastHeading !== null) updateHeadingConeGeoJSON();
+    // Refresh weather pill with GPS coords on first fix
+    if(!hadGPS) updateMapWeather();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
     dbg('trackuserlocationend');
