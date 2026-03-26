@@ -7717,11 +7717,7 @@ function moveFeatMarker() {
     ttpMoveTempMarker.remove();
     ttpMoveTempMarker = null;
 
-    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
-    const oldHistory = m.location_history || [];
-    const newHistory = [...oldHistory, historyEntry];
-
-    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).eq('property_id', PROPERTY_ID).then(({error}) => {
+    sb.from('property_markers').update({ lat: newLat, lng: newLng }).eq('id', ttpMoveMarkerId).then(({error}) => {
       if(error) {
         console.error('Move save error:', error);
         showToast('Move failed — try again');
@@ -7731,7 +7727,6 @@ function moveFeatMarker() {
         if(idx >= 0) {
           propertyMarkers[idx].lat = newLat;
           propertyMarkers[idx].lng = newLng;
-          propertyMarkers[idx].location_history = newHistory;
         }
         renderPropertyMarkers();
         showToast('Location updated');
@@ -7831,17 +7826,7 @@ function moveCameraPin(camName) {
     ttpMoveTempMarker.remove();
     ttpMoveTempMarker = null;
 
-    // Fetch current location_history from cameras table before appending
-    let oldHistory = [];
-    try {
-      const { data } = await sb.from('cameras').select('location_history').eq('name', camName).eq('property_id', PROPERTY_ID).is('deleted_at', null).single();
-      if(data && data.location_history) oldHistory = data.location_history;
-    } catch(_) {}
-
-    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
-    const newHistory = [...oldHistory, historyEntry];
-
-    const { error } = await sb.from('cameras').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('name', camName).eq('property_id', PROPERTY_ID);
+    const { error } = await sb.from('cameras').update({ lat: newLat, lng: newLng }).eq('name', camName);
     if(error) {
       console.error('Camera move save error:', error);
       showToast('Move failed — try again');
