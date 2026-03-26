@@ -2768,13 +2768,17 @@ async function handleSignUp() {
     // claimed_by update may fail if auth role switched — that's OK, claimed_at is already set
     await sb.from('invites').update({ claimed_by: newUserId }).eq('id', invite.id);
 
-    await sb.from('property_members').insert({
-      property_id: invite.property_id,
-      user_id: newUserId,
-      role: invite.role,
-      invited_at: invite.created_at,
-      accepted_at: new Date().toISOString()
-    });
+    // Only create property_members if invite has a property_id
+    // New-property invites (property_id null) skip this — user will go through onboarding
+    if(invite.property_id) {
+      await sb.from('property_members').insert({
+        property_id: invite.property_id,
+        user_id: newUserId,
+        role: invite.role,
+        invited_at: invite.created_at,
+        accepted_at: new Date().toISOString()
+      });
+    }
   }
 
   btn.disabled = false; btn.textContent = 'Create Account';
@@ -2815,7 +2819,7 @@ async function bootApp() {
     .limit(1)
     .maybeSingle();
 
-  if(!membership) {
+  if(!membership || !membership.property_id) {
     // New user with no property — route to onboarding setup
     document.getElementById('authGate').style.display = 'none';
     showOnboarding(user.id);
@@ -3019,16 +3023,12 @@ async function onboardCreateProperty() {
     // center_lat/center_lng require migration — see commit message for SQL
     // NOTE: requires RLS policy: CREATE POLICY "auth_insert_properties" ON properties FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
     // NOTE: requires RLS policy: CREATE POLICY "auth_select_own_properties" ON properties FOR SELECT TO authenticated USING (id IN (SELECT property_id FROM property_members WHERE user_id = auth.uid()) OR owner_id = auth.uid());
-    const propPayload = {
+    const { data: prop, error: propErr } = await sb.from('properties').insert({
       name: name,
-      owner_id: onboardUserId
-    };
-    // Only include coordinate columns if migration has been applied
-    if(lat && lng) {
-      propPayload.center_lat = lat;
-      propPayload.center_lng = lng;
-    }
-    const { data: prop, error: propErr } = await sb.from('properties').insert(propPayload).select().single();
+      owner_id: onboardUserId,
+      center_lat: lat,
+      center_lng: lng
+    }).select().single();
 
     if(propErr) throw propErr;
 
@@ -6042,7 +6042,7 @@ async function deleteCameraFromMenu() {
 
 // --- Conditions overlay -
 function updateConditionsOverlay() {
-  fetch("https://api.open-meteo.com/v1/forecast?latitude=45.0200&longitude=-88.2756" +
+  fetch("https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG +
     "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph" +
     "&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1")
   .then(r => r.json()).then(j => {
