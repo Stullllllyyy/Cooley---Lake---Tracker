@@ -601,6 +601,8 @@ textarea{resize:none}
 
 /* Auth gate */
 #authGate{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
+.onboard-overlay{position:fixed;inset:0;z-index:99999;background:var(--bg);display:none;align-items:center;justify-content:center;flex-direction:column}
+.onboard-overlay.on{display:flex}
 .auth-card{width:100%;max-width:360px;padding:32px 24px;text-align:center}
 .auth-logo{width:80px;height:auto;margin:0 auto 16px;display:block;filter:drop-shadow(0 2px 12px rgba(140,115,85,0.3))}
 .auth-tagline{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--bronze);font-weight:600;margin-bottom:32px}
@@ -657,6 +659,28 @@ textarea{resize:none}
       <button class="auth-btn" id="authSignUpBtn" onclick="handleSignUp()">Create Account</button>
       <div class="auth-back" onclick="showAuthView('signin')">&larr; Back to Sign In</div>
     </div>
+  </div>
+</div>
+
+<!-- Onboarding: Property Setup (new users with no property) -->
+<div class="onboard-overlay" id="onboardOverlay">
+  <div class="auth-card" style="max-width:380px">
+    <img src="HuginnLogo.svg" class="auth-logo" alt="Huginn"/>
+    <div class="auth-tagline">Know More. Hunt Smarter.</div>
+    <div class="auth-title">Set Up Your Property</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Welcome to Huginn! Name your hunting property and set its center point to get started.</div>
+    <input class="auth-input" type="text" id="onboardPropName" placeholder="Property name (e.g., Cooley Lake)"/>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Property center (GPS auto-detected or enter manually)</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input class="auth-input" type="text" id="onboardLat" placeholder="Latitude" style="flex:1;margin-bottom:0"/>
+      <input class="auth-input" type="text" id="onboardLng" placeholder="Longitude" style="flex:1;margin-bottom:0"/>
+    </div>
+    <button class="auth-btn" id="onboardDetectBtn" onclick="onboardDetectGPS()" style="margin-bottom:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> Use My Location
+    </button>
+    <div id="onboardError" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
+    <button class="auth-btn" id="onboardCreateBtn" onclick="onboardCreateProperty()">Create Property</button>
+    <div class="auth-link" onclick="handleLogout()" style="margin-top:12px">Sign out</div>
   </div>
 </div>
 
@@ -2790,18 +2814,9 @@ async function bootApp() {
     .single();
 
   if(memErr || !membership) {
-    // User has an account but no property access
-    document.getElementById('authGate').style.display = 'flex';
-    document.getElementById('authSignIn').style.display = 'none';
-    document.getElementById('authSignUp').style.display = 'none';
-    document.getElementById('authSignInError').textContent = '';
-    const card = document.querySelector('.auth-card');
-    if(!document.getElementById('authNoAccess')) {
-      const msg = document.createElement('div');
-      msg.id = 'authNoAccess';
-      msg.innerHTML = '<div class="auth-title">No Property Access</div><div style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">Your account is confirmed but you don\'t have access to any property yet. Contact the property owner for an invite.</div><div class="auth-link" onclick="handleLogout()">Sign out</div>';
-      card.appendChild(msg);
-    }
+    // New user with no property — route to onboarding setup
+    document.getElementById('authGate').style.display = 'none';
+    showOnboarding(user.id);
     return;
   }
 
@@ -2818,9 +2833,7 @@ async function bootApp() {
 function showAuthGate() {
   appBooted = false;
   document.getElementById('authGate').style.display = 'flex';
-  // Remove no-access message if present
-  const noAccess = document.getElementById('authNoAccess');
-  if(noAccess) noAccess.remove();
+  document.getElementById('onboardOverlay').classList.remove('on');
   showAuthView('signin');
   // Clear sensitive form fields
   document.getElementById('authEmail').value = '';
@@ -2828,6 +2841,89 @@ function showAuthGate() {
   document.getElementById('authSignUpEmail').value = '';
   document.getElementById('authSignUpPass').value = '';
   document.getElementById('authInviteCode').value = '';
+}
+
+// --- Onboarding: New User Property Setup ---
+let onboardUserId = null;
+
+function showOnboarding(userId) {
+  onboardUserId = userId;
+  document.getElementById('onboardOverlay').classList.add('on');
+  document.getElementById('onboardError').textContent = '';
+  // Auto-detect GPS
+  onboardDetectGPS();
+}
+
+function onboardDetectGPS() {
+  const btn = document.getElementById('onboardDetectBtn');
+  if(!navigator.geolocation) return;
+  btn.textContent = 'Detecting...';
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      document.getElementById('onboardLat').value = pos.coords.latitude.toFixed(6);
+      document.getElementById('onboardLng').value = pos.coords.longitude.toFixed(6);
+      btn.textContent = 'Location detected';
+      btn.disabled = false;
+    },
+    () => {
+      btn.textContent = 'Use My Location';
+      btn.disabled = false;
+    },
+    { enableHighAccuracy: true, timeout: 8000 }
+  );
+}
+
+async function onboardCreateProperty() {
+  const name = document.getElementById('onboardPropName').value.trim();
+  const lat = parseFloat(document.getElementById('onboardLat').value);
+  const lng = parseFloat(document.getElementById('onboardLng').value);
+  const errEl = document.getElementById('onboardError');
+  const btn = document.getElementById('onboardCreateBtn');
+
+  if(!name) { errEl.textContent = 'Enter a property name.'; return; }
+  if(isNaN(lat) || isNaN(lng)) { errEl.textContent = 'Enter valid coordinates or use GPS detection.'; return; }
+  if(!onboardUserId) { errEl.textContent = 'Session error. Please sign out and try again.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Creating...';
+  errEl.textContent = '';
+
+  try {
+    // Create property record
+    const { data: prop, error: propErr } = await sb.from('properties').insert({
+      name: name,
+      center_lat: lat,
+      center_lng: lng,
+      owner_id: onboardUserId
+    }).select().single();
+
+    if(propErr) throw propErr;
+
+    // Add user as owner in property_members
+    const { error: memErr } = await sb.from('property_members').insert({
+      property_id: prop.id,
+      user_id: onboardUserId,
+      role: 'owner',
+      accepted_at: new Date().toISOString()
+    });
+
+    if(memErr) throw memErr;
+
+    // Set the global PROPERTY_ID and boot the app
+    PROPERTY_ID = prop.id;
+    document.getElementById('onboardOverlay').classList.remove('on');
+    document.getElementById('authGate').style.display = 'none';
+    loadBuckRegistry();
+    loadSightings();
+    updateMapWeather();
+    startMap();
+    showToast('Welcome to Huginn! Your property is ready.');
+
+  } catch(e) {
+    console.error('Onboarding error:', e);
+    errEl.textContent = 'Failed to create property: ' + (e.message || 'Unknown error');
+    btn.disabled = false; btn.textContent = 'Create Property';
+  }
 }
 
 // Auth state listener
