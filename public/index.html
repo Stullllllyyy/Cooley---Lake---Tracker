@@ -669,15 +669,17 @@ textarea{resize:none}
     <div class="auth-tagline">Know More. Hunt Smarter.</div>
     <div class="auth-title">Set Up Your Property</div>
     <div style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">Welcome to Huginn! Name your hunting property and set its center point to get started.</div>
-    <input class="auth-input" type="text" id="onboardPropName" placeholder="Property name (e.g., Cooley Lake)"/>
-    <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Property center (GPS auto-detected or enter manually)</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input class="auth-input" type="text" id="onboardLat" placeholder="Latitude" style="flex:1;margin-bottom:0"/>
-      <input class="auth-input" type="text" id="onboardLng" placeholder="Longitude" style="flex:1;margin-bottom:0"/>
-    </div>
+    <input class="auth-input" type="text" id="onboardPropName" placeholder="e.g., Home Farm, Ridge Property"/>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px;font-weight:600">Property Center</div>
     <button class="auth-btn" id="onboardDetectBtn" onclick="onboardDetectGPS()" style="margin-bottom:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> Use My Location
     </button>
+    <button class="auth-btn" id="onboardPinBtn" onclick="onboardDropPin()" style="margin-bottom:8px;background:var(--surface2);color:var(--text2);border:1px solid var(--border2)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> Drop a Pin on Map
+    </button>
+    <div id="onboardCoords" style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:8px;min-height:16px;text-align:center"></div>
+    <input type="hidden" id="onboardLat"/>
+    <input type="hidden" id="onboardLng"/>
     <div id="onboardError" style="color:var(--red);font-size:12px;margin-bottom:8px;min-height:16px"></div>
     <button class="auth-btn" id="onboardCreateBtn" onclick="onboardCreateProperty()">Create Property</button>
     <div class="auth-link" onclick="handleLogout()" style="margin-top:12px">Sign out</div>
@@ -2845,33 +2847,141 @@ function showAuthGate() {
 
 // --- Onboarding: New User Property Setup ---
 let onboardUserId = null;
+let onboardPinMarker = null;
 
 function showOnboarding(userId) {
   onboardUserId = userId;
   document.getElementById('onboardOverlay').classList.add('on');
   document.getElementById('onboardError').textContent = '';
-  // Auto-detect GPS
-  onboardDetectGPS();
+  document.getElementById('onboardCoords').textContent = '';
+  document.getElementById('onboardLat').value = '';
+  document.getElementById('onboardLng').value = '';
 }
 
 function onboardDetectGPS() {
   const btn = document.getElementById('onboardDetectBtn');
-  if(!navigator.geolocation) return;
-  btn.textContent = 'Detecting...';
+  if(!navigator.geolocation) { showToast('GPS not available on this device'); return; }
+  btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg> Detecting...';
   btn.disabled = true;
   navigator.geolocation.getCurrentPosition(
     (pos) => {
-      document.getElementById('onboardLat').value = pos.coords.latitude.toFixed(6);
-      document.getElementById('onboardLng').value = pos.coords.longitude.toFixed(6);
-      btn.textContent = 'Location detected';
+      const lat = pos.coords.latitude.toFixed(6);
+      const lng = pos.coords.longitude.toFixed(6);
+      document.getElementById('onboardLat').value = lat;
+      document.getElementById('onboardLng').value = lng;
+      document.getElementById('onboardCoords').textContent = lat + ', ' + lng;
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg> Location set';
       btn.disabled = false;
     },
     () => {
-      btn.textContent = 'Use My Location';
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg> Use My Location';
       btn.disabled = false;
+      showToast('GPS unavailable — try Drop a Pin instead');
     },
     { enableHighAccuracy: true, timeout: 8000 }
   );
+}
+
+function onboardDropPin() {
+  // Hide onboarding overlay to show the map, init map if needed
+  document.getElementById('onboardOverlay').style.opacity = '0';
+  document.getElementById('onboardOverlay').style.pointerEvents = 'none';
+
+  // Ensure map is initialized
+  if(!mapInstance) {
+    const container = document.getElementById('map');
+    if(container && container.offsetWidth > 0) {
+      mapInstance = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/satellite-streets-v12',
+        center: [-98.5, 39.5],
+        zoom: 4,
+        fadeDuration: 0
+      });
+      mapInstance.on('load', () => { placeOnboardPin(); });
+    }
+  } else {
+    placeOnboardPin();
+  }
+}
+
+function placeOnboardPin() {
+  // Remove existing pin if any
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+
+  const center = mapInstance.getCenter();
+
+  // Create sulfur draggable pin (same pattern as tap-to-place)
+  const pinEl = document.createElement('div');
+  pinEl.innerHTML = '<svg width="36" height="44" viewBox="0 0 36 44"><path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z" fill="#E5B53B" stroke="rgba(255,255,255,0.85)" stroke-width="2.5"/></svg>';
+  pinEl.style.cursor = 'grab';
+
+  onboardPinMarker = new mapboxgl.Marker({ element: pinEl, draggable: true, anchor: 'bottom' })
+    .setLngLat(center)
+    .addTo(mapInstance);
+
+  // Show confirm card
+  showOnboardPinConfirm(center.lat, center.lng);
+
+  onboardPinMarker.on('drag', () => {
+    const ll = onboardPinMarker.getLngLat();
+    updateOnboardPinCoords(ll.lat, ll.lng);
+  });
+  onboardPinMarker.on('dragend', () => {
+    const ll = onboardPinMarker.getLngLat();
+    updateOnboardPinCoords(ll.lat, ll.lng);
+  });
+}
+
+function showOnboardPinConfirm(lat, lng) {
+  // Floating confirm card at bottom of screen
+  let card = document.getElementById('onboardPinCard');
+  if(!card) {
+    card = document.createElement('div');
+    card.id = 'onboardPinCard';
+    card.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:16px 20px;box-shadow:0 8px 40px rgba(0,0,0,0.8);text-align:center;width:min(320px,calc(100vw - 32px))';
+    document.body.appendChild(card);
+  }
+  card.innerHTML = '<div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Drag pin to your property center</div>' +
+    '<div id="onboardPinCoords" style="font-size:11px;color:var(--text3);font-family:monospace;margin-bottom:12px">' + lat.toFixed(6) + ', ' + lng.toFixed(6) + '</div>' +
+    '<div style="display:flex;gap:10px">' +
+    '<button onclick="cancelOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--border2);background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Cancel</button>' +
+    '<button onclick="confirmOnboardPin()" style="flex:1;padding:10px;border-radius:10px;border:1px solid var(--gold);background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Confirm</button>' +
+    '</div>';
+}
+
+function updateOnboardPinCoords(lat, lng) {
+  const el = document.getElementById('onboardPinCoords');
+  if(el) el.textContent = lat.toFixed(6) + ', ' + lng.toFixed(6);
+}
+
+function confirmOnboardPin() {
+  const ll = onboardPinMarker.getLngLat();
+  document.getElementById('onboardLat').value = ll.lat.toFixed(6);
+  document.getElementById('onboardLng').value = ll.lng.toFixed(6);
+  document.getElementById('onboardCoords').textContent = ll.lat.toFixed(6) + ', ' + ll.lng.toFixed(6);
+
+  // Clean up pin and card, show onboarding overlay again
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+  const card = document.getElementById('onboardPinCard');
+  if(card) card.remove();
+
+  const overlay = document.getElementById('onboardOverlay');
+  overlay.style.opacity = '';
+  overlay.style.pointerEvents = '';
+
+  // Update pin button text
+  document.getElementById('onboardPinBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px"><polyline points="20 6 9 17 4 12"/></svg> Pin placed';
+}
+
+function cancelOnboardPin() {
+  if(onboardPinMarker) { onboardPinMarker.remove(); onboardPinMarker = null; }
+  const card = document.getElementById('onboardPinCard');
+  if(card) card.remove();
+
+  const overlay = document.getElementById('onboardOverlay');
+  overlay.style.opacity = '';
+  overlay.style.pointerEvents = '';
 }
 
 async function onboardCreateProperty() {
@@ -2882,18 +2992,18 @@ async function onboardCreateProperty() {
   const btn = document.getElementById('onboardCreateBtn');
 
   if(!name) { errEl.textContent = 'Enter a property name.'; return; }
-  if(isNaN(lat) || isNaN(lng)) { errEl.textContent = 'Enter valid coordinates or use GPS detection.'; return; }
+  if(isNaN(lat) || isNaN(lng)) { errEl.textContent = 'Set your property center using GPS or Drop a Pin.'; return; }
   if(!onboardUserId) { errEl.textContent = 'Session error. Please sign out and try again.'; return; }
 
   btn.disabled = true; btn.textContent = 'Creating...';
   errEl.textContent = '';
 
   try {
-    // Create property record
+    // Create property record (columns: name, lat, lng, owner_id)
     const { data: prop, error: propErr } = await sb.from('properties').insert({
       name: name,
-      center_lat: lat,
-      center_lng: lng,
+      lat: lat,
+      lng: lng,
       owner_id: onboardUserId
     }).select().single();
 
