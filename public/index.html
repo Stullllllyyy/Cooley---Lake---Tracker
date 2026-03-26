@@ -3015,15 +3015,20 @@ async function onboardCreateProperty() {
   errEl.textContent = '';
 
   try {
-    // Create property record
+    // Create property record (existing columns: id, name, description, owner_id, invite_code, created_at)
+    // center_lat/center_lng require migration — see commit message for SQL
     // NOTE: requires RLS policy: CREATE POLICY "auth_insert_properties" ON properties FOR INSERT TO authenticated WITH CHECK (owner_id = auth.uid());
     // NOTE: requires RLS policy: CREATE POLICY "auth_select_own_properties" ON properties FOR SELECT TO authenticated USING (id IN (SELECT property_id FROM property_members WHERE user_id = auth.uid()) OR owner_id = auth.uid());
-    const { data: prop, error: propErr } = await sb.from('properties').insert({
+    const propPayload = {
       name: name,
-      center_lat: lat,
-      center_lng: lng,
       owner_id: onboardUserId
-    }).select().single();
+    };
+    // Only include coordinate columns if migration has been applied
+    if(lat && lng) {
+      propPayload.center_lat = lat;
+      propPayload.center_lng = lng;
+    }
+    const { data: prop, error: propErr } = await sb.from('properties').insert(propPayload).select().single();
 
     if(propErr) throw propErr;
 
