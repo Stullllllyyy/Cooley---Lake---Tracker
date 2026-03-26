@@ -2888,30 +2888,37 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
-  // Hide onboarding overlay to reveal the map
   onboardingMode = true;
+  // Hide onboarding overlay to reveal the map
   document.getElementById('onboardOverlay').style.opacity = '0';
   document.getElementById('onboardOverlay').style.pointerEvents = 'none';
 
   if(mapInstance) {
     // Map already exists — just resize and place pin
     mapInstance.resize();
-    setTimeout(() => placeOnboardPin(), 100);
-  } else {
-    // Set Mapbox token if not already set, then init map via the standard path
-    if(typeof mapboxgl !== 'undefined' && !mapboxgl.accessToken) {
-      mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+    if(mapInstance.loaded()) {
+      placeOnboardPin();
+    } else {
+      mapInstance.once('idle', () => placeOnboardPin());
     }
-    // initMap creates mapInstance using the standard path
-    initMap();
-    // Wait for map to be ready then place pin
-    const waitForMap = setInterval(() => {
-      if(mapInstance) {
-        clearInterval(waitForMap);
-        mapInstance.once('idle', () => placeOnboardPin());
-      }
-    }, 200);
+    return;
   }
+
+  // No map yet — set token and create one directly (not via initMap to avoid side effects)
+  if(typeof mapboxgl !== 'undefined' && !mapboxgl.accessToken) {
+    mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+  }
+  mapInstance = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    center: [-98.5, 39.5],
+    zoom: 4,
+    fadeDuration: 0
+  });
+  mapInstance.once('load', () => {
+    mapInstance.resize();
+    placeOnboardPin();
+  });
 }
 
 function placeOnboardPin() {
@@ -3055,7 +3062,17 @@ async function onboardCreateProperty() {
     loadBuckRegistry();
     loadSightings();
     updateMapWeather();
-    startMap();
+    // Map already exists from Drop a Pin — set up data layers and fly to property
+    if(mapInstance) {
+      mapInstance.flyTo({ center: [lng, lat], zoom: 15, duration: 1500 });
+      loadCamLocations();
+      loadPropertyMarkers();
+      addLineLayer();
+      lineLayerAdded = true;
+      initGeolocate();
+    } else {
+      startMap();
+    }
     showToast('Welcome to Huginn! Your property is ready.');
 
   } catch(e) {
@@ -3624,8 +3641,7 @@ async function saveCamLocation(name, lng, lat) {
 }
 
 function initMap() {
-  
-  if(mapInstance) { refreshMapPins(); mapInstance.resize(); return; }
+  if(mapInstance) return; // Map initialized exactly once per page load
   const container = document.getElementById('map');
   if(!container || container.offsetWidth === 0) {
     setTimeout(initMap, 100);
