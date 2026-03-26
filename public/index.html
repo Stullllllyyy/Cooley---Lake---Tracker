@@ -4368,7 +4368,7 @@ async function showPin(camName) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Rename
     </button>
-    <button class="popup-act-btn" onclick="enableDragForCamera('${camName}')">
+    <button class="popup-act-btn" onclick="moveCameraPin('${camName}')">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
       Move Pin
     </button>
@@ -4509,15 +4509,8 @@ async function renameCamera(oldName) {
 }
 
 function enableDragForCamera(camName) {
-  closePopup();
-  // Turn on edit mode so pins become draggable
-  if(!editMode) toggleEditMode();
-  // Flash a message
-  const msg = document.createElement('div');
-  msg.textContent = 'Drag the ' + camName + ' pin to reposition it';
-  msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(74,127,193,0.9);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;z-index:200;pointer-events:none;font-family:Roboto,sans-serif';
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  // Legacy — replaced by moveCameraPin(). Redirect for safety.
+  moveCameraPin(camName);
 }
 
 async function confirmDeleteCamera(camName) {
@@ -7638,7 +7631,8 @@ function cancelFeatEdit() {
 }
 
 let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
-let ttpMoveMarkerId = null; // ID of marker being moved
+let ttpMoveMarkerId = null; // ID of marker being moved (property_markers id or camera name)
+let ttpMoveMarkerType = null; // 'camera' or 'marker'
 let ttpMoveMarkerInst = null; // existing marker instance (hidden during move)
 let ttpMoveTempMarker = null; // temporary draggable marker
 let ttpMoveOldLat = null;
@@ -7649,24 +7643,9 @@ function moveFeatMarker() {
   if(ttpMoveMarkerId) { console.log('Move already in progress, ignoring duplicate call'); return; }
   const m = activeFeatureMarker;
   ttpMoveMarkerId = m.id;
+  ttpMoveMarkerType = 'marker';
   ttpMoveOldLat = m.lat;
   ttpMoveOldLng = m.lng;
-
-  // Find existing marker instance for expanded log
-  let logInst = null;
-  for(const inst of propertyMarkerInstances) {
-    const ll = inst.getLngLat();
-    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
-      logInst = inst;
-      break;
-    }
-  }
-  console.log('Move initiated:', {
-    id: ttpMoveMarkerId,
-    lat: logInst ? logInst.getLngLat().lat : m.lat,
-    lng: logInst ? logInst.getLngLat().lng : m.lng,
-    isDraggable: logInst ? logInst.isDraggable() : 'no instance found'
-  });
   closePopup();
 
   // Find the rendered Mapbox marker instance for this pin
@@ -7678,14 +7657,15 @@ function moveFeatMarker() {
       break;
     }
   }
-  if(!targetInst) { showToast('Could not find pin on map'); return; }
+  if(!targetInst) { showToast('Could not find pin on map'); ttpMoveMarkerId = null; ttpMoveMarkerType = null; return; }
   ttpMoveMarkerInst = targetInst;
 
-  // Hide the existing marker (opacity 0, do not remove)
+  // Hide the existing marker — do not remove
   const existingEl = targetInst.getElement();
-  if(existingEl) existingEl.style.opacity = '0';
+  if(existingEl) existingEl.style.visibility = 'hidden';
 
-  // Build temporary draggable marker with SAME SVG/color as existing pin + pulse
+  // Build temporary draggable marker with SAME SVG/color as existing pin
+  // ttpGlow animation on INNER .cam-pin div — NOT outer element (Mapbox controls outer transform)
   const t = m.type;
   const fill = m.color || FEAT_COLORS[t] || '#8C7355';
   const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
@@ -7694,10 +7674,9 @@ function moveFeatMarker() {
 
   const tempEl = document.createElement('div');
   tempEl.className = 'cam-marker';
-  tempEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
   tempEl.innerHTML =
     '<div class="cam-lbl">' + lbl + '</div>' +
-    '<div class="cam-pin">' +
+    '<div class="cam-pin" style="animation:ttpGlow 1.4s ease-in-out infinite">' +
       '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
         '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
         ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
@@ -7727,7 +7706,6 @@ function moveFeatMarker() {
     const ll = ttpMoveTempMarker.getLngLat();
     const newLat = ll.lat;
     const newLng = ll.lng;
-    console.log('Move confirm:', { newLat, newLng, ttpMoveMarkerId });
 
     // Clean up TTP state (do not call cancelTapToPlace)
     tapToPlaceActive = false;
@@ -7743,12 +7721,11 @@ function moveFeatMarker() {
     const oldHistory = m.location_history || [];
     const newHistory = [...oldHistory, historyEntry];
 
-    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).then(({error}) => {
+    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).eq('property_id', PROPERTY_ID).then(({error}) => {
       if(error) {
         console.error('Move save error:', error);
         showToast('Move failed — try again');
-        // Restore existing marker visibility at original position
-        if(existingEl) existingEl.style.opacity = '1';
+        if(existingEl) existingEl.style.visibility = 'visible';
       } else {
         const idx = propertyMarkers.findIndex(x => x.id === ttpMoveMarkerId);
         if(idx >= 0) {
@@ -7757,9 +7734,10 @@ function moveFeatMarker() {
           propertyMarkers[idx].location_history = newHistory;
         }
         renderPropertyMarkers();
-        showToast((m.name || m.type) + ' moved');
+        showToast('Location updated');
       }
       ttpMoveMarkerId = null;
+      ttpMoveMarkerType = null;
       ttpMoveMarkerInst = null;
       ttpMoveTempMarker = null;
       ttpMoveOldLat = null;
@@ -7773,9 +7751,123 @@ function moveFeatMarker() {
     if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
     if(ttpMoveMarkerInst) {
       const el = ttpMoveMarkerInst.getElement();
-      if(el) el.style.opacity = '1';
+      if(el) el.style.visibility = 'visible';
     }
     ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+}
+
+function moveCameraPin(camName) {
+  if(ttpMoveMarkerId) { console.log('Move already in progress'); return; }
+  const pos = camLocations[camName];
+  if(!pos) { showToast('Camera location not found'); return; }
+
+  ttpMoveMarkerId = camName;
+  ttpMoveMarkerType = 'camera';
+  ttpMoveOldLat = pos.lat;
+  ttpMoveOldLng = pos.lng;
+  closePopup();
+
+  // Find existing marker instance
+  const targetInst = mapMarkers[camName];
+  if(!targetInst) { showToast('Could not find pin on map'); ttpMoveMarkerId = null; ttpMoveMarkerType = null; return; }
+  ttpMoveMarkerInst = targetInst;
+
+  // Hide existing marker — do not remove
+  const existingEl = targetInst.getElement();
+  if(existingEl) existingEl.style.visibility = 'hidden';
+
+  // Build temp draggable marker matching camera pin SVG/color
+  // ttpGlow animation on INNER .cam-pin div — NOT outer element (Mapbox controls outer transform)
+  const baseColor = pos.color || '#8C7355';
+  const baseStroke = PIN_COLOR_STROKES[baseColor] || '#a08468';
+
+  const tempEl = document.createElement('div');
+  tempEl.className = 'cam-marker';
+  tempEl.innerHTML =
+    '<div class="cam-lbl">' + camName + '</div>' +
+    '<div class="cam-pin" style="animation:ttpGlow 1.4s ease-in-out infinite">' +
+      '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+      '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="' + baseColor + '" stroke="' + baseStroke + '" stroke-width="1.5"/>' +
+      '</svg>' +
+      '<div class="cam-pin-content"><div class="cam-pin-ico">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+        '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
+      '</div></div>' +
+    '</div>';
+
+  ttpMoveTempMarker = new mapboxgl.Marker({ element: tempEl, anchor: 'bottom', offset: [0, 0], draggable: true })
+    .setLngLat([pos.lng, pos.lat])
+    .addTo(mapInstance);
+
+  ttpMoveTempMarker.on('drag', onMoveDrag);
+  ttpMoveTempMarker.on('dragend', onMoveDrag);
+
+  // Show location confirm card
+  tapToPlaceActive = true;
+  tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+
+  // Confirm callback
+  ttpAfterConfirm = async () => {
+    const ll = ttpMoveTempMarker.getLngLat();
+    const newLat = ll.lat;
+    const newLng = ll.lng;
+
+    tapToPlaceActive = false;
+    tapToPlaceLngLat = null;
+    ttpAfterConfirm = null;
+    document.getElementById('ttpLocModal').classList.remove('on');
+
+    ttpMoveTempMarker.remove();
+    ttpMoveTempMarker = null;
+
+    // Fetch current location_history from cameras table before appending
+    let oldHistory = [];
+    try {
+      const { data } = await sb.from('cameras').select('location_history').eq('name', camName).eq('property_id', PROPERTY_ID).is('deleted_at', null).single();
+      if(data && data.location_history) oldHistory = data.location_history;
+    } catch(_) {}
+
+    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
+    const newHistory = [...oldHistory, historyEntry];
+
+    const { error } = await sb.from('cameras').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('name', camName).eq('property_id', PROPERTY_ID);
+    if(error) {
+      console.error('Camera move save error:', error);
+      showToast('Move failed — try again');
+      if(existingEl) existingEl.style.visibility = 'visible';
+    } else {
+      camLocations[camName] = { ...camLocations[camName], lng: newLng, lat: newLat };
+      addCamMarkers();
+      showToast('Location updated');
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveTempMarker = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+
+  // Cancel callback
+  ttpOnCancel = () => {
+    if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
+    if(ttpMoveMarkerInst) {
+      const el = ttpMoveMarkerInst.getElement();
+      if(el) el.style.visibility = 'visible';
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
     ttpMoveMarkerInst = null;
     ttpMoveOldLat = null;
     ttpMoveOldLng = null;
