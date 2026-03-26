@@ -2813,9 +2813,9 @@ async function bootApp() {
     .select('property_id, role')
     .eq('user_id', user.id)
     .limit(1)
-    .single();
+    .maybeSingle();
 
-  if(memErr || !membership) {
+  if(!membership) {
     // New user with no property — route to onboarding setup
     document.getElementById('authGate').style.display = 'none';
     showOnboarding(user.id);
@@ -2883,32 +2883,28 @@ function onboardDetectGPS() {
 }
 
 function onboardDropPin() {
-  // Hide onboarding overlay to show the map
+  // Hide onboarding overlay to reveal the map
   document.getElementById('onboardOverlay').style.opacity = '0';
   document.getElementById('onboardOverlay').style.pointerEvents = 'none';
 
-  // Ensure map is initialized
-  if(!mapInstance) {
-    const container = document.getElementById('map');
-    // Force container to be visible and sized before map init
-    container.style.position = 'fixed';
-    container.style.inset = '0';
-    container.style.zIndex = '1';
-
-    mapInstance = new mapboxgl.Map({
-      container: 'map',
-      style: 'mapbox://styles/mapbox/satellite-streets-v12',
-      center: [-98.5, 39.5],
-      zoom: 4,
-      fadeDuration: 0
-    });
-    mapInstance.on('load', () => {
-      mapInstance.resize();
-      placeOnboardPin();
-    });
-  } else {
+  if(mapInstance) {
+    // Map already exists — just resize and place pin
     mapInstance.resize();
     setTimeout(() => placeOnboardPin(), 100);
+  } else {
+    // Set Mapbox token if not already set, then init map via the standard path
+    if(typeof mapboxgl !== 'undefined' && !mapboxgl.accessToken) {
+      mapboxgl.accessToken = 'pk.eyJ1Ijoic3R1bGxsbGxseXl5IiwiYSI6ImNtbXFoZno0NTExbTcyc29yMHRqcGxicWEifQ.EePZxua45zvUYd5smAq41A';
+    }
+    // initMap creates mapInstance using the standard path
+    initMap();
+    // Wait for map to be ready then place pin
+    const waitForMap = setInterval(() => {
+      if(mapInstance) {
+        clearInterval(waitForMap);
+        mapInstance.once('idle', () => placeOnboardPin());
+      }
+    }, 200);
   }
 }
 
