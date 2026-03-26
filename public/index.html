@@ -70,7 +70,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .ham-divider{height:1px;background:rgba(140,115,85,0.25);margin:0 20px}
 .ham-account{display:flex;flex-direction:column;align-items:center;padding:20px;gap:8px}
 .ham-avatar{width:64px;height:64px;border-radius:50%;border:2px solid var(--bronze);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:#121415;font-size:24px;font-weight:700;color:var(--bronze);font-family:var(--font);-webkit-tap-highlight-color:transparent}
-.ham-avatar img{width:100%;height:100%;object-fit:cover}
+.ham-avatar img{width:100%;height:100%;object-fit:cover;object-position:center;border-radius:50%}
 .ham-email{font-size:12px;color:var(--silver);text-align:center;word-break:break-all}
 .ham-prop{font-size:11px;color:var(--tungsten)}
 .ham-tier{display:inline-block;padding:2px 10px;border-radius:10px;border:1px solid var(--bronze);font-size:9px;color:var(--bronze);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:2px}
@@ -80,7 +80,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .ham-item svg{flex-shrink:0}
 .ham-item-label{flex:1}
 .ham-item-chevron{color:var(--tungsten)}
-.ham-bottom{padding:16px 20px 28px;border-top:1px solid var(--border)}
+.ham-bottom{padding:16px 20px calc(20px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border)}
 .ham-signout{width:100%;height:48px;border:none;border-radius:10px;background:var(--bronze);color:#121415;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s}
 .ham-signout:active{opacity:0.8}
 .ham-version{text-align:center;font-size:10px;color:var(--tungsten);margin-top:10px}
