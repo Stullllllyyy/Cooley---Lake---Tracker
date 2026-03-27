@@ -3183,6 +3183,14 @@ function buckColor(name) {
   const idx = names.indexOf(name);
   return idx >= 0 ? BUCK_COLORS[idx % BUCK_COLORS.length] : "#c8a951";
 }
+function buckIdByName(name) {
+  const b = buckRegistry.find(r => r.name === name);
+  return b ? b.id : null;
+}
+function buckNameById(id) {
+  const b = buckRegistry.find(r => r.id === id);
+  return b ? b.name : null;
+}
 function syncDot(on) {
   const d = document.getElementById("syncDot");
   if(d) d.className = "sync-dot" + (on ? " on" : "");
@@ -5443,9 +5451,9 @@ function renderBuckCards(filteredSightings) {
     });
     const topTime = Object.entries(hourCounts).sort((a, b) => b[1] - a[1])[0];
 
-    const escapedName = buckName.replace(/'/g, "\\'");
+    const bId = buckIdByName(buckName);
 
-    return `<div class="intel-buck-card" onclick="openBuckDossier('${escapedName}')">
+    return `<div class="intel-buck-card" data-buck-id="${bId || ''}" onclick="openBuckDossier('${bId}')">
       ${photoUrl
         ? `<img class="intel-buck-thumb" src="${photoUrl}" alt="${buckName}"/>`
         : `<div class="intel-buck-thumb-placeholder">${DEER_SILHOUETTE_SVG}</div>`}
@@ -5790,7 +5798,8 @@ async function fetchAiInsights(filteredSightings, cacheKey) {
 }
 
 // Open buck dossier modal
-function openBuckDossier(buckName) {
+function openBuckDossier(buckId) {
+  const buckName = buckNameById(buckId) || buckId;
   const bs = sightings.filter(s => s.buck_name === buckName);
   if(!bs.length) return;
 
@@ -6455,7 +6464,7 @@ function showSightMenu(sightingId, btnEl) {
     items.push({
       icon: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="14" width="4" height="8" rx="1"/><rect x="9" y="9" width="4" height="13" rx="1"/><rect x="16" y="4" width="4" height="18" rx="1"/></svg>',
       label: `${s.buck_name} intel`,
-      action: `viewBuckActivity('${s.buck_name}')`
+      action: `viewBuckActivity('${buckIdByName(s.buck_name) || ''}')`
     });
   }
   menu.innerHTML = items.map(item =>
@@ -6476,7 +6485,8 @@ function showSightMenu(sightingId, btnEl) {
   }, 50);
 }
 
-function viewBuckActivity(buckName) {
+function viewBuckActivity(buckId) {
+  const buckName = buckNameById(buckId) || buckId;
   intelBuck = buckName;
   closeSheet('sightings');
   setTimeout(() => {
@@ -6516,10 +6526,11 @@ function renderProfiles(fil, sl) {
           const recent = bs.sort((a,b_) => b_.date?.localeCompare(a.date) || 0)[0];
           const recentImg = bs.find(s => s.image_url)?.image_url;
           const bc = buckColor(bname);
+          const bId = buckIdByName(bname);
           const lastCam = recent.camera_name || '--';
           const lastDate = recent.date ? fmtD(recent.date) : '--';
           const lastTime = recent.time ? fmtT(recent.time) : '';
-          html += `<div class="profile-card" onclick="openBuckProfile('${bname}')" style="border-left:3px solid ${bc}">
+          html += `<div class="profile-card" data-buck-id="${bId || ''}" onclick="openBuckProfile('${bId}')" style="border-left:3px solid ${bc}">
             ${recentImg
               ? `<img class="profile-thumb" src="${recentImg}" alt="${bname}"/>`
               : `<div class="profile-thumb-placeholder"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="${bc}" stroke-width="1.5" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg></div>`}
@@ -6593,7 +6604,10 @@ function renderProfiles(fil, sl) {
   sl.innerHTML = html;
 }
 
-function openBuckProfile(bname) {
+function openBuckProfile(buckId) {
+  const regBuck = buckRegistry.find(b => b.id === buckId);
+  const bname = regBuck ? regBuck.name : null;
+  if(!bname) return;
   const bc = buckColor(bname);
   const bs = sightings.filter(s => s.buck_name === bname).sort((a,b) => (b.date||'').localeCompare(a.date||''));
   if(!bs.length) return;
@@ -6601,12 +6615,14 @@ function openBuckProfile(bname) {
   document.getElementById('bpName').textContent = bname;
   document.getElementById('bpName').style.color = bc;
 
+  // Store current buck ID on the overlay for internal use
+  document.getElementById('bpOverlay').dataset.buckId = buckId;
+
   // --- Antler Description (below name) ---
-  const escapedBname = bname.replace(/'/g,"\\'");
   let html = `<div class="bp-section">
     <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> Antler Description</div>
     <div class="bp-antler-wrap">
-      <input type="text" class="bp-antler-input" id="bpAntlerDesc" placeholder="e.g. Drop tine left G2, sticker right beam, wide spread, dark tarsal glands" onblur="saveAntlerDesc('${escapedBname}')"/>
+      <input type="text" class="bp-antler-input" id="bpAntlerDesc" placeholder="e.g. Drop tine left G2, sticker right beam, wide spread, dark tarsal glands" onblur="saveAntlerDescFromProfile()"/>
       <svg class="bp-antler-pencil" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
     </div>
   </div>`;
@@ -6615,7 +6631,7 @@ function openBuckProfile(bname) {
   html += `<div class="bp-section">
     <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Hunter's Notes</div>
     <textarea class="bp-notes-entry-input" id="bpNewNote" placeholder="Add a new observation..."></textarea>
-    <button class="bp-save-btn" onclick="appendBuckNote('${escapedBname}')">Add Note</button>
+    <button class="bp-save-btn" onclick="appendBuckNoteFromProfile()">Add Note</button>
     <div class="bp-notes-history" id="bpNotesHistory"></div>
   </div>`;
 
@@ -6730,8 +6746,8 @@ function openBuckProfile(bname) {
 
   document.getElementById('bpContent').innerHTML = html;
 
-  // Load buck notes from bucks table
-  loadBuckNotes(bname);
+  // Load buck data (antler desc + notes) from bucks table by ID
+  loadBuckData(buckId);
 
   document.getElementById('bpOverlay').classList.add('on');
 }
@@ -6740,9 +6756,9 @@ function closeBuckProfile() {
   document.getElementById('bpOverlay').classList.remove('on');
 }
 
-async function loadBuckNotes(bname) {
+async function loadBuckData(buckId) {
   try {
-    const { data } = await sb.from('bucks').select('notes, antler_description').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    const { data } = await sb.from('bucks').select('notes, antler_description').eq('id', buckId).maybeSingle();
     // Load antler description
     const ad = document.getElementById('bpAntlerDesc');
     if(ad && data?.antler_description) ad.value = data.antler_description;
@@ -6760,12 +6776,18 @@ async function loadBuckNotes(bname) {
   } catch(e) { /* silent */ }
 }
 
-async function saveAntlerDesc(bname) {
+// Wrapper called from onblur — reads buck ID from profile overlay
+function saveAntlerDescFromProfile() {
+  const buckId = document.getElementById('bpOverlay')?.dataset?.buckId;
+  if(buckId) saveAntlerDesc(buckId);
+}
+
+async function saveAntlerDesc(buckId) {
   const val = document.getElementById('bpAntlerDesc')?.value || '';
   try {
-    await sb.from('bucks').update({ antler_description: val }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    await sb.from('bucks').update({ antler_description: val }).eq('id', buckId);
     // Also update local registry cache
-    const reg = buckRegistry.find(b => b.name === bname);
+    const reg = buckRegistry.find(b => b.id === buckId);
     if(reg) reg.antler_description = val;
     showToast('Antler description saved');
   } catch(e) {
@@ -6773,23 +6795,29 @@ async function saveAntlerDesc(bname) {
   }
 }
 
-async function appendBuckNote(bname) {
+// Wrapper called from onclick — reads buck ID from profile overlay
+function appendBuckNoteFromProfile() {
+  const buckId = document.getElementById('bpOverlay')?.dataset?.buckId;
+  if(buckId) appendBuckNote(buckId);
+}
+
+async function appendBuckNote(buckId) {
   const input = document.getElementById('bpNewNote');
   const text = input?.value?.trim();
   if(!text) return;
   try {
-    const { data } = await sb.from('bucks').select('notes').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    const { data } = await sb.from('bucks').select('notes').eq('id', buckId).maybeSingle();
     const ts = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const entry = `[${ts}] ${text}`;
     const updated = data?.notes ? data.notes + '\n---\n' + entry : entry;
-    await sb.from('bucks').update({ notes: updated }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    await sb.from('bucks').update({ notes: updated }).eq('id', buckId);
     // Update local cache
-    const reg = buckRegistry.find(b => b.name === bname);
+    const reg = buckRegistry.find(b => b.id === buckId);
     if(reg) reg.notes = updated;
     input.value = '';
     showToast('Note added');
     // Refresh notes display
-    loadBuckNotes(bname);
+    loadBuckData(buckId);
   } catch(e) {
     showToast('Failed to add note');
   }
