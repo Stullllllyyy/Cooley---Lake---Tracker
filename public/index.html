@@ -3347,9 +3347,16 @@ const AI_VISUAL_REASONING_PROMPT = `Before naming a buck, describe what you obse
 - Spread relative to body width
 - Any distinctive features (drop tines, stickers, kickers)
 - Body size and estimated age class
-Then compare these observations against the known buck descriptions.
+Then compare these observations against the reference photos and known buck descriptions.
 
-IMPORTANT: Do not weight your suggestion based on which buck has the most historical sightings. Base your identification purely on visual characteristics and camera location history.`;
+Priority order for identification:
+1. VISUAL MATCH against reference photos is the PRIMARY signal
+2. Camera location history is a SECONDARY signal that can support or slightly adjust confidence
+3. Never let camera history override a strong visual match
+
+If the reference photos strongly suggest Buck A but camera history suggests Buck B, report Buck A with a note: "Strong visual match to Buck A — less common at this camera but antler configuration matches closely."
+
+Do not weight your suggestion based on which buck has the most historical sightings. Base your identification purely on visual characteristics observed in the photos.`;
 
 // --- Reference Photo Comparison for AI Identification ---
 let refPhotoCache = null; // { buckId: [{url, base64, mediaType}], ... }
@@ -3393,13 +3400,14 @@ async function getBuckReferencePhotos() {
     }
 
     // Priority 2: Fallback from sightings for bucks with < 3 confirmed photos
+    // Match by buck_id OR buck_name to catch older sightings before buck_id was added
     for(const buck of buckRegistry) {
       if(!cache[buck.id]) cache[buck.id] = [];
       if(cache[buck.id].length >= 3) continue;
       const needed = 3 - cache[buck.id].length;
       const existingUrls = new Set(cache[buck.id].map(p => p.url));
       const buckSightings = sightings
-        .filter(s => s.buck_id === buck.id && s.image_url && !existingUrls.has(s.image_url))
+        .filter(s => (s.buck_id === buck.id || s.buck_name === buck.name) && s.image_url && !existingUrls.has(s.image_url))
         .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
         .slice(0, needed);
       buckSightings.forEach(s => {
@@ -3436,9 +3444,9 @@ async function buildRefPhotoContent(cameraName) {
     .filter(b => refPhotos[b.id] && refPhotos[b.id].length > 0)
     .map(buck => {
       const camSightings = cameraName
-        ? sightings.filter(s => s.buck_id === buck.id && s.camera_name === cameraName).length
+        ? sightings.filter(s => (s.buck_id === buck.id || s.buck_name === buck.name) && s.camera_name === cameraName).length
         : 0;
-      const totalSightings = sightings.filter(s => s.buck_id === buck.id).length;
+      const totalSightings = sightings.filter(s => s.buck_id === buck.id || s.buck_name === buck.name).length;
       return { buck, camRelevance: camSightings, total: totalSightings };
     })
     .sort((a, b) => b.camRelevance - a.camRelevance || b.total - a.total)
