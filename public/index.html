@@ -3193,21 +3193,28 @@ function buckNameById(id) {
 
 // --- AI Feedback Logging ---
 async function writeAiFeedback({ photoUrl, cameraName, aiSuggestion, aiConfidence, aiReasoning, confirmedBuckId, confirmedBuckName, wasCorrect, correctionNotes }) {
+  const payload = {
+    property_id: PROPERTY_ID,
+    user_id: null,
+    photo_url: photoUrl || null,
+    camera_name: cameraName || null,
+    ai_suggestion: aiSuggestion || null,
+    ai_confidence: aiConfidence != null ? aiConfidence : null,
+    ai_reasoning: aiReasoning || null,
+    hunter_confirmed_buck_id: confirmedBuckId || null,
+    hunter_confirmed_buck_name: confirmedBuckName || null,
+    was_correct: wasCorrect,
+    correction_notes: correctionNotes || null
+  };
+  console.log('Writing ai_feedback:', payload);
   try {
-    await sb.from('ai_feedback').insert({
-      property_id: PROPERTY_ID,
-      user_id: null,
-      photo_url: photoUrl || null,
-      camera_name: cameraName || null,
-      ai_suggestion: aiSuggestion || null,
-      ai_confidence: aiConfidence != null ? aiConfidence : null,
-      ai_reasoning: aiReasoning || null,
-      hunter_confirmed_buck_id: confirmedBuckId || null,
-      hunter_confirmed_buck_name: confirmedBuckName || null,
-      was_correct: wasCorrect,
-      correction_notes: correctionNotes || null
-    });
-  } catch(e) { console.error('writeAiFeedback:', e); }
+    const { data, error } = await sb.from('ai_feedback').insert(payload).select();
+    if(error) {
+      console.error('ai_feedback insert failed:', error);
+    } else {
+      console.log('ai_feedback insert success:', data);
+    }
+  } catch(e) { console.error('writeAiFeedback exception:', e); }
 }
 
 function syncDot(on) {
@@ -7027,7 +7034,7 @@ async function bulkSaveNameValue(name) {
   if(bulkAiFullResult || name) {
     const aiSugg = bulkAiFullResult?.match || null;
     const wasCorrect = aiSugg && aiSugg === name;
-    writeAiFeedback({
+    await writeAiFeedback({
       photoUrl: s.image_url, cameraName: s.camera_name,
       aiSuggestion: aiSugg, aiConfidence: bulkAiFullResult?.confidence,
       aiReasoning: bulkAiFullResult?.reasoning,
@@ -8699,7 +8706,7 @@ async function submitObsSighting() {
   // Log AI feedback if AI was used
   if(obsAiResult && obsBuckName) {
     const wasCorrect = obsAiResult.match && obsAiResult.match === obsBuckName;
-    writeAiFeedback({
+    await writeAiFeedback({
       photoUrl: data.image_url, cameraName: null,
       aiSuggestion: obsAiResult.match, aiConfidence: obsAiResult.confidence,
       aiReasoning: obsAiResult.reasoning,
@@ -9112,7 +9119,7 @@ async function submitTrailCamSighting() {
   // Log AI feedback if AI was used
   if(tcamAiResult && tcamBuckNameVal) {
     const wasCorrect = tcamAiResult.match && tcamAiResult.match === tcamBuckNameVal;
-    writeAiFeedback({
+    await writeAiFeedback({
       photoUrl: data.image_url, cameraName: tcamSelectedCam,
       aiSuggestion: tcamAiResult.match, aiConfidence: tcamAiResult.confidence,
       aiReasoning: tcamAiResult.reasoning,
