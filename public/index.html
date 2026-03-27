@@ -427,6 +427,15 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .bp-feed-date{font-size:10px;color:var(--text3);width:65px;flex-shrink:0}
 .bp-notes-area{width:100%;min-height:60px;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical}
 .bp-save-btn{margin-top:8px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)}
+.bp-antler-wrap{position:relative;margin-bottom:4px}
+.bp-antler-input{width:100%;padding:8px 30px 8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);font-style:italic}
+.bp-antler-input:focus{border-color:var(--gold);outline:none}
+.bp-antler-pencil{position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4}
+.bp-notes-entry-input{width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:40px}
+.bp-notes-entry-input:focus{border-color:var(--gold);outline:none}
+.bp-notes-history{max-height:200px;overflow-y:auto;margin-top:8px}
+.bp-notes-entry{padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);line-height:1.5}
+.bp-notes-entry-ts{font-size:9px;color:var(--text3);margin-bottom:2px}
 .group-hdr{padding:10px 14px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 
 /* log form */
@@ -3232,6 +3241,79 @@ async function updateBuckDates(buckId, sightingDate) {
     Object.assign(buck, updates);
   } catch(e) { console.error('updateBuckDates:', e); }
 }
+
+// Build enhanced buck profiles for AI identification
+function buildAiBuckProfiles(cameraName) {
+  const namedBucks = getNamedBucks();
+  const profiles = [];
+  const bucksWithPhotos = [];
+  const bucksWithoutPhotos = [];
+
+  namedBucks.forEach(name => {
+    const regBuck = buckRegistry.find(b => b.name === name);
+    const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
+    const hasPhotos = bs.some(s => s.image_url);
+    const antlerDesc = regBuck?.antler_description || '';
+    const regNotes = regBuck?.notes || '';
+    // Summarize notes — take first entry if append model
+    const notesSummary = regNotes ? regNotes.split('\n---\n').slice(-3).map(e => e.replace(/^\[.+?\]\s*/, '')).join('; ') : '';
+    const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0, 3).join('; ');
+    const cameras = [...new Set(bs.map(s => s.camera_name).filter(Boolean))];
+
+    if(!hasPhotos) {
+      bucksWithoutPhotos.push(name);
+      return;
+    }
+
+    let profile = `${name}: ${bs.length} sightings, cameras: ${cameras.join(', ')}`;
+    if(antlerDesc) profile += `\n  Antler description: ${antlerDesc}`;
+    if(notesSummary) profile += `\n  Hunter notes: ${notesSummary}`;
+    if(sightingNotes) profile += `\n  Field notes: ${sightingNotes}`;
+
+    // Camera-specific history
+    if(cameraName) {
+      const camSightings = bs.filter(s => s.camera_name === cameraName);
+      if(camSightings.length > 0) {
+        profile += `\n  Confirmed at ${cameraName}: ${camSightings.length} sighting${camSightings.length > 1 ? 's' : ''}`;
+      }
+    }
+
+    bucksWithPhotos.push(profile);
+  });
+
+  let result = bucksWithPhotos.join('\n\n');
+  if(bucksWithoutPhotos.length) {
+    result += `\n\nBucks excluded from matching (insufficient reference data — no confirmed photos): ${bucksWithoutPhotos.join(', ')}`;
+  }
+
+  // Camera context
+  if(cameraName) {
+    const confirmedAtCam = namedBucks.filter(name => {
+      const bs = sightings.filter(s => s.buck_name === name && s.camera_name === cameraName);
+      return bs.length > 0;
+    });
+    if(confirmedAtCam.length) {
+      result = `This photo is from the ${cameraName} camera. Confirmed bucks at ${cameraName}: ${confirmedAtCam.map(n => {
+        const cnt = sightings.filter(s => s.buck_name === n && s.camera_name === cameraName).length;
+        return `${n} (${cnt} sighting${cnt > 1 ? 's' : ''})`;
+      }).join(', ')}. Use this as a strong prior.\n\n` + result;
+    } else {
+      result = `This photo is from the ${cameraName} camera. No previously confirmed bucks at this camera.\n\n` + result;
+    }
+  }
+
+  return { profiles: result, hasBucks: bucksWithPhotos.length > 0 };
+}
+
+const AI_VISUAL_REASONING_PROMPT = `Before naming a buck, describe what you observe:
+- Approximate point count
+- Tine length relative to ears
+- Spread relative to body width
+- Any distinctive features (drop tines, stickers, kickers)
+- Body size and estimated age class
+Then compare these observations against the known buck descriptions.
+
+IMPORTANT: Do not weight your suggestion based on which buck has the most historical sightings. Base your identification purely on visual characteristics and camera location history.`;
 
 // --- data -
 async function loadSightings() {
@@ -6519,6 +6601,24 @@ function openBuckProfile(bname) {
   document.getElementById('bpName').textContent = bname;
   document.getElementById('bpName').style.color = bc;
 
+  // --- Antler Description (below name) ---
+  const escapedBname = bname.replace(/'/g,"\\'");
+  let html = `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> Antler Description</div>
+    <div class="bp-antler-wrap">
+      <input type="text" class="bp-antler-input" id="bpAntlerDesc" placeholder="e.g. Drop tine left G2, sticker right beam, wide spread, dark tarsal glands" onblur="saveAntlerDesc('${escapedBname}')"/>
+      <svg class="bp-antler-pencil" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </div>
+  </div>`;
+
+  // --- Hunter's Notes (append model) ---
+  html += `<div class="bp-section">
+    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Hunter's Notes</div>
+    <textarea class="bp-notes-entry-input" id="bpNewNote" placeholder="Add a new observation..."></textarea>
+    <button class="bp-save-btn" onclick="appendBuckNote('${escapedBname}')">Add Note</button>
+    <div class="bp-notes-history" id="bpNotesHistory"></div>
+  </div>`;
+
   // --- Stats ---
   const firstSeen = bs[bs.length - 1]?.date;
   const lastSeen = bs[0]?.date;
@@ -6526,7 +6626,7 @@ function openBuckProfile(bname) {
   const obsCount = bs.filter(s => s.source === 'observation').length;
   const ageClass = bs[0]?.deer_type || 'Buck';
 
-  let html = `<div class="bp-section">
+  html += `<div class="bp-section">
     <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7"/><path d="M12 14 L15 10 L17 7"/></svg> Overview</div>
     <div style="font-size:12px;color:var(--text2);margin-bottom:10px">${ageClass}</div>
     <div class="bp-stat-grid">
@@ -6616,12 +6716,7 @@ function openBuckProfile(bname) {
     </div>`;
   }
 
-  // --- Notes ---
-  html += `<div class="bp-section">
-    <div class="bp-section-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Notes</div>
-    <textarea class="bp-notes-area" id="bpNotesArea" placeholder="Add notes about this buck...">${''}</textarea>
-    <button class="bp-save-btn" onclick="saveBuckNotes('${bname.replace(/'/g,"\\'")}')">Save Notes</button>
-  </div>`;
+  // --- Notes removed (now Hunter's Notes with append model above Overview) ---
 
   // --- Recent Sightings Feed ---
   const recent10 = bs.slice(0, 10);
@@ -6647,19 +6742,56 @@ function closeBuckProfile() {
 
 async function loadBuckNotes(bname) {
   try {
-    const { data } = await sb.from('bucks').select('notes').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
-    const ta = document.getElementById('bpNotesArea');
-    if(ta && data?.notes) ta.value = data.notes;
+    const { data } = await sb.from('bucks').select('notes, antler_description').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    // Load antler description
+    const ad = document.getElementById('bpAntlerDesc');
+    if(ad && data?.antler_description) ad.value = data.antler_description;
+    // Load notes history (append model — newline-separated timestamped entries)
+    const hist = document.getElementById('bpNotesHistory');
+    if(hist && data?.notes) {
+      const entries = data.notes.split('\n---\n').filter(Boolean).reverse();
+      hist.innerHTML = entries.map(e => {
+        const tsMatch = e.match(/^\[(.+?)\]\s*/);
+        const ts = tsMatch ? tsMatch[1] : '';
+        const body = tsMatch ? e.slice(tsMatch[0].length) : e;
+        return `<div class="bp-notes-entry">${ts ? `<div class="bp-notes-entry-ts">${ts}</div>` : ''}${body}</div>`;
+      }).join('');
+    }
   } catch(e) { /* silent */ }
 }
 
-async function saveBuckNotes(bname) {
-  const notes = document.getElementById('bpNotesArea')?.value || '';
+async function saveAntlerDesc(bname) {
+  const val = document.getElementById('bpAntlerDesc')?.value || '';
   try {
-    await sb.from('bucks').update({ notes }).eq('name', bname).eq('property_id', PROPERTY_ID);
-    showToast('Notes saved');
+    await sb.from('bucks').update({ antler_description: val }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    // Also update local registry cache
+    const reg = buckRegistry.find(b => b.name === bname);
+    if(reg) reg.antler_description = val;
+    showToast('Antler description saved');
   } catch(e) {
-    showToast('Failed to save notes');
+    showToast('Failed to save');
+  }
+}
+
+async function appendBuckNote(bname) {
+  const input = document.getElementById('bpNewNote');
+  const text = input?.value?.trim();
+  if(!text) return;
+  try {
+    const { data } = await sb.from('bucks').select('notes').eq('name', bname).eq('property_id', PROPERTY_ID).maybeSingle();
+    const ts = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const entry = `[${ts}] ${text}`;
+    const updated = data?.notes ? data.notes + '\n---\n' + entry : entry;
+    await sb.from('bucks').update({ notes: updated }).eq('name', bname).eq('property_id', PROPERTY_ID);
+    // Update local cache
+    const reg = buckRegistry.find(b => b.name === bname);
+    if(reg) reg.notes = updated;
+    input.value = '';
+    showToast('Note added');
+    // Refresh notes display
+    loadBuckNotes(bname);
+  } catch(e) {
+    showToast('Failed to add note');
   }
 }
 
@@ -6744,11 +6876,13 @@ async function runBulkAi(s) {
     return;
   }
   try {
-    const buckProfiles = namedBucks.map(name => {
-      const bs = sightings.filter(x => x.buck_name === name && x.deer_type && x.deer_type.includes('Buck'));
-      const notes = bs.filter(x => x.notes).map(x => x.notes).slice(0, 3).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(x => x.camera_name))].join(', ')}${notes ? ', notes: ' + notes : ''}`;
-    }).join('\n');
+    const camContext = s.camera_name || null;
+    const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(camContext);
+    if(!hasBucks) {
+      const aiTextEl = document.getElementById('bulkAiText');
+      if(aiTextEl) aiTextEl.textContent = 'No named bucks with reference photos — enter a name below.';
+      return;
+    }
 
     const imgResp = await fetch(s.image_url);
     const imgBlob = await imgResp.blob();
@@ -6762,12 +6896,21 @@ async function runBulkAi(s) {
 
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 300,
+        max_tokens: 500,
         messages: [{
           role: 'user',
           content: [
             { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64data } },
-            { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks from this property:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
+            { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.
+
+${AI_VISUAL_REASONING_PROMPT}
+
+Known bucks on this property:
+
+${buckProfiles}
+
+Respond in JSON only, no other text:
+{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
           ]
         }]
     });
@@ -6784,10 +6927,17 @@ async function runBulkAi(s) {
 
     if(!aiTextEl) return; // modal closed
 
-    if(result.match && result.confidence >= 50) {
+    const bulkConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
+    if(result.confidence < 40) {
+      bulkMatchResult = null;
+      aiTextEl.innerHTML = `<span style="color:#e53935">Unable to confidently identify</span>`;
+      aiReasonEl.textContent = result.reasoning || 'Please tag manually.';
+      acceptRow.style.display = 'none';
+    } else if(result.match && result.confidence >= 40) {
       bulkMatchResult = result.match;
-      aiTextEl.textContent = `${result.match} — ${result.confidence}% confidence`;
+      aiTextEl.innerHTML = `${result.match} — <span style="color:${bulkConfColor}">${result.confidence}%</span>`;
       aiReasonEl.textContent = result.reasoning || '';
+      if(result.confidence < 50) aiReasonEl.textContent += ' (Low confidence — verify carefully)';
       acceptBtn.textContent = `Accept: ${result.match}`;
       acceptRow.style.display = 'block';
       document.getElementById('bulkNameInput').value = result.match;
@@ -6956,17 +7106,16 @@ async function runFullAiMatch(sightingId, imageUrl) {
     return;
   }
 
-  // Build detailed buck profiles including registry notes + sightings data
-  const buckProfiles = namedBucks.map(name => {
-    const regBuck = buckRegistry.find(b => b.name === name);
-    const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes("Buck"));
-    const notesSample = bs.filter(s => s.notes).map(s => s.notes).slice(0, 5).join("; ");
-    const regNotes = regBuck && regBuck.notes ? regBuck.notes : "";
-    const cameras = [...new Set(bs.map(s => s.camera_name))].join(", ");
-    const matCount = bs.filter(s => s.deer_type.includes("Mature")).length;
-    const allNotes = [regNotes, notesSample].filter(Boolean).join("; ");
-    return `${name}: ${bs.length} sightings, cameras: ${cameras}${matCount > 0 ? `, mature buck (${matCount}x)` : ""}${allNotes ? `\nField notes: ${allNotes}` : ""}`;
-  }).join("\n\n");
+  // Build enhanced buck profiles with antler descriptions, notes, camera context
+  // Determine camera context from the sighting
+  const thisSighting = sightings.find(s => s.id === sightingId);
+  const camContext = thisSighting?.camera_name || null;
+  const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(camContext);
+
+  if(!hasBucks) {
+    result.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:12px;font-style:italic">No named bucks with reference photos to compare against. Add photos to your named bucks first.</div>`;
+    return;
+  }
 
   try {
     // Fetch the image as base64
@@ -6981,19 +7130,21 @@ async function runFullAiMatch(sightingId, imageUrl) {
 
     const response = await claudeFetch({
         model: "claude-sonnet-4-5",
-        max_tokens: 500,
+        max_tokens: 700,
         messages: [{
           role: "user",
           content: [
             { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-            { type: "text", text: `You are a deer hunting expert analyzing a trail camera photo. Study the buck's antler characteristics carefully — tine count, beam spread, G2/G3 length, kicker points, drop tines, palmation, base mass, unique asymmetries.
+            { type: "text", text: `You are a deer hunting expert analyzing a trail camera photo.
+
+${AI_VISUAL_REASONING_PROMPT}
 
 Known bucks on this property:
 
 ${buckProfiles}
 
 Respond in JSON only:
-{"match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences describing specific antler traits observed and how they match or don't match the known bucks", "antler_desc": "one sentence describing this buck's rack"}` }
+{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` }
           ]
         }]
     });
@@ -7010,31 +7161,45 @@ Respond in JSON only:
     const res = JSON.parse(cleaned);
     whoMatchResult = res;
 
-    const confColor = res.confidence >= 75 ? "var(--blue)" : res.confidence >= 50 ? "#c8a951" : "var(--text3)";
-    const confLabel = res.confidence >= 75 ? "High confidence" : res.confidence >= 50 ? "Moderate confidence" : "Low confidence";
+    const confColor = res.confidence > 80 ? "#4caf50" : res.confidence >= 50 ? "#f5a623" : "#e53935";
+    const confLabel = res.confidence > 80 ? "High confidence" : res.confidence >= 50 ? "Moderate confidence" : "Low confidence";
+    const confDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${confColor};margin-right:4px;vertical-align:middle"></span>`;
 
-    if(res.match && res.confidence >= 45) {
+    // Visual observations section
+    const obsHtml = res.visual_observations ? `<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(140,115,85,0.08);border-radius:8px;border-left:3px solid var(--gold)"><strong style="color:var(--text)">Visual Analysis:</strong> ${res.visual_observations}</div>` : "";
+
+    if(res.confidence < 40) {
+      // Below 40% — don't show a guess
+      result.innerHTML = `${obsHtml}
+        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(229,57,53,0.08);border-radius:10px;border:1px solid rgba(229,57,53,0.2);margin-bottom:8px">
+          ${confDot}<span style="font-size:13px;color:#e53935;font-weight:600">Unable to confidently identify — please tag manually</span>
+        </div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
+        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}`;
+    } else if(res.match && res.confidence >= 40) {
       const bc = buckColor(res.match);
-      result.innerHTML = `
+      const lowConfWarn = res.confidence < 50 ? `<div style="font-size:11px;color:#e53935;margin-top:6px;font-style:italic">Low confidence — please verify carefully</div>` : "";
+      result.innerHTML = `${obsHtml}
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:rgba(74,127,193,0.08);border-radius:10px;border:1px solid rgba(74,127,193,0.2)">
           <div style="width:36px;height:36px;border-radius:50%;background:#1a1a1a;border:2px solid ${bc};display:flex;align-items:center;justify-content:center;flex-shrink:0">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${bc}" stroke-width="1.5" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>
           </div>
           <div>
             <div style="font-size:14px;font-weight:700;color:${bc}">${res.match}</div>
-            <div style="font-size:11px;color:${confColor}">${res.confidence}% — ${confLabel}</div>
+            <div style="font-size:11px;color:${confColor}">${confDot}${res.confidence}% — ${confLabel}</div>
           </div>
         </div>
         <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}`;
+        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}
+        ${lowConfWarn}`;
       document.getElementById("whoAcceptBtn").textContent = "Apply: " + res.match;
       actions.style.display = "block";
     } else {
-      result.innerHTML = `
+      result.innerHTML = `${obsHtml}
         <div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:600">No confident match</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
         ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">Add more field notes to your named bucks to improve matching accuracy.</div>`;
+        <div style="font-size:11px;color:var(--text3);margin-top:8px">Add antler descriptions and field notes to improve matching.</div>`;
     }
   } catch(e) {
     console.error("Full AI match failed:", e);
@@ -8213,31 +8378,30 @@ async function obsRunAiHint(base64DataUrl) {
   hintReason.textContent = '';
   obsAiHintSugg = null;
   try {
-    const buckProfiles = namedBucks.map(name => {
-      const regBuck = buckRegistry.find(b => b.name === name);
-      const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
-      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
-    }).join('\n');
+    const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(null);
+    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; hintBox.style.display = 'block'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 300,
+        max_tokens: 500,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: `You are analyzing a photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
+          { type: 'text', text: `You are analyzing a photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
     const result = JSON.parse(cleaned);
-    if(result.match && result.confidence >= 50) {
+    const obsConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
+    if(result.confidence < 40) {
+      hintText.innerHTML = '<span style="color:#e53935">Unable to confidently identify</span>';
+      hintReason.textContent = result.reasoning || 'Please tag manually.';
+    } else if(result.match && result.confidence >= 40) {
       obsAiHintSugg = result.match;
-      hintText.textContent = `${result.match} — ${result.confidence}% confidence`;
+      hintText.innerHTML = `${result.match} — <span style="color:${obsConfColor}">${result.confidence}%</span>`;
       hintReason.textContent = result.reasoning;
+      if(result.confidence < 50) hintReason.textContent += ' (Low confidence — verify carefully)';
     } else {
       hintText.textContent = 'No confident match found';
       hintReason.textContent = result.reasoning || '';
@@ -8637,31 +8801,31 @@ async function tcamRunAiHint(base64DataUrl) {
   hintReason.textContent = '';
   tcamAiHintSugg = null;
   try {
-    const buckProfiles = namedBucks.map(name => {
-      const regBuck = buckRegistry.find(b => b.name === name);
-      const bs = sightings.filter(s => s.buck_name === name && s.deer_type && s.deer_type.includes('Buck'));
-      const sightingNotes = bs.filter(s => s.notes).map(s => s.notes).slice(0,3).join('; ');
-      const regNotes = regBuck && regBuck.notes ? regBuck.notes : '';
-      const allNotes = [regNotes, sightingNotes].filter(Boolean).join('; ');
-      return `${name}: ${bs.length} sightings, cameras: ${[...new Set(bs.map(s=>s.camera_name))].join(', ')}${allNotes ? ', notes: ' + allNotes : ''}`;
-    }).join('\n');
+    const camContext = tcamSelectedCam || null;
+    const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(camContext);
+    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; hintBox.style.display = 'block'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 300,
+        max_tokens: 500,
         messages: [{ role: 'user', content: [
           { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app. Look at the buck in this photo and compare it to these known bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
+          { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
         ]}]
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
     const result = JSON.parse(cleaned);
-    if(result.match && result.confidence >= 50) {
+    const tcConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
+    if(result.confidence < 40) {
+      hintText.innerHTML = '<span style="color:#e53935">Unable to confidently identify</span>';
+      hintReason.textContent = result.reasoning || 'Please tag manually.';
+    } else if(result.match && result.confidence >= 40) {
       tcamAiHintSugg = result.match;
-      hintText.textContent = `${result.match} — ${result.confidence}% confidence`;
+      hintText.innerHTML = `${result.match} — <span style="color:${tcConfColor}">${result.confidence}%</span>`;
       hintReason.textContent = result.reasoning;
+      if(result.confidence < 50) hintReason.textContent += ' (Low confidence — verify carefully)';
     } else {
       hintText.textContent = 'No confident match found';
       hintReason.textContent = result.reasoning || '';
