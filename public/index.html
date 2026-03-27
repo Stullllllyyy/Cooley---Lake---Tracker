@@ -3411,6 +3411,11 @@ async function getBuckReferencePhotos() {
   }
 
   refPhotoCache = cache;
+  console.log('Reference photos loaded:', Object.entries(refPhotoCache).map(([buckId, photos]) => ({
+    buckName: buckRegistry.find(b => b.id === buckId)?.name,
+    photoCount: photos.length,
+    urls: photos.map(p => p.url)
+  })));
   return cache;
 }
 
