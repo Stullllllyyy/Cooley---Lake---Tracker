@@ -27,9 +27,65 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .map-hdr{position:fixed;top:0;left:0;right:0;z-index:50;padding:50px 16px 16px;background:linear-gradient(180deg,rgba(0,0,0,0.65) 0%,transparent 100%);pointer-events:none;display:flex;align-items:flex-start;justify-content:space-between}
 .map-title-main{font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
 .map-title-sub{font-size:9px;color:rgba(220,210,190,0.85);letter-spacing:2px;text-transform:uppercase;margin-top:1px;text-shadow:0 1px 6px rgba(0,0,0,0.9)}
-.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.3);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5)}
+.wx-pill{pointer-events:auto;cursor:pointer;background:rgba(18,20,21,0.85);border:1px solid rgba(140,115,85,0.3);border-radius:22px;padding:7px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);box-shadow:0 2px 12px rgba(0,0,0,0.5);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .wx-pill-temp{font-size:16px;font-weight:700;color:var(--text)}
 .wx-pill-info{font-size:10px;color:var(--text2);line-height:1.5}
+
+/* Weather popup card */
+#wxPopupCard{position:fixed;top:100px;right:16px;z-index:120;width:min(340px,calc(100vw - 32px));background:rgba(18,20,21,0.96);border:1px solid rgba(140,115,85,0.35);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:0;display:none;transform-origin:top right;animation:wxPopIn 0.18s ease-out forwards;overflow:hidden;-webkit-overflow-scrolling:touch}
+#wxPopupCard.closing{animation:wxPopOut 0.14s ease-in forwards}
+@keyframes wxPopIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@keyframes wxPopOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.92)}}
+.wx-card-hdr{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
+.wx-toggle-row{display:flex;gap:6px}
+.wx-toggle{padding:5px 10px;border-radius:14px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s}
+.wx-toggle.on{background:rgba(140,115,85,0.2);border-color:var(--gold);color:var(--gold)}
+.wx-refresh-btn{background:none;border:1px solid var(--border2);border-radius:50%;width:26px;height:26px;display:none;align-items:center;justify-content:center;cursor:pointer;color:var(--text3);transition:all 0.15s}
+.wx-refresh-btn:active{transform:rotate(180deg)}
+.wx-refresh-btn.show{display:flex}
+.wx-body{padding:14px 16px}
+.wx-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px}
+.wx-cell{text-align:center}
+.wx-cell-val{font-size:15px;font-weight:700;color:var(--text)}
+.wx-cell-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-top:2px}
+.wx-sun-row{display:flex;justify-content:center;gap:24px;padding:10px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);margin-bottom:12px}
+.wx-sun-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2)}
+.wx-forecast-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 0 8px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.wx-forecast-scroll::-webkit-scrollbar{display:none}
+.wx-hour-cell{flex:0 0 auto;text-align:center;min-width:48px;padding:8px 6px;background:var(--surface2);border-radius:10px;border:1px solid var(--border)}
+.wx-hour-time{font-size:9px;color:var(--text3);margin-bottom:4px}
+.wx-hour-temp{font-size:13px;font-weight:700;color:var(--text)}
+.wx-hour-wind{font-size:9px;color:var(--text3);margin-top:2px}
+.wx-pressure-row{display:flex;align-items:center;justify-content:center;gap:8px;padding:8px 0 4px;font-size:11px;color:var(--text2)}
+
+/* Hamburger slide-out menu */
+#hamOverlay{position:fixed;inset:0;z-index:450;background:rgba(0,0,0,0.6);opacity:0;pointer-events:none;transition:opacity 0.3s ease}
+#hamOverlay.on{opacity:1;pointer-events:auto}
+#hamMenu{position:fixed;top:0;left:0;bottom:0;z-index:450;width:min(80vw,320px);background:#121415;box-shadow:4px 0 24px rgba(0,0,0,0.7);transform:translateX(-100%);transition:transform 0.3s ease-out;display:flex;flex-direction:column;overflow:hidden}
+#hamMenu.on{transform:translateX(0)}
+.ham-scrollable{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ham-close{position:absolute;top:16px;right:16px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;z-index:10;background:none;border:none;color:var(--text3);cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.ham-hdr{display:flex;flex-direction:column;align-items:center;padding:48px 20px 20px}
+.ham-hdr-logo{height:48px;width:auto;margin-bottom:8px}
+.ham-hdr-tag{font-size:10px;color:var(--bronze);letter-spacing:2px;text-transform:uppercase}
+.ham-divider{height:1px;background:rgba(140,115,85,0.25);margin:0 20px}
+.ham-account{display:flex;flex-direction:column;align-items:center;padding:20px;gap:8px}
+.ham-avatar{width:64px;height:64px;border-radius:50%;border:2px solid var(--bronze);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer;background:#121415;font-size:24px;font-weight:700;color:var(--bronze);font-family:var(--font);-webkit-tap-highlight-color:transparent}
+.ham-avatar img{width:100%;height:100%;object-fit:cover;object-position:center;border-radius:50%;display:block}
+#hamAvatarInner{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.ham-email{font-size:12px;color:var(--silver);text-align:center;word-break:break-all}
+.ham-prop{font-size:11px;color:var(--tungsten)}
+.ham-tier{display:inline-block;padding:2px 10px;border-radius:10px;border:1px solid var(--bronze);font-size:9px;color:var(--bronze);text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-top:2px}
+.ham-items{flex:1;padding:12px 0}
+.ham-item{display:flex;align-items:center;gap:14px;padding:0 20px;height:52px;cursor:pointer;color:var(--text2);font-size:13px;font-family:var(--font);-webkit-tap-highlight-color:transparent;border-left:3px solid transparent;transition:background 0.12s,border-color 0.12s}
+.ham-item:active{background:rgba(140,115,85,0.08);border-left-color:var(--bronze)}
+.ham-item svg{flex-shrink:0}
+.ham-item-label{flex:1}
+.ham-item-chevron{color:var(--tungsten)}
+.ham-bottom{flex-shrink:0;padding:16px 20px calc(16px + var(--tab-h) + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);background:#121415}
+.ham-signout{width:100%;height:48px;border:none;border-radius:10px;background:var(--bronze);color:#121415;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent;transition:opacity 0.15s}
+.ham-signout:active{opacity:0.8}
+.ham-version{text-align:center;font-size:10px;color:var(--tungsten);margin-top:10px}
 
 /* Filter FAB + Panel */
 .filter-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid rgba(140,115,85,0.6);color:#BCC6CC;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
@@ -697,11 +753,58 @@ textarea{resize:none}
   </svg>
 </div>
 
+<!-- Hamburger overlay + slide-out menu -->
+<div id="hamOverlay" onclick="closeHamMenu()"></div>
+<div id="hamMenu">
+  <button class="ham-close" onclick="closeHamMenu()"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="ham-scrollable">
+    <div class="ham-hdr">
+      <img src="huginnhgold.png" class="ham-hdr-logo" alt="Huginn"/>
+      <div class="ham-hdr-tag">Know More. Hunt Smarter.</div>
+    </div>
+    <div class="ham-divider"></div>
+    <div class="ham-account">
+      <div class="ham-avatar" id="hamAvatar" onclick="triggerAvatarUpload()"><span id="hamAvatarInner">?</span></div>
+      <input type="file" id="hamAvatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)"/>
+      <div class="ham-email" id="hamEmail">--</div>
+      <div class="ham-prop" id="hamProp">--</div>
+      <div class="ham-tier">Free</div>
+    </div>
+    <div class="ham-divider"></div>
+    <div class="ham-items">
+      <div class="ham-item" onclick="showToast('Coming Soon')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 1 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span class="ham-item-label">My Property</span>
+        <svg class="ham-item-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="ham-item" onclick="showToast('Coming Soon')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        <span class="ham-item-label">Invite a Hunter</span>
+        <svg class="ham-item-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="ham-item" onclick="showToast('Coming Soon')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="ham-item-label">Send Feedback</span>
+        <svg class="ham-item-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="ham-item" onclick="window.open('https://huginnhunt.com/about','_blank')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <span class="ham-item-label">Help / About</span>
+        <svg class="ham-item-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </div>
+  <div class="ham-bottom">
+    <button class="ham-signout" onclick="closeHamMenu();handleLogout()">Sign Out</button>
+    <div class="ham-version">v1.0.0-beta</div>
+  </div>
+</div>
+
 <!-- Map header -->
 <div class="map-hdr">
   <div>
     <div style="display:flex;align-items:center;gap:8px">
-      <img src="huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95))" alt="Huginn" onerror="console.error('logo failed to load:', this.src)"/>
+      <img src="huginnhgold.png" style="height:40px;width:auto;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.95));cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent" alt="Huginn" onclick="openHamMenu()" onerror="console.error('logo failed to load:', this.src)"/>
       <div>
         <div style="font-size:13px;font-weight:700;color:var(--gold);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">HUGINN <span class="sync-dot" id="syncDot"></span></div>
         <div style="font-size:9px;color:rgba(220,210,190,0.85);letter-spacing:2px;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,0.9)">Know More. Hunt Smarter.</div>
@@ -709,14 +812,29 @@ textarea{resize:none}
     </div>
   </div>
   <div style="display:flex;align-items:center;pointer-events:auto">
-    <div class="wx-pill" onclick="openSheet('intel');setTimeout(()=>{const el=document.getElementById('forecastContent');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},400)";>
+    <div class="wx-pill" onclick="toggleWxPopup()">
       <div>
         <div class="wx-pill-temp" id="mapWeatherTemp">--</div>
-        <div class="wx-pill-info" id="mapWeatherDetail">Intel &rsaquo;</div>
+        <div class="wx-pill-info" id="mapWeatherDetail">--</div>
       </div>
       <div id="mapWeatherIcon" style="display:flex;align-items:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg></div>
     </div>
-    <button class="logout-btn" onclick="handleLogout()" title="Sign out"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+  </div>
+</div>
+
+<!-- Weather popup card -->
+<div id="wxPopupCard" onclick="event.stopPropagation()">
+  <div class="wx-card-hdr">
+    <div class="wx-toggle-row">
+      <button class="wx-toggle on" id="wxToggleGps" onclick="setWxSource('gps')">My Location</button>
+      <button class="wx-toggle" id="wxToggleMap" onclick="setWxSource('map')">Map Center</button>
+    </div>
+    <button class="wx-refresh-btn" id="wxRefreshBtn" onclick="refreshWxForMapCenter()" title="Refresh for new map center">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </button>
+  </div>
+  <div class="wx-body" id="wxPopupBody">
+    <div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Loading...</div>
   </div>
 </div>
 
@@ -1606,12 +1724,14 @@ function showDet(id) {
   openSheet('detail');
 }
 
-// Map weather pill updater
+// Map weather pill updater — uses GPS if available, then map center. Never uses CLAT/CLNG.
 function updateMapWeather() {
-  const now = new Date();
-  const date = now.toISOString().split('T')[0];
-  const hour = now.getHours();
-  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + CLAT + "&longitude=" + CLNG + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
+  let lat, lng;
+  if(lastKnownGPS) { lat = lastKnownGPS.lat; lng = lastKnownGPS.lng; }
+  else if(mapInstance) { const c = mapInstance.getCenter(); lat = c.lat; lng = c.lng; }
+  else return; // No coordinates available yet — wait for map load or GPS
+  const hour = new Date().getHours();
+  const url = "https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lng + "&hourly=temperature_2m,windspeed_10m,winddirection_10m&wind_speed_unit=mph&temperature_unit=fahrenheit&timezone=America%2FChicago&forecast_days=1";
   fetch(url).then(r=>r.json()).then(j=>{
     if(!j.hourly) return;
     const temp = Math.round(j.hourly.temperature_2m[hour]);
@@ -1621,6 +1741,170 @@ function updateMapWeather() {
     document.getElementById('mapWeatherTemp').textContent = temp+'F';
     document.getElementById('mapWeatherDetail').textContent = `${dir} ${wind}mph`;
   }).catch(()=>{});
+}
+
+// --- Weather popup card ---
+let wxPopupOpen = false;
+let wxPopupSource = 'gps'; // 'gps' or 'map'
+let wxMapMoved = false; // track if map panned since last Map Center fetch
+let wxDismissHandler = null;
+let lastKnownGPS = null; // persists across tracking state changes — never cleared
+
+function toggleWxPopup() {
+  const card = document.getElementById('wxPopupCard');
+  if(wxPopupOpen) { closeWxPopup(); return; }
+  wxPopupOpen = true;
+  card.classList.remove('closing');
+  card.style.display = 'block';
+  // Default to GPS if available, Map Center otherwise
+  if(lastKnownGPS) { wxPopupSource = 'gps'; }
+  else { wxPopupSource = 'map'; }
+  updateWxToggleUI();
+  loadWxPopupData();
+  // Dismiss on outside tap (delay to avoid same-tap close)
+  setTimeout(() => {
+    wxDismissHandler = (e) => {
+      if(!document.getElementById('wxPopupCard').contains(e.target) &&
+         !e.target.closest('.wx-pill')) {
+        closeWxPopup();
+      }
+    };
+    document.addEventListener('click', wxDismissHandler);
+  }, 50);
+}
+
+function closeWxPopup() {
+  if(!wxPopupOpen) return;
+  const card = document.getElementById('wxPopupCard');
+  card.classList.add('closing');
+  setTimeout(() => { card.style.display = 'none'; card.classList.remove('closing'); }, 140);
+  wxPopupOpen = false;
+  if(wxDismissHandler) { document.removeEventListener('click', wxDismissHandler); wxDismissHandler = null; }
+}
+
+function setWxSource(src) {
+  if(src === 'gps' && !lastKnownGPS) {
+    // Try to trigger a fresh GPS request
+    if(geolocateCtrl) {
+      try { geolocateCtrl.trigger(); } catch(_) {}
+      showToast('Requesting GPS position...');
+    } else {
+      showToast('GPS not available — enable location');
+    }
+    return;
+  }
+  wxPopupSource = src;
+  updateWxToggleUI();
+  wxMapMoved = false;
+  loadWxPopupData();
+}
+
+function updateWxToggleUI() {
+  document.getElementById('wxToggleGps').classList.toggle('on', wxPopupSource === 'gps');
+  document.getElementById('wxToggleMap').classList.toggle('on', wxPopupSource === 'map');
+  document.getElementById('wxRefreshBtn').classList.toggle('show', wxPopupSource === 'map' && wxMapMoved);
+}
+
+function refreshWxForMapCenter() {
+  wxMapMoved = false;
+  updateWxToggleUI();
+  loadWxPopupData();
+}
+
+function getWxCoords() {
+  if(wxPopupSource === 'gps' && lastKnownGPS) {
+    return { lat: lastKnownGPS.lat, lng: lastKnownGPS.lng };
+  }
+  if(mapInstance) {
+    const c = mapInstance.getCenter();
+    return { lat: c.lat, lng: c.lng };
+  }
+  return null;
+}
+
+function loadWxPopupData() {
+  const body = document.getElementById('wxPopupBody');
+  body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Loading...</div>';
+  const coords = getWxCoords();
+  if(!coords) { body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Waiting for location...</div>'; return; }
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords.lat +
+    '&longitude=' + coords.lng +
+    '&hourly=temperature_2m,relativehumidity_2m,precipitation,windspeed_10m,windgusts_10m,winddirection_10m,surface_pressure' +
+    '&daily=sunrise,sunset' +
+    '&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch' +
+    '&timezone=America%2FChicago&forecast_days=2';
+  fetch(url).then(r => r.json()).then(j => {
+    if(!j.hourly || !j.daily) { body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Weather data unavailable</div>'; return; }
+    const h = new Date().getHours();
+    const temp = Math.round(j.hourly.temperature_2m[h]);
+    const wind = Math.round(j.hourly.windspeed_10m[h]);
+    const gust = Math.round(j.hourly.windgusts_10m[h]);
+    const humid = Math.round(j.hourly.relativehumidity_2m[h]);
+    const pressHpa = j.hourly.surface_pressure[h];
+    const pressInHg = (pressHpa / 33.8639).toFixed(2);
+    const precip = j.hourly.precipitation[h].toFixed(2);
+    const windDeg = j.hourly.winddirection_10m[h];
+    const windDir = DIR_LABELS[Math.round(windDeg / 22.5) % 16];
+
+    // Pressure trend — compare current hour to 3 hours ago
+    let pTrend = 'Steady';
+    let pArrow = '&#8594;';
+    let pColor = 'var(--text3)';
+    if(h >= 3) {
+      const diff = j.hourly.surface_pressure[h] - j.hourly.surface_pressure[h - 3];
+      if(diff > 0.5) { pTrend = 'Rising'; pArrow = '&#8599;'; pColor = 'var(--blue)'; }
+      else if(diff < -0.5) { pTrend = 'Falling'; pArrow = '&#8600;'; pColor = '#e87a3a'; }
+    }
+
+    // Sunrise / sunset
+    const sunrise = j.daily.sunrise[0];
+    const sunset = j.daily.sunset[0];
+    const fmtSun = (iso) => {
+      if(!iso) return '--';
+      const d = new Date(iso);
+      let hh = d.getHours(), mm = d.getMinutes();
+      const ampm = hh >= 12 ? 'PM' : 'AM';
+      hh = hh % 12 || 12;
+      return hh + ':' + String(mm).padStart(2, '0') + ' ' + ampm;
+    };
+
+    // 24h forecast — start at current hour, show next 24
+    let forecastHtml = '';
+    for(let i = h; i < h + 24 && i < j.hourly.time.length; i++) {
+      const hTime = new Date(j.hourly.time[i]);
+      let hh = hTime.getHours();
+      const ampm = hh >= 12 ? 'p' : 'a';
+      hh = hh % 12 || 12;
+      const hTemp = Math.round(j.hourly.temperature_2m[i]);
+      const hWind = Math.round(j.hourly.windspeed_10m[i]);
+      const hDir = DIR_LABELS[Math.round(j.hourly.winddirection_10m[i] / 22.5) % 16];
+      const isNow = i === h;
+      forecastHtml += '<div class="wx-hour-cell"' + (isNow ? ' style="border-color:var(--gold)"' : '') + '>' +
+        '<div class="wx-hour-time">' + (isNow ? 'Now' : hh + ampm) + '</div>' +
+        '<div class="wx-hour-temp">' + hTemp + '°</div>' +
+        '<div class="wx-hour-wind">' + hDir + ' ' + hWind + '</div>' +
+        '</div>';
+    }
+
+    body.innerHTML =
+      '<div class="wx-grid">' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + temp + '°F</div><div class="wx-cell-lbl">Temp</div></div>' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + windDir + ' ' + wind + '</div><div class="wx-cell-lbl">Wind mph</div></div>' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + gust + '</div><div class="wx-cell-lbl">Gust mph</div></div>' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + humid + '%</div><div class="wx-cell-lbl">Humidity</div></div>' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + pressInHg + '</div><div class="wx-cell-lbl">Pressure inHg</div></div>' +
+        '<div class="wx-cell"><div class="wx-cell-val">' + precip + '"</div><div class="wx-cell-lbl">Precip</div></div>' +
+      '</div>' +
+      '<div class="wx-pressure-row"><span style="color:' + pColor + '">' + pArrow + '</span> Pressure ' + pTrend + '</div>' +
+      '<div class="wx-sun-row">' +
+        '<div class="wx-sun-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' + fmtSun(sunrise) + '</div>' +
+        '<div class="wx-sun-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e87a3a" stroke-width="2" stroke-linecap="round"><path d="M17 18a5 5 0 0 0-10 0"/><line x1="12" y1="9" x2="12" y2="2"/><line x1="4.22" y1="10.22" x2="5.64" y2="11.64"/><line x1="1" y1="18" x2="3" y2="18"/><line x1="21" y1="18" x2="23" y2="18"/><line x1="18.36" y1="11.64" x2="19.78" y2="10.22"/></svg>' + fmtSun(sunset) + '</div>' +
+      '</div>' +
+      '<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">24-Hour Forecast</div>' +
+      '<div class="wx-forecast-scroll">' + forecastHtml + '</div>';
+  }).catch(() => {
+    body.innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--text3);font-size:12px">Failed to load weather</div>';
+  });
 }
 
 // --- FAB ---
@@ -2388,9 +2672,13 @@ function initGeolocate() {
   });
   geolocateCtrl.on('error', (err) => { dbg('geolocate error: ' + (err?.message || JSON.stringify(err))); });
   geolocateCtrl.on('geolocate', (e) => {
+    const hadGPS = !!lastKnownGPS;
     lastUserLngLat = [e.coords.longitude, e.coords.latitude];
+    lastKnownGPS = { lat: e.coords.latitude, lng: e.coords.longitude };
     dbg('GPS position: ' + e.coords.latitude.toFixed(5) + ', ' + e.coords.longitude.toFixed(5));
     if(compassConeActive && lastHeading !== null) updateHeadingConeGeoJSON();
+    // Refresh weather pill with GPS coords on first fix
+    if(!hadGPS) updateMapWeather();
   });
   geolocateCtrl.on('trackuserlocationend', () => {
     dbg('trackuserlocationend');
@@ -2805,6 +3093,82 @@ async function handleLogout() {
   await sb.auth.signOut();
 }
 
+// --- Hamburger menu ---
+let hamMenuOpen = false;
+
+function openHamMenu() {
+  if(hamMenuOpen) return;
+  hamMenuOpen = true;
+  document.getElementById('hamOverlay').classList.add('on');
+  document.getElementById('hamMenu').classList.add('on');
+  populateHamMenu();
+}
+
+function closeHamMenu() {
+  if(!hamMenuOpen) return;
+  hamMenuOpen = false;
+  document.getElementById('hamOverlay').classList.remove('on');
+  document.getElementById('hamMenu').classList.remove('on');
+}
+
+async function populateHamMenu() {
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if(!user) return;
+    // Email
+    document.getElementById('hamEmail').textContent = user.email || '--';
+    // Avatar — check for profile photo, else show initial
+    const avatarEl = document.getElementById('hamAvatar');
+    const innerEl = document.getElementById('hamAvatarInner');
+    const photoPath = 'profile-photos/' + user.id + '.jpg';
+    const { data: urlData } = sb.storage.from('trail-cam-photos').getPublicUrl(photoPath);
+    if(urlData && urlData.publicUrl) {
+      // Try loading the image — if it 404s, fall back to initial
+      const testImg = new Image();
+      testImg.onload = () => {
+        innerEl.innerHTML = '<img src="' + urlData.publicUrl + '?t=' + Date.now() + '" alt=""/>';
+      };
+      testImg.onerror = () => {
+        const initial = (user.email || '?')[0].toUpperCase();
+        innerEl.textContent = initial;
+      };
+      testImg.src = urlData.publicUrl + '?t=' + Date.now();
+    } else {
+      const initial = (user.email || '?')[0].toUpperCase();
+      innerEl.textContent = initial;
+    }
+    // Property name
+    if(PROPERTY_ID) {
+      const { data: propData } = await sb.from('properties').select('name').eq('id', PROPERTY_ID).maybeSingle();
+      document.getElementById('hamProp').textContent = propData?.name || 'No property';
+    }
+  } catch(e) { console.error('populateHamMenu:', e); }
+}
+
+function triggerAvatarUpload() {
+  document.getElementById('hamAvatarInput').click();
+}
+
+async function handleAvatarUpload(input) {
+  const file = input.files && input.files[0];
+  if(!file) return;
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if(!user) { showToast('Not signed in'); return; }
+    const compressed = await compressImage(file);
+    const path = 'profile-photos/' + user.id + '.jpg';
+    const { error } = await sb.storage.from('trail-cam-photos').upload(path, compressed, { upsert: true, contentType: 'image/jpeg' });
+    if(error) { showToast('Upload failed — try again'); console.error('Avatar upload:', error); return; }
+    // Update display immediately
+    const { data: urlData } = sb.storage.from('trail-cam-photos').getPublicUrl(path);
+    if(urlData?.publicUrl) {
+      document.getElementById('hamAvatarInner').innerHTML = '<img src="' + urlData.publicUrl + '?t=' + Date.now() + '" alt=""/>';
+    }
+    showToast('Profile photo updated');
+  } catch(e) { showToast('Upload failed'); console.error('Avatar upload:', e); }
+  input.value = '';
+}
+
 async function bootApp() {
   if(appBooted) return;
   appBooted = true;
@@ -2834,7 +3198,6 @@ async function bootApp() {
   document.getElementById('authGate').style.display = 'none';
   loadBuckRegistry();
   loadSightings();
-  updateMapWeather();
   startMap();
 }
 
@@ -3640,6 +4003,8 @@ function initMap() {
   mapInstance.on('load', () => {
     mapInstance.resize();
     initGeolocate();
+    // Fetch weather using map center now that mapInstance is ready
+    updateMapWeather();
     // Fly to GPS if available, otherwise stay on continental US view
     if(navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -3650,6 +4015,10 @@ function initMap() {
         { enableHighAccuracy: true, timeout: 5000 }
       );
     }
+  });
+  // Weather popup: track map pan for Map Center refresh button
+  mapInstance.on('moveend', () => {
+    if(wxPopupSource === 'map' && wxPopupOpen) { wxMapMoved = true; updateWxToggleUI(); }
   });
   mapInstance.on('style.load', () => {
     addLineLayer();
@@ -4368,7 +4737,7 @@ async function showPin(camName) {
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
       Rename
     </button>
-    <button class="popup-act-btn" onclick="enableDragForCamera('${camName}')">
+    <button class="popup-act-btn" onclick="moveCameraPin('${camName}')">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></svg>
       Move Pin
     </button>
@@ -4509,15 +4878,8 @@ async function renameCamera(oldName) {
 }
 
 function enableDragForCamera(camName) {
-  closePopup();
-  // Turn on edit mode so pins become draggable
-  if(!editMode) toggleEditMode();
-  // Flash a message
-  const msg = document.createElement('div');
-  msg.textContent = 'Drag the ' + camName + ' pin to reposition it';
-  msg.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(74,127,193,0.9);color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;z-index:200;pointer-events:none;font-family:Roboto,sans-serif';
-  document.body.appendChild(msg);
-  setTimeout(() => msg.remove(), 3000);
+  // Legacy — replaced by moveCameraPin(). Redirect for safety.
+  moveCameraPin(camName);
 }
 
 async function confirmDeleteCamera(camName) {
@@ -7638,7 +8000,8 @@ function cancelFeatEdit() {
 }
 
 let ttpOnCancel = null; // optional callback when tap-to-place is cancelled
-let ttpMoveMarkerId = null; // ID of marker being moved
+let ttpMoveMarkerId = null; // ID of marker being moved (property_markers id or camera name)
+let ttpMoveMarkerType = null; // 'camera' or 'marker'
 let ttpMoveMarkerInst = null; // existing marker instance (hidden during move)
 let ttpMoveTempMarker = null; // temporary draggable marker
 let ttpMoveOldLat = null;
@@ -7649,24 +8012,9 @@ function moveFeatMarker() {
   if(ttpMoveMarkerId) { console.log('Move already in progress, ignoring duplicate call'); return; }
   const m = activeFeatureMarker;
   ttpMoveMarkerId = m.id;
+  ttpMoveMarkerType = 'marker';
   ttpMoveOldLat = m.lat;
   ttpMoveOldLng = m.lng;
-
-  // Find existing marker instance for expanded log
-  let logInst = null;
-  for(const inst of propertyMarkerInstances) {
-    const ll = inst.getLngLat();
-    if(Math.abs(ll.lat - m.lat) < 0.00001 && Math.abs(ll.lng - m.lng) < 0.00001) {
-      logInst = inst;
-      break;
-    }
-  }
-  console.log('Move initiated:', {
-    id: ttpMoveMarkerId,
-    lat: logInst ? logInst.getLngLat().lat : m.lat,
-    lng: logInst ? logInst.getLngLat().lng : m.lng,
-    isDraggable: logInst ? logInst.isDraggable() : 'no instance found'
-  });
   closePopup();
 
   // Find the rendered Mapbox marker instance for this pin
@@ -7678,14 +8026,15 @@ function moveFeatMarker() {
       break;
     }
   }
-  if(!targetInst) { showToast('Could not find pin on map'); return; }
+  if(!targetInst) { showToast('Could not find pin on map'); ttpMoveMarkerId = null; ttpMoveMarkerType = null; return; }
   ttpMoveMarkerInst = targetInst;
 
-  // Hide the existing marker (opacity 0, do not remove)
+  // Hide the existing marker — do not remove
   const existingEl = targetInst.getElement();
-  if(existingEl) existingEl.style.opacity = '0';
+  if(existingEl) existingEl.style.visibility = 'hidden';
 
-  // Build temporary draggable marker with SAME SVG/color as existing pin + pulse
+  // Build temporary draggable marker with SAME SVG/color as existing pin
+  // ttpGlow animation on INNER .cam-pin div — NOT outer element (Mapbox controls outer transform)
   const t = m.type;
   const fill = m.color || FEAT_COLORS[t] || '#8C7355';
   const stroke = m.color ? (PIN_COLOR_STROKES[m.color] || '#a08468') : (FEAT_STROKES[t] || '#a08468');
@@ -7694,10 +8043,9 @@ function moveFeatMarker() {
 
   const tempEl = document.createElement('div');
   tempEl.className = 'cam-marker';
-  tempEl.style.animation = 'ttpGlow 1.4s ease-in-out infinite';
   tempEl.innerHTML =
     '<div class="cam-lbl">' + lbl + '</div>' +
-    '<div class="cam-pin">' +
+    '<div class="cam-pin" style="animation:ttpGlow 1.4s ease-in-out infinite">' +
       '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
         '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
         ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
@@ -7727,7 +8075,6 @@ function moveFeatMarker() {
     const ll = ttpMoveTempMarker.getLngLat();
     const newLat = ll.lat;
     const newLng = ll.lng;
-    console.log('Move confirm:', { newLat, newLng, ttpMoveMarkerId });
 
     // Clean up TTP state (do not call cancelTapToPlace)
     tapToPlaceActive = false;
@@ -7739,27 +8086,22 @@ function moveFeatMarker() {
     ttpMoveTempMarker.remove();
     ttpMoveTempMarker = null;
 
-    const historyEntry = { lat: ttpMoveOldLat, lng: ttpMoveOldLng, moved_at: new Date().toISOString() };
-    const oldHistory = m.location_history || [];
-    const newHistory = [...oldHistory, historyEntry];
-
-    sb.from('property_markers').update({ lat: newLat, lng: newLng, location_history: newHistory }).eq('id', ttpMoveMarkerId).then(({error}) => {
+    sb.from('property_markers').update({ lat: newLat, lng: newLng }).eq('id', ttpMoveMarkerId).then(({error}) => {
       if(error) {
         console.error('Move save error:', error);
         showToast('Move failed — try again');
-        // Restore existing marker visibility at original position
-        if(existingEl) existingEl.style.opacity = '1';
+        if(existingEl) existingEl.style.visibility = 'visible';
       } else {
         const idx = propertyMarkers.findIndex(x => x.id === ttpMoveMarkerId);
         if(idx >= 0) {
           propertyMarkers[idx].lat = newLat;
           propertyMarkers[idx].lng = newLng;
-          propertyMarkers[idx].location_history = newHistory;
         }
         renderPropertyMarkers();
-        showToast((m.name || m.type) + ' moved');
+        showToast('Location updated');
       }
       ttpMoveMarkerId = null;
+      ttpMoveMarkerType = null;
       ttpMoveMarkerInst = null;
       ttpMoveTempMarker = null;
       ttpMoveOldLat = null;
@@ -7773,9 +8115,113 @@ function moveFeatMarker() {
     if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
     if(ttpMoveMarkerInst) {
       const el = ttpMoveMarkerInst.getElement();
-      if(el) el.style.opacity = '1';
+      if(el) el.style.visibility = 'visible';
     }
     ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+}
+
+function moveCameraPin(camName) {
+  if(ttpMoveMarkerId) { console.log('Move already in progress'); return; }
+  const pos = camLocations[camName];
+  if(!pos) { showToast('Camera location not found'); return; }
+
+  ttpMoveMarkerId = camName;
+  ttpMoveMarkerType = 'camera';
+  ttpMoveOldLat = pos.lat;
+  ttpMoveOldLng = pos.lng;
+  closePopup();
+
+  // Find existing marker instance
+  const targetInst = mapMarkers[camName];
+  if(!targetInst) { showToast('Could not find pin on map'); ttpMoveMarkerId = null; ttpMoveMarkerType = null; return; }
+  ttpMoveMarkerInst = targetInst;
+
+  // Hide existing marker — do not remove
+  const existingEl = targetInst.getElement();
+  if(existingEl) existingEl.style.visibility = 'hidden';
+
+  // Build temp draggable marker matching camera pin SVG/color
+  // ttpGlow animation on INNER .cam-pin div — NOT outer element (Mapbox controls outer transform)
+  const baseColor = pos.color || '#8C7355';
+  const baseStroke = PIN_COLOR_STROKES[baseColor] || '#a08468';
+
+  const tempEl = document.createElement('div');
+  tempEl.className = 'cam-marker';
+  tempEl.innerHTML =
+    '<div class="cam-lbl">' + camName + '</div>' +
+    '<div class="cam-pin" style="animation:ttpGlow 1.4s ease-in-out infinite">' +
+      '<svg class="pin-bg" viewBox="0 0 36 44" fill="none">' +
+        '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="3"/>' +
+      '<path d="M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z"' +
+        ' fill="' + baseColor + '" stroke="' + baseStroke + '" stroke-width="1.5"/>' +
+      '</svg>' +
+      '<div class="cam-pin-content"><div class="cam-pin-ico">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">' +
+        '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>' +
+      '</div></div>' +
+    '</div>';
+
+  ttpMoveTempMarker = new mapboxgl.Marker({ element: tempEl, anchor: 'bottom', offset: [0, 0], draggable: true })
+    .setLngLat([pos.lng, pos.lat])
+    .addTo(mapInstance);
+
+  ttpMoveTempMarker.on('drag', onMoveDrag);
+  ttpMoveTempMarker.on('dragend', onMoveDrag);
+
+  // Show location confirm card
+  tapToPlaceActive = true;
+  tapToPlaceLngLat = { lat: pos.lat, lng: pos.lng };
+  const coordEl = document.getElementById('ttpLocCoords');
+  if(coordEl) coordEl.textContent = pos.lat.toFixed(5) + ', ' + pos.lng.toFixed(5);
+  document.getElementById('ttpLocModal').classList.add('on');
+
+  // Confirm callback
+  ttpAfterConfirm = async () => {
+    const ll = ttpMoveTempMarker.getLngLat();
+    const newLat = ll.lat;
+    const newLng = ll.lng;
+
+    tapToPlaceActive = false;
+    tapToPlaceLngLat = null;
+    ttpAfterConfirm = null;
+    document.getElementById('ttpLocModal').classList.remove('on');
+
+    ttpMoveTempMarker.remove();
+    ttpMoveTempMarker = null;
+
+    const { error } = await sb.from('cameras').update({ lat: newLat, lng: newLng }).eq('name', camName);
+    if(error) {
+      console.error('Camera move save error:', error);
+      showToast('Move failed — try again');
+      if(existingEl) existingEl.style.visibility = 'visible';
+    } else {
+      camLocations[camName] = { ...camLocations[camName], lng: newLng, lat: newLat };
+      addCamMarkers();
+      showToast('Location updated');
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
+    ttpMoveMarkerInst = null;
+    ttpMoveTempMarker = null;
+    ttpMoveOldLat = null;
+    ttpMoveOldLng = null;
+  };
+
+  // Cancel callback
+  ttpOnCancel = () => {
+    if(ttpMoveTempMarker) { ttpMoveTempMarker.remove(); ttpMoveTempMarker = null; }
+    if(ttpMoveMarkerInst) {
+      const el = ttpMoveMarkerInst.getElement();
+      if(el) el.style.visibility = 'visible';
+    }
+    ttpMoveMarkerId = null;
+    ttpMoveMarkerType = null;
     ttpMoveMarkerInst = null;
     ttpMoveOldLat = null;
     ttpMoveOldLng = null;
