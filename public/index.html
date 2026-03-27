@@ -436,6 +436,19 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .bp-notes-history{max-height:200px;overflow-y:auto;margin-top:8px}
 .bp-notes-entry{padding:6px 0;border-bottom:1px solid var(--border);font-size:11px;color:var(--text2);line-height:1.5}
 .bp-notes-entry-ts{font-size:9px;color:var(--text3);margin-bottom:2px}
+.aif-btn{height:48px;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;width:100%}
+.aif-btn-confirm{background:#8C7355;color:#121415;border:none}
+.aif-btn-wrong{background:#4A4D4E;color:#BCC6CC;border:none}
+.aif-btn-new{background:transparent;color:#8C7355;border:2px solid #8C7355}
+.aif-btn:disabled{opacity:0.5;cursor:default}
+.aif-buck-list{max-height:300px;overflow-y:auto;margin-top:8px}
+.aif-buck-item{display:flex;align-items:center;gap:10px;padding:10px;border-radius:10px;border:1px solid var(--border2);margin-bottom:6px;cursor:pointer;background:var(--surface2)}
+.aif-buck-item:active{background:rgba(140,115,85,0.15)}
+.aif-buck-thumb{width:40px;height:40px;border-radius:8px;object-fit:cover;flex-shrink:0}
+.aif-buck-thumb-ph{width:40px;height:40px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.aif-new-form{margin-top:10px;padding:12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border2)}
+.aif-new-input{width:100%;padding:10px 12px;border-radius:8px;background:var(--bg);border:1px solid var(--border2);color:var(--text);font-size:13px;font-family:var(--font);outline:none;margin-bottom:8px}
+.aif-new-input:focus{border-color:#8C7355}
 .group-hdr{padding:10px 14px 4px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;background:var(--bg);border-bottom:1px solid var(--border)}
 
 /* log form */
@@ -1197,17 +1210,10 @@ textarea{resize:none}
     <input type="file" id="tcamInput" accept="image/*" style="display:none" onchange="tcamHandlePhoto(this)"/>
     <!-- AI hint (buck-only) -->
     <div id="tcamAiHint" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:2px">AI Buck ID</div>
-          <div style="font-size:12px;color:var(--text)" id="tcamAiText">Analyzing...</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="tcamAcceptAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
-          <button onclick="tcamDismissAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
-        </div>
-      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">AI Buck ID</div>
+      <div style="font-size:12px;color:var(--text)" id="tcamAiText">Analyzing...</div>
       <div id="tcamAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
+      <div id="tcamAiActions" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
     </div>
     <!-- Date / Time -->
     <div class="two-col">
@@ -1374,17 +1380,10 @@ textarea{resize:none}
     <input type="file" id="ttpObsInput" accept="image/*" style="display:none" onchange="obsHandlePhoto(this)"/>
     <!-- AI hint (buck-only) -->
     <div id="ttpObsAiHint" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-        <div>
-          <div style="font-size:11px;color:var(--text3);margin-bottom:2px">AI Buck ID</div>
-          <div style="font-size:12px;color:var(--text)" id="ttpObsAiText">Analyzing...</div>
-        </div>
-        <div style="display:flex;gap:6px;flex-shrink:0">
-          <button onclick="obsAcceptAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--blue);background:transparent;color:var(--blue);font-size:11px;cursor:pointer;font-family:var(--font)">Accept</button>
-          <button onclick="obsDismissAiHint()" style="padding:10px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>
-        </div>
-      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">AI Buck ID</div>
+      <div style="font-size:12px;color:var(--text)" id="ttpObsAiText">Analyzing...</div>
       <div id="ttpObsAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
+      <div id="ttpObsAiActions" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
     </div>
     <!-- Date / Time -->
     <div class="two-col">
@@ -3191,6 +3190,26 @@ function buckNameById(id) {
   const b = buckRegistry.find(r => r.id === id);
   return b ? b.name : null;
 }
+
+// --- AI Feedback Logging ---
+async function writeAiFeedback({ photoUrl, cameraName, aiSuggestion, aiConfidence, aiReasoning, confirmedBuckId, confirmedBuckName, wasCorrect, correctionNotes }) {
+  try {
+    await sb.from('ai_feedback').insert({
+      property_id: PROPERTY_ID,
+      user_id: null,
+      photo_url: photoUrl || null,
+      camera_name: cameraName || null,
+      ai_suggestion: aiSuggestion || null,
+      ai_confidence: aiConfidence != null ? aiConfidence : null,
+      ai_reasoning: aiReasoning || null,
+      hunter_confirmed_buck_id: confirmedBuckId || null,
+      hunter_confirmed_buck_name: confirmedBuckName || null,
+      was_correct: wasCorrect,
+      correction_notes: correctionNotes || null
+    });
+  } catch(e) { console.error('writeAiFeedback:', e); }
+}
+
 function syncDot(on) {
   const d = document.getElementById("syncDot");
   if(d) d.className = "sync-dot" + (on ? " on" : "");
@@ -6834,6 +6853,7 @@ function openUnknownBucks() {
 let bulkQueue = [];
 let bulkIdx = 0;
 let bulkMatchResult = null;
+let bulkAiFullResult = null;
 
 function startBulkResolve() {
   bulkQueue = sightings.filter(s => s.deer_type && s.deer_type.includes('Buck') && !s.buck_name && s.image_url);
@@ -6954,6 +6974,7 @@ Respond in JSON only, no other text:
     const acceptBtn = document.getElementById('bulkAcceptBtn');
 
     if(!aiTextEl) return; // modal closed
+    bulkAiFullResult = result;
 
     const bulkConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
     if(result.confidence < 40) {
@@ -7002,6 +7023,18 @@ async function bulkSaveNameValue(name) {
   const local = sightings.find(x => x.id === s.id);
   if(local) { local.buck_name = name; local.buck_id = bulkBuckId; }
   if(bulkBuckId && local && local.date) updateBuckDates(bulkBuckId, local.date);
+  // Log AI feedback
+  if(bulkAiFullResult || name) {
+    const aiSugg = bulkAiFullResult?.match || null;
+    const wasCorrect = aiSugg && aiSugg === name;
+    writeAiFeedback({
+      photoUrl: s.image_url, cameraName: s.camera_name,
+      aiSuggestion: aiSugg, aiConfidence: bulkAiFullResult?.confidence,
+      aiReasoning: bulkAiFullResult?.reasoning,
+      confirmedBuckId: bulkBuckId, confirmedBuckName: name, wasCorrect
+    });
+    bulkAiFullResult = null;
+  }
   showToast(`Saved: ${name}`);
   refreshBucknameList();
   buildMapFilters();
@@ -7073,14 +7106,13 @@ function whoIsThis(sightingId) {
 }
 
 function showWhoIsThisModal(sightingId, imageUrl) {
-  // Build or reuse modal
   let modal = document.getElementById("whoModal");
   if(!modal) {
     modal = document.createElement("div");
     modal.id = "whoModal";
     modal.className = "modal-overlay";
     modal.style.display = "flex";
-    modal.innerHTML = `<div class="modal-sheet" onclick="event.stopPropagation()">
+    modal.innerHTML = `<div class="modal-sheet" onclick="event.stopPropagation()" style="max-height:88vh;overflow-y:auto">
       <div style="width:36px;height:4px;background:var(--border2);border-radius:2px;margin:0 auto 16px"></div>
       <div class="modal-hdr"><div style="font-size:15px;font-weight:600;color:var(--text)">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:6px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -7089,24 +7121,7 @@ function showWhoIsThisModal(sightingId, imageUrl) {
       </div>
       <img id="whoImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-bottom:12px"/>
       <div id="whoResult" style="min-height:80px"></div>
-      <div id="whoActions" style="display:none;margin-top:10px">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Apply this identification?</div>
-        <div style="display:flex;gap:8px">
-          <button id="whoAcceptBtn" onclick="applyWhoMatch()" style="flex:1;padding:10px;border:none;border-radius:10px;background:var(--gold);color:var(--bg);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font)">Accept Match</button>
-          <button onclick="showWhoEditInput()" style="flex:1;padding:10px;border:1px solid var(--border2);border-radius:10px;background:transparent;color:var(--text2);font-size:13px;cursor:pointer;font-family:var(--font)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:4px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Edit ID
-          </button>
-        </div>
-        <div id="whoEditWrap" style="display:none;margin-top:10px">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Enter correct buck name:</div>
-          <div style="display:flex;gap:8px">
-            <input id="whoEditInput" type="text" placeholder="Buck name..." list="bucknamelist"
-              style="flex:1;background:var(--bg);border:1px solid var(--border2);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:var(--font);outline:none"/>
-            <button onclick="applyWhoEdit()" style="padding:8px 14px;border:none;border-radius:8px;background:var(--gold);color:var(--bg);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Save</button>
-          </div>
-        </div>
-      </div>
+      <div id="whoActions" style="display:none;margin-top:10px"></div>
     </div>`;
     document.body.appendChild(modal);
     modal.addEventListener("click", e => { if(e.target===modal) modal.style.display="none"; });
@@ -7116,8 +7131,9 @@ function showWhoIsThisModal(sightingId, imageUrl) {
   document.getElementById("whoResult").innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">
     <div style="font-size:20px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Analyzing photo...</div>`;
   document.getElementById("whoActions").style.display = "none";
-  const ewrap = document.getElementById("whoEditWrap"); if(ewrap) { ewrap.style.display = "none"; const ei = document.getElementById("whoEditInput"); if(ei) ei.value = ""; }
+  document.getElementById("whoActions").innerHTML = "";
   modal.dataset.sightingId = sightingId;
+  modal.dataset.imageUrl = imageUrl;
   runFullAiMatch(sightingId, imageUrl);
 }
 
@@ -7194,19 +7210,33 @@ Respond in JSON only:
     const confDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${confColor};margin-right:4px;vertical-align:middle"></span>`;
 
     // Visual observations section
-    const obsHtml = res.visual_observations ? `<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(140,115,85,0.08);border-radius:8px;border-left:3px solid var(--gold)"><strong style="color:var(--text)">Visual Analysis:</strong> ${res.visual_observations}</div>` : "";
+    const obsHtml = res.visual_observations ? `<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(140,115,85,0.08);border-radius:8px;border-left:3px solid var(--gold)"><strong style="color:var(--text)">AI observed:</strong> ${res.visual_observations}</div>` : "";
 
-    if(res.confidence < 40) {
-      // Below 40% — don't show a guess
+    if(res.confidence < 50 || !res.match) {
+      // LOW confidence or no match — Tag New / Select Existing
       result.innerHTML = `${obsHtml}
         <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(229,57,53,0.08);border-radius:10px;border:1px solid rgba(229,57,53,0.2);margin-bottom:8px">
-          ${confDot}<span style="font-size:13px;color:#e53935;font-weight:600">Unable to confidently identify — please tag manually</span>
+          ${confDot}<span style="font-size:13px;color:#e53935;font-weight:600">Unable to confidently identify</span>
         </div>
         <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}`;
-    } else if(res.match && res.confidence >= 40) {
+        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px;margin-bottom:8px">${res.antler_desc}</div>` : ""}`;
+      actions.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+        <button class="aif-btn aif-btn-new" onclick="whoShowNewBuckForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Tag as New Buck
+        </button>
+        <button class="aif-btn aif-btn-wrong" onclick="whoShowBuckSelector()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Select Existing Buck
+        </button>
+      </div>
+      <div id="whoBuckSelector" style="display:none"></div>
+      <div id="whoNewBuckForm" style="display:none"></div>`;
+      actions.style.display = "block";
+    } else {
+      // MEDIUM or HIGH confidence — Confirm / Wrong / New
       const bc = buckColor(res.match);
-      const lowConfWarn = res.confidence < 50 ? `<div style="font-size:11px;color:#e53935;margin-top:6px;font-style:italic">Low confidence — please verify carefully</div>` : "";
+      const lowConfWarn = res.confidence < 80 ? "" : "";
       result.innerHTML = `${obsHtml}
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:rgba(74,127,193,0.08);border-radius:10px;border:1px solid rgba(74,127,193,0.2)">
           <div style="width:36px;height:36px;border-radius:50%;background:#1a1a1a;border:2px solid ${bc};display:flex;align-items:center;justify-content:center;flex-shrink:0">
@@ -7218,16 +7248,24 @@ Respond in JSON only:
           </div>
         </div>
         <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}
-        ${lowConfWarn}`;
-      document.getElementById("whoAcceptBtn").textContent = "Apply: " + res.match;
+        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px;margin-bottom:8px">${res.antler_desc}</div>` : ""}`;
+      actions.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+        <button class="aif-btn aif-btn-confirm" id="whoConfirmBtn" onclick="whoConfirmMatch()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          Confirm — This is ${res.match}
+        </button>
+        <button class="aif-btn aif-btn-wrong" onclick="whoShowBuckSelector()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Wrong Buck
+        </button>
+        <button class="aif-btn aif-btn-new" onclick="whoShowNewBuckForm()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Buck
+        </button>
+      </div>
+      <div id="whoBuckSelector" style="display:none"></div>
+      <div id="whoNewBuckForm" style="display:none"></div>`;
       actions.style.display = "block";
-    } else {
-      result.innerHTML = `${obsHtml}
-        <div style="font-size:13px;color:var(--text2);margin-bottom:8px;font-weight:600">No confident match</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px">${res.antler_desc}</div>` : ""}
-        <div style="font-size:11px;color:var(--text3);margin-top:8px">Add antler descriptions and field notes to improve matching.</div>`;
     }
   } catch(e) {
     console.error("Full AI match failed:", e);
@@ -7235,54 +7273,138 @@ Respond in JSON only:
   }
 }
 
-function showWhoEditInput() {
-  const wrap = document.getElementById('whoEditWrap');
-  if(wrap) {
-    wrap.style.display = 'block';
-    setTimeout(() => document.getElementById('whoEditInput')?.focus(), 100);
-  }
-}
-
-async function applyWhoEdit() {
-  const modal = document.getElementById('whoModal');
-  const input = document.getElementById('whoEditInput');
-  const sightingId = parseInt(modal.dataset.sightingId);
-  const name = input?.value.trim();
-  if(!name || !sightingId) return;
-  const whoEditBuckId = await resolveBuckId(name);
-  const {error} = await sb.from('sightings').update({ buck_name: name, buck_id: whoEditBuckId }).eq('id', sightingId);
-  if(error) { showToast('Save failed: ' + error.message); return; }
-  const s = sightings.find(x => x.id === sightingId);
-  if(s) { s.buck_name = name; s.buck_id = whoEditBuckId; }
-  if(whoEditBuckId && s && s.date) updateBuckDates(whoEditBuckId, s.date);
-  modal.style.display = 'none';
-  renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
-  showToast(`ID updated: ${name}`);
-}
-
-async function applyWhoMatch() {
+// --- Who Is This: three-button actions ---
+function whoGetContext() {
   const modal = document.getElementById("whoModal");
   const sightingId = parseInt(modal.dataset.sightingId);
-  if(!whoMatchResult?.match || !sightingId) return;
-  const btn = document.getElementById("whoAcceptBtn");
-  if(btn) { btn.textContent = "Saving..."; btn.disabled = true; }
-  // Resolve buck_id from registry
-  const whoMatchBuckId = await resolveBuckId(whoMatchResult.match);
-  // Update in Supabase
-  const {error} = await sb.from("sightings").update({ buck_name: whoMatchResult.match, buck_id: whoMatchBuckId }).eq("id", sightingId);
-  if(error) {
-    showToast("Save failed: " + error.message);
-    if(btn) { btn.textContent = "Apply: " + whoMatchResult.match; btn.disabled = false; }
-    return;
-  }
-  // Update local
+  const imageUrl = modal.dataset.imageUrl || null;
   const s = sightings.find(x => x.id === sightingId);
-  if(s) { s.buck_name = whoMatchResult.match; s.buck_id = whoMatchBuckId; }
-  if(whoMatchBuckId && s && s.date) updateBuckDates(whoMatchBuckId, s.date);
+  return { modal, sightingId, imageUrl, s };
+}
+
+function whoRefreshUI() {
+  renderLog(); renderDash(); buildMapFilters(); buildMapLegend(); refreshBucknameList(); refreshMapPins();
+}
+
+// ✅ Confirm — AI was correct
+async function whoConfirmMatch() {
+  if(!whoMatchResult?.match) return;
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  const btn = document.getElementById("whoConfirmBtn");
+  if(btn) { btn.textContent = "Saving..."; btn.disabled = true; }
+  const buckId = await resolveBuckId(whoMatchResult.match);
+  const { error } = await sb.from("sightings").update({ buck_name: whoMatchResult.match, buck_id: buckId }).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); if(btn) { btn.textContent = "Confirm"; btn.disabled = false; } return; }
+  if(s) { s.buck_name = whoMatchResult.match; s.buck_id = buckId; }
+  if(buckId && s?.date) updateBuckDates(buckId, s.date);
+  await writeAiFeedback({
+    photoUrl: imageUrl, cameraName: s?.camera_name,
+    aiSuggestion: whoMatchResult.match, aiConfidence: whoMatchResult.confidence,
+    aiReasoning: whoMatchResult.visual_observations || whoMatchResult.reasoning,
+    confirmedBuckId: buckId, confirmedBuckName: whoMatchResult.match, wasCorrect: true
+  });
   modal.style.display = "none";
-  renderLog(); renderDash(); buildMapFilters(); buildMapLegend();
-  refreshBucknameList(); refreshMapPins();
-  showToast("Buck identified: " + whoMatchResult.match);
+  whoRefreshUI();
+  showToast("Sighting tagged as " + whoMatchResult.match);
+}
+
+// ✗ Wrong Buck — show selector
+function whoShowBuckSelector() {
+  const sel = document.getElementById("whoBuckSelector");
+  const newForm = document.getElementById("whoNewBuckForm");
+  if(newForm) newForm.style.display = "none";
+  if(!sel) return;
+  const namedBucks = getNamedBucks();
+  let html = `<div style="font-size:12px;font-weight:600;color:var(--text);margin:10px 0 6px">Select the correct buck:</div><div class="aif-buck-list">`;
+  namedBucks.forEach(name => {
+    const regBuck = buckRegistry.find(b => b.name === name);
+    const bId = regBuck ? regBuck.id : "";
+    const bs = sightings.filter(x => x.buck_name === name);
+    const photo = bs.find(x => x.image_url)?.image_url;
+    const ageClass = bs[0]?.deer_type || "Buck";
+    html += `<div class="aif-buck-item" onclick="whoSelectCorrectBuck('${bId}')">
+      ${photo ? `<img class="aif-buck-thumb" src="${photo}" alt="${name}"/>` : `<div class="aif-buck-thumb-ph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7"/><path d="M12 14 L15 10 L17 7"/></svg></div>`}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:600;color:${buckColor(name)}">${name}</div>
+        <div style="font-size:10px;color:var(--text3)">${ageClass} &middot; ${bs.length} sighting${bs.length !== 1 ? 's' : ''}</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  sel.innerHTML = html;
+  sel.style.display = "block";
+}
+
+async function whoSelectCorrectBuck(buckId) {
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  const regBuck = buckRegistry.find(b => b.id === buckId);
+  if(!regBuck) return;
+  const name = regBuck.name;
+  const { error } = await sb.from("sightings").update({ buck_name: name, buck_id: buckId }).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); return; }
+  if(s) { s.buck_name = name; s.buck_id = buckId; }
+  if(s?.date) updateBuckDates(buckId, s.date);
+  await writeAiFeedback({
+    photoUrl: imageUrl, cameraName: s?.camera_name,
+    aiSuggestion: whoMatchResult?.match || null, aiConfidence: whoMatchResult?.confidence,
+    aiReasoning: whoMatchResult?.visual_observations || whoMatchResult?.reasoning,
+    confirmedBuckId: buckId, confirmedBuckName: name, wasCorrect: false
+  });
+  modal.style.display = "none";
+  whoRefreshUI();
+  showToast("Correction saved — " + name);
+}
+
+// ➕ New Buck — show form
+function whoShowNewBuckForm() {
+  const form = document.getElementById("whoNewBuckForm");
+  const sel = document.getElementById("whoBuckSelector");
+  if(sel) sel.style.display = "none";
+  if(!form) return;
+  form.innerHTML = `<div class="aif-new-form">
+    <div style="font-size:12px;font-weight:600;color:var(--text);margin-bottom:8px">Add New Buck</div>
+    <input type="text" class="aif-new-input" id="whoNewBuckName" placeholder="Buck name (required)"/>
+    <select class="aif-new-input" id="whoNewBuckAge" style="padding:10px 12px">
+      <option value="">Age class (optional)</option>
+      <option value="Buck - Mature (4.5+)">Mature (4.5+)</option>
+      <option value="Buck - 3.5">3.5 yr</option>
+      <option value="Buck - 2.5">2.5 yr</option>
+      <option value="Buck - 1.5">1.5 yr</option>
+    </select>
+    <button class="aif-btn aif-btn-confirm" onclick="whoSaveNewBuck()" style="margin-top:4px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+      Save New Buck
+    </button>
+  </div>`;
+  form.style.display = "block";
+  setTimeout(() => document.getElementById("whoNewBuckName")?.focus(), 100);
+}
+
+async function whoSaveNewBuck() {
+  const nameInput = document.getElementById("whoNewBuckName");
+  const ageSelect = document.getElementById("whoNewBuckAge");
+  const name = nameInput?.value?.trim();
+  if(!name) { showToast("Name is required"); return; }
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  const ageClass = ageSelect?.value || null;
+  const newBuck = await createBuck(name);
+  if(!newBuck) { showToast("Failed to create buck"); return; }
+  const buckId = newBuck.id;
+  const updateData = { buck_name: name, buck_id: buckId };
+  if(ageClass) updateData.deer_type = ageClass;
+  const { error } = await sb.from("sightings").update(updateData).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); return; }
+  if(s) { s.buck_name = name; s.buck_id = buckId; if(ageClass) s.deer_type = ageClass; }
+  if(s?.date) updateBuckDates(buckId, s.date);
+  await writeAiFeedback({
+    photoUrl: imageUrl, cameraName: s?.camera_name,
+    aiSuggestion: whoMatchResult?.match || null, aiConfidence: whoMatchResult?.confidence,
+    aiReasoning: whoMatchResult?.visual_observations || whoMatchResult?.reasoning,
+    confirmedBuckId: buckId, confirmedBuckName: name, wasCorrect: false
+  });
+  modal.style.display = "none";
+  whoRefreshUI();
+  showToast("New buck " + name + " added");
 }
 
 // --- detail -
@@ -8395,19 +8517,23 @@ function obsHandlePhoto(inp) {
   r.readAsDataURL(f);
 }
 
+let obsAiResult = null;
 async function obsRunAiHint(base64DataUrl) {
   const namedBucks = getNamedBucks();
   if(namedBucks.length === 0) return;
   const hintBox = document.getElementById('ttpObsAiHint');
   const hintText = document.getElementById('ttpObsAiText');
   const hintReason = document.getElementById('ttpObsAiReason');
+  const hintActions = document.getElementById('ttpObsAiActions');
   hintBox.style.display = 'block';
   hintText.textContent = 'Analyzing photo...';
   hintReason.textContent = '';
+  hintActions.innerHTML = '';
   obsAiHintSugg = null;
+  obsAiResult = null;
   try {
     const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(null);
-    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; hintBox.style.display = 'block'; return; }
+    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
     const response = await claudeFetch({
@@ -8421,32 +8547,38 @@ async function obsRunAiHint(base64DataUrl) {
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
     const result = JSON.parse(cleaned);
+    obsAiResult = result;
     const obsConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
-    if(result.confidence < 40) {
-      hintText.innerHTML = '<span style="color:#e53935">Unable to confidently identify</span>';
-      hintReason.textContent = result.reasoning || 'Please tag manually.';
-    } else if(result.match && result.confidence >= 40) {
+    if(result.match && result.confidence >= 50) {
       obsAiHintSugg = result.match;
       hintText.innerHTML = `${result.match} — <span style="color:${obsConfColor}">${result.confidence}%</span>`;
       hintReason.textContent = result.reasoning;
-      if(result.confidence < 50) hintReason.textContent += ' (Low confidence — verify carefully)';
+      hintActions.innerHTML = `<button onclick="obsConfirmAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#8C7355;color:#121415;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">&#10003; Confirm</button>
+        <button onclick="obsWrongAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#4A4D4E;color:#BCC6CC;font-size:11px;cursor:pointer;font-family:var(--font)">&#10007; Wrong</button>
+        <button onclick="obsDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
     } else {
-      hintText.textContent = 'No confident match found';
+      hintText.innerHTML = result.confidence < 40 ? '<span style="color:#e53935">Unable to confidently identify</span>' : 'No confident match';
       hintReason.textContent = result.reasoning || '';
+      hintActions.innerHTML = `<button onclick="obsDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
     }
   } catch(e) {
     hintText.textContent = 'AI analysis failed';
     console.error('obsRunAiHint:', e);
   }
 }
-
-function obsAcceptAiHint() {
+function obsConfirmAiHint() {
   if(obsAiHintSugg) document.getElementById('ttpObsBuckName').value = obsAiHintSugg;
   document.getElementById('ttpObsAiHint').style.display = 'none';
+}
+function obsWrongAiHint() {
+  obsAiHintSugg = null;
+  document.getElementById('ttpObsAiHint').style.display = 'none';
+  document.getElementById('ttpObsBuckName')?.focus();
 }
 function obsDismissAiHint() {
   document.getElementById('ttpObsAiHint').style.display = 'none';
   obsAiHintSugg = null;
+  obsAiResult = null;
 }
 
 function filterObsBuckSugg(val) {
@@ -8564,6 +8696,17 @@ async function submitObsSighting() {
   document.getElementById('ttpObsModal').classList.remove('on');
   sightings.unshift(data);
   if(obsBuckId && data.date) updateBuckDates(obsBuckId, data.date);
+  // Log AI feedback if AI was used
+  if(obsAiResult && obsBuckName) {
+    const wasCorrect = obsAiResult.match && obsAiResult.match === obsBuckName;
+    writeAiFeedback({
+      photoUrl: data.image_url, cameraName: null,
+      aiSuggestion: obsAiResult.match, aiConfidence: obsAiResult.confidence,
+      aiReasoning: obsAiResult.reasoning,
+      confirmedBuckId: obsBuckId, confirmedBuckName: obsBuckName, wasCorrect
+    });
+  }
+  obsAiResult = null;
   btn.textContent = 'Log Field Observation'; obsCheckSub();
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Field observation logged!');
@@ -8818,20 +8961,24 @@ function tcamHandlePhoto(inp) {
   };
   r.readAsDataURL(f);
 }
+let tcamAiResult = null;
 async function tcamRunAiHint(base64DataUrl) {
   const namedBucks = getNamedBucks();
   if(namedBucks.length === 0) return;
   const hintBox = document.getElementById('tcamAiHint');
   const hintText = document.getElementById('tcamAiText');
   const hintReason = document.getElementById('tcamAiReason');
+  const hintActions = document.getElementById('tcamAiActions');
   hintBox.style.display = 'block';
   hintText.textContent = 'Analyzing photo...';
   hintReason.textContent = '';
+  hintActions.innerHTML = '';
   tcamAiHintSugg = null;
+  tcamAiResult = null;
   try {
     const camContext = tcamSelectedCam || null;
     const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(camContext);
-    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; hintBox.style.display = 'block'; return; }
+    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
     const response = await claudeFetch({
@@ -8845,31 +8992,41 @@ async function tcamRunAiHint(base64DataUrl) {
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
     const result = JSON.parse(cleaned);
+    tcamAiResult = result;
     const tcConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
-    if(result.confidence < 40) {
-      hintText.innerHTML = '<span style="color:#e53935">Unable to confidently identify</span>';
-      hintReason.textContent = result.reasoning || 'Please tag manually.';
-    } else if(result.match && result.confidence >= 40) {
+    if(result.match && result.confidence >= 50) {
       tcamAiHintSugg = result.match;
       hintText.innerHTML = `${result.match} — <span style="color:${tcConfColor}">${result.confidence}%</span>`;
       hintReason.textContent = result.reasoning;
-      if(result.confidence < 50) hintReason.textContent += ' (Low confidence — verify carefully)';
+      hintActions.innerHTML = `<button onclick="tcamConfirmAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#8C7355;color:#121415;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">&#10003; Confirm</button>
+        <button onclick="tcamWrongAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#4A4D4E;color:#BCC6CC;font-size:11px;cursor:pointer;font-family:var(--font)">&#10007; Wrong</button>
+        <button onclick="tcamDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
     } else {
-      hintText.textContent = 'No confident match found';
+      hintText.innerHTML = result.confidence < 40 ? '<span style="color:#e53935">Unable to confidently identify</span>' : 'No confident match';
       hintReason.textContent = result.reasoning || '';
+      hintActions.innerHTML = `<button onclick="tcamDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
     }
   } catch(e) {
     hintText.textContent = 'AI analysis failed';
     console.error('tcamRunAiHint:', e);
   }
 }
-function tcamAcceptAiHint() {
+function tcamConfirmAiHint() {
   if(tcamAiHintSugg) document.getElementById('tcamBuckName').value = tcamAiHintSugg;
   document.getElementById('tcamAiHint').style.display = 'none';
+  // Feedback logged at sighting submit time with tcamAiResult
+}
+function tcamWrongAiHint() {
+  // Dismiss the suggestion and let user pick manually
+  tcamAiHintSugg = null;
+  document.getElementById('tcamAiHint').style.display = 'none';
+  document.getElementById('tcamBuckName')?.focus();
+  // tcamAiResult retained for feedback logging at submit time
 }
 function tcamDismissAiHint() {
   document.getElementById('tcamAiHint').style.display = 'none';
   tcamAiHintSugg = null;
+  tcamAiResult = null;
 }
 
 // Buck tag suggestion dropdown
@@ -8952,6 +9109,17 @@ async function submitTrailCamSighting() {
   }
   sightings.unshift(data);
   if(tcamBuckId && data.date) updateBuckDates(tcamBuckId, data.date);
+  // Log AI feedback if AI was used
+  if(tcamAiResult && tcamBuckNameVal) {
+    const wasCorrect = tcamAiResult.match && tcamAiResult.match === tcamBuckNameVal;
+    writeAiFeedback({
+      photoUrl: data.image_url, cameraName: tcamSelectedCam,
+      aiSuggestion: tcamAiResult.match, aiConfidence: tcamAiResult.confidence,
+      aiReasoning: tcamAiResult.reasoning,
+      confirmedBuckId: tcamBuckId, confirmedBuckName: tcamBuckNameVal, wasCorrect
+    });
+  }
+  tcamAiResult = null;
   closeSheet('trail-cam');
   refreshMapPins(); refreshBucknameList(); renderDash();
   showToast('Camera sighting logged!');
