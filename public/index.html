@@ -3213,6 +3213,8 @@ async function writeAiFeedback({ photoUrl, cameraName, aiSuggestion, aiConfidenc
       console.error('ai_feedback insert failed:', error);
     } else {
       console.log('ai_feedback insert success:', data);
+      // Invalidate reference photo cache when a confirmed photo is added
+      if(photoUrl && confirmedBuckId) invalidateRefPhotoCache();
     }
   } catch(e) { console.error('writeAiFeedback exception:', e); }
 }
@@ -3348,6 +3350,127 @@ const AI_VISUAL_REASONING_PROMPT = `Before naming a buck, describe what you obse
 Then compare these observations against the known buck descriptions.
 
 IMPORTANT: Do not weight your suggestion based on which buck has the most historical sightings. Base your identification purely on visual characteristics and camera location history.`;
+
+// --- Reference Photo Comparison for AI Identification ---
+let refPhotoCache = null; // { buckId: [{url, base64, mediaType}], ... }
+
+async function urlToBase64(url) {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  const mediaType = blob.type || 'image/jpeg';
+  const base64 = await new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.readAsDataURL(blob);
+  });
+  return { base64, mediaType };
+}
+
+async function getBuckReferencePhotos() {
+  // Return cached if available
+  if(refPhotoCache) return refPhotoCache;
+
+  const cache = {};
+  try {
+    // Priority 1: Photos confirmed via ai_feedback (was_correct = true)
+    const { data: confirmed } = await sb.from('ai_feedback')
+      .select('hunter_confirmed_buck_id, photo_url')
+      .eq('property_id', PROPERTY_ID)
+      .eq('was_correct', true)
+      .not('photo_url', 'is', null)
+      .not('hunter_confirmed_buck_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if(confirmed) {
+      confirmed.forEach(row => {
+        const bid = row.hunter_confirmed_buck_id;
+        if(!cache[bid]) cache[bid] = [];
+        if(cache[bid].length < 3 && !cache[bid].some(p => p.url === row.photo_url)) {
+          cache[bid].push({ url: row.photo_url, base64: null, mediaType: null });
+        }
+      });
+    }
+
+    // Priority 2: Fallback from sightings for bucks with < 3 confirmed photos
+    for(const buck of buckRegistry) {
+      if(!cache[buck.id]) cache[buck.id] = [];
+      if(cache[buck.id].length >= 3) continue;
+      const needed = 3 - cache[buck.id].length;
+      const existingUrls = new Set(cache[buck.id].map(p => p.url));
+      const buckSightings = sightings
+        .filter(s => s.buck_id === buck.id && s.image_url && !existingUrls.has(s.image_url))
+        .sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+        .slice(0, needed);
+      buckSightings.forEach(s => {
+        cache[buck.id].push({ url: s.image_url, base64: null, mediaType: null });
+      });
+    }
+  } catch(e) {
+    console.error('getBuckReferencePhotos error:', e);
+  }
+
+  refPhotoCache = cache;
+  return cache;
+}
+
+function invalidateRefPhotoCache() {
+  refPhotoCache = null;
+}
+
+// Build multi-image content array with reference photos for AI identification
+// cameraName: prioritize bucks seen at this camera
+// Returns { content: [...imageBlocks], refCount: number }
+async function buildRefPhotoContent(cameraName) {
+  const refPhotos = await getBuckReferencePhotos();
+  const content = [];
+  let refCount = 0;
+
+  // Score bucks for prioritization: camera-relevant first, then by sighting count
+  const scored = buckRegistry
+    .filter(b => refPhotos[b.id] && refPhotos[b.id].length > 0)
+    .map(buck => {
+      const camSightings = cameraName
+        ? sightings.filter(s => s.buck_id === buck.id && s.camera_name === cameraName).length
+        : 0;
+      const totalSightings = sightings.filter(s => s.buck_id === buck.id).length;
+      return { buck, camRelevance: camSightings, total: totalSightings };
+    })
+    .sort((a, b) => b.camRelevance - a.camRelevance || b.total - a.total)
+    .slice(0, 4); // Max 4 bucks with reference photos
+
+  for(const { buck } of scored) {
+    const photos = refPhotos[buck.id].slice(0, 2); // Max 2 photos per buck
+    const desc = buck.antler_description || 'no description';
+
+    // Pre-fetch base64 for photos that aren't cached yet
+    const loaded = [];
+    for(const photo of photos) {
+      try {
+        if(!photo.base64) {
+          const result = await urlToBase64(photo.url);
+          photo.base64 = result.base64;
+          photo.mediaType = result.mediaType;
+        }
+        loaded.push(photo);
+      } catch(e) {
+        console.warn('Failed to fetch ref photo for', buck.name, e);
+      }
+    }
+    if(loaded.length === 0) continue;
+
+    content.push({ type: 'text', text: `Reference photos for ${buck.name} (${desc}):` });
+    for(const photo of loaded) {
+      content.push({
+        type: 'image',
+        source: { type: 'base64', media_type: photo.mediaType, data: photo.base64 }
+      });
+      refCount++;
+    }
+  }
+
+  return { content, refCount };
+}
 
 // --- data -
 async function loadSightings() {
@@ -6939,6 +7062,9 @@ async function runBulkAi(s) {
       return;
     }
 
+    const aiTextEl0 = document.getElementById('bulkAiText');
+    if(aiTextEl0) aiTextEl0.textContent = 'Loading reference images...';
+
     const imgResp = await fetch(s.image_url);
     const imgBlob = await imgResp.blob();
     const base64 = await new Promise(res => {
@@ -6949,25 +7075,27 @@ async function runBulkAi(s) {
     const b64data = base64.split(',')[1];
     const mediaType = base64.split(';')[0].split(':')[1];
 
+    // Build content with reference photos
+    let refContent = [];
+    try { const r = await buildRefPhotoContent(camContext); refContent = r.content; } catch(e) { /* fallback to text-only */ }
+
+    if(aiTextEl0) aiTextEl0.textContent = 'Comparing against known bucks...';
+
+    const content = [];
+    if(refContent.length > 0) {
+      content.push({ type: 'text', text: 'Reference photos of known bucks:' });
+      content.push(...refContent);
+      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos above.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` });
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64data } });
+    } else {
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: b64data } });
+      content.push({ type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks on this property:\n\n${buckProfiles}\n\nRespond in JSON only, no other text:\n{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` });
+    }
+
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 500,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: b64data } },
-            { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.
-
-${AI_VISUAL_REASONING_PROMPT}
-
-Known bucks on this property:
-
-${buckProfiles}
-
-Respond in JSON only, no other text:
-{"match": "buck name or null if no match", "confidence": 0-100, "reasoning": "one sentence about antler characteristics that match or don't match"}` }
-          ]
-        }]
+        messages: [{ role: 'user', content }]
     });
 
     const data = await response.json();
@@ -7169,7 +7297,8 @@ async function runFullAiMatch(sightingId, imageUrl) {
   }
 
   try {
-    // Fetch the image as base64
+    // Fetch the new photo as base64
+    result.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Loading reference images...</div>`;
     const imgResp = await fetch(imageUrl);
     const blob = await imgResp.blob();
     const base64 = await new Promise(res => {
@@ -7179,14 +7308,39 @@ async function runFullAiMatch(sightingId, imageUrl) {
     });
     const mediaType = blob.type || "image/jpeg";
 
-    const response = await claudeFetch({
-        model: "claude-sonnet-4-5",
-        max_tokens: 700,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-            { type: "text", text: `You are a deer hunting expert analyzing a trail camera photo.
+    // Build multi-image content with reference photos
+    let refContent = [];
+    let refCount = 0;
+    try {
+      const refResult = await buildRefPhotoContent(camContext);
+      refContent = refResult.content;
+      refCount = refResult.refCount;
+    } catch(e) {
+      console.warn('Reference photo fetch failed, falling back to text-only:', e);
+    }
+
+    result.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Comparing against known bucks${refCount > 0 ? ` (${refCount} reference photo${refCount > 1 ? 's' : ''})` : ''}...</div>`;
+
+    // Build content array: reference photos first, then the new photo
+    const content = [];
+    if(refContent.length > 0) {
+      content.push({ type: 'text', text: 'Here are confirmed reference photos of known bucks on this property. Study each buck\'s antler configuration carefully.' });
+      content.push(...refContent);
+      content.push({ type: 'text', text: `Now identify this new trail cam photo. Compare the antler configuration, tine count, brow tines, spread, and body profile against the reference photos above.
+
+${AI_VISUAL_REASONING_PROMPT}
+
+Additional context about known bucks:
+
+${buckProfiles}
+
+Respond in JSON only:
+{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the reference photos and known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` });
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+    } else {
+      // Fallback: text-only identification (no reference photos available)
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+      content.push({ type: 'text', text: `You are a deer hunting expert analyzing a trail camera photo.
 
 ${AI_VISUAL_REASONING_PROMPT}
 
@@ -7195,9 +7349,13 @@ Known bucks on this property:
 ${buckProfiles}
 
 Respond in JSON only:
-{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` }
-          ]
-        }]
+{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` });
+    }
+
+    const response = await claudeFetch({
+        model: "claude-sonnet-4-5",
+        max_tokens: 700,
+        messages: [{ role: "user", content }]
     });
 
     if(!response.ok) {
@@ -8543,13 +8701,28 @@ async function obsRunAiHint(base64DataUrl) {
     if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
+
+    // Fetch reference photos
+    hintText.textContent = 'Loading reference images...';
+    let refContent = [];
+    try { const r = await buildRefPhotoContent(null); refContent = r.content; } catch(e) { /* fallback */ }
+    hintText.textContent = 'Comparing against known bucks...';
+
+    const content = [];
+    if(refContent.length > 0) {
+      content.push({ type: 'text', text: 'Reference photos of known bucks:' });
+      content.push(...refContent);
+      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+    } else {
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+      content.push({ type: 'text', text: `You are analyzing a photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+    }
+
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 500,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: `You are analyzing a photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
-        ]}]
+        messages: [{ role: 'user', content }]
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
@@ -8988,13 +9161,28 @@ async function tcamRunAiHint(base64DataUrl) {
     if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
+
+    // Fetch reference photos
+    hintText.textContent = 'Loading reference images...';
+    let refContent = [];
+    try { const r = await buildRefPhotoContent(camContext); refContent = r.content; } catch(e) { /* fallback */ }
+    hintText.textContent = 'Comparing against known bucks...';
+
+    const content = [];
+    if(refContent.length > 0) {
+      content.push({ type: 'text', text: 'Reference photos of known bucks:' });
+      content.push(...refContent);
+      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+    } else {
+      content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
+      content.push({ type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+    }
+
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 500,
-        messages: [{ role: 'user', content: [
-          { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-          { type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` }
-        ]}]
+        messages: [{ role: 'user', content }]
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
