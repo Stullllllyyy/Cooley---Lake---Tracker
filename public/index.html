@@ -372,6 +372,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* Dossier full-screen sheet */
 #sheet-dossier{max-height:100dvh;height:100dvh;bottom:0;border-radius:0;z-index:450}
 @supports not (height:100dvh){#sheet-dossier{max-height:100vh;height:100vh}}
+#sheet-detail{z-index:475}
+#overlay-detail{z-index:474}
 #sheet-dossier .sheet-body{padding:0}
 .dossier-hero{position:relative;width:100%;max-height:220px;overflow:hidden;background:linear-gradient(135deg,#121415 0%,#1a1c1e 100%)}
 .dossier-hero img{width:100%;height:220px;object-fit:cover;display:block}
@@ -395,7 +397,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .dossier-photo-row{display:flex;gap:4px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0;scrollbar-width:none}
 .dossier-photo-row::-webkit-scrollbar{display:none}
 .dossier-photo-row img{width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid var(--border);flex-shrink:0;cursor:pointer}
-.dossier-sighting-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.dossier-sighting-item{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);cursor:pointer;transition:opacity 0.15s}
+.dossier-sighting-item:active{opacity:0.7}
 .dossier-sighting-item:last-child{border-bottom:none}
 .dossier-sighting-thumb{width:40px;height:40px;object-fit:cover;border-radius:4px;flex-shrink:0}
 .dossier-sticky-bar{position:sticky;bottom:0;padding:12px 14px;background:var(--surface);border-top:1px solid var(--border);z-index:2}
@@ -499,7 +502,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 @media(min-width:769px){.tc-thumb{width:100px;height:100px}.tc-thumb-placeholder{width:100px;height:100px}}
 .tc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.tc-buck{font-size:14px;font-weight:600;cursor:pointer;font-family:'Raleway',var(--font)}
+.tc-buck{font-size:14px;font-weight:600;cursor:pointer;font-family:'Raleway',var(--font);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(hover:hover){.tc-buck:hover{text-decoration:underline}}
 .tc-buck:active{opacity:0.7}
 .tc-cam{font-size:12px;color:var(--silver);flex-shrink:0}
 .tc-date{font-size:12px;color:var(--text3);margin-top:3px}
@@ -513,7 +517,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .fn-card:active{opacity:0.9}
 .fn-icon{width:40px;height:40px;border-radius:8px;background:#121415;border:1px solid rgba(140,115,85,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .fn-body{flex:1;min-width:0}
-.fn-buck{font-size:13px;font-weight:600;cursor:pointer}
+.fn-buck{font-size:13px;font-weight:600;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+@media(hover:hover){.fn-buck:hover{text-decoration:underline}}
 .fn-buck:active{opacity:0.7}
 .fn-meta{font-size:11px;color:var(--text3);margin-top:2px}
 .fn-notes{font-size:11px;color:var(--text3);font-style:italic;line-height:1.4;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -6615,12 +6620,13 @@ function openBuckDossier(buckId) {
   // 11. Recent Sightings
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Recent Sightings</div>
-    ${recent10.map(s => `<div class="dossier-sighting-item">
+    ${recent10.map(s => `<div class="dossier-sighting-item" style="cursor:pointer" onclick="showDetFromDossier(${s.id})">
       ${s.image_url ? `<img class="dossier-sighting-thumb" src="${s.image_url}" loading="lazy"/>` : ''}
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;color:var(--silver)">${s.camera_name || 'Field Obs'}${s.time ? ' &middot; '+s.time.slice(0,5) : ''}</div>
         <div style="font-size:11px;color:var(--text3)">${fmtD(s.date)}${s.behavior ? ' &middot; '+s.behavior : ''}${s.wind_dir ? ' &middot; '+s.wind_dir : ''}</div>
       </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
     </div>`).join('')}
   </div>`;
 
@@ -6797,6 +6803,50 @@ async function fetchBuckWeatherSummary(buckId, buckName, buckSightings) {
   } catch(e) {
     el.innerHTML = '';
   }
+}
+
+// Open sighting detail on top of dossier (without closing dossier)
+function showDetFromDossier(id) {
+  // Populate detail content using showDet's template, then open detail sheet on top
+  const s = sightings.find(x => x.id === id);
+  if(!s) return;
+  const m = moonPhase(s.date);
+  const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const wxHtml = s.wind_speed ? `
+    <div class="wx-panel" style="margin-top:10px">
+      <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Conditions at Sighting</div>
+      <div class="wx-grid">
+        <div class="wx-cell"><div class="wx-val">${s.temp_f||'--'}</div><div class="wx-lbl">Temp F</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_speed||'--'}</div><div class="wx-lbl">Wind mph</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.wind_gust||'--'}</div><div class="wx-lbl">Gust mph</div></div>
+      </div>
+      <div class="wx-row2">
+        <div class="wx-cell"><div class="wx-val">${s.wind_dir||'--'}</div><div class="wx-lbl">Wind Dir</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.humidity?s.humidity+'%':'--'}</div><div class="wx-lbl">Humidity</div></div>
+        <div class="wx-cell"><div class="wx-val">${s.precip?s.precip+'"':'--'}</div><div class="wx-lbl">Precip</div></div>
+      </div>
+      ${s.pressure?`<div style="margin-top:6px"><div class="wx-cell" style="text-align:left;padding:8px 10px"><div class="wx-lbl">Barometric Pressure</div><div style="font-size:13px;color:var(--text)">${s.pressure} hPa</div></div></div>`:''}
+    </div>` : '';
+  document.getElementById('detcontent').innerHTML = `
+    ${s.image_url ? `<img class="detail-img" src="${s.image_url}" alt=""/>` : ''}
+    <div class="card${s.deer_type&&s.deer_type.includes('Mature')?' gold':''}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <div style="font-size:18px;font-weight:700;color:${s.deer_type&&s.deer_type.includes('Mature')?'var(--gold)':'var(--text)'}">${s.deer_type}</div>
+        ${s.buck_name?`<div style="font-size:12px;padding:3px 10px;border-radius:12px;background:rgba(0,0,0,0.4);color:${bc};border:1px solid ${bc}">&#9679; ${s.buck_name}</div>`:''}
+      </div>
+      <div style="font-size:13px;color:var(--text3);margin-bottom:14px">${s.camera_name||''}</div>
+      <div class="detail-grid">
+        <div class="d-cell"><div class="d-cell-lbl">Date</div><div class="d-cell-val">${fmtD(s.date)}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Time</div><div class="d-cell-val">${fmtT(s.time)}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Moon</div><div class="d-cell-val">${m.i} ${m.l}</div></div>
+        <div class="d-cell"><div class="d-cell-lbl">Behavior</div><div class="d-cell-val">${s.behavior||'--'}</div></div>
+      </div>
+      ${wxHtml}
+      ${s.notes?`<div style="background:var(--bg);border-radius:10px;padding:10px;margin-top:10px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div><div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">${s.notes}</div></div>`:''}
+    </div>`;
+  // Open detail sheet on top of dossier (don't close dossier)
+  document.getElementById('sheet-detail')?.classList.add('open');
+  document.getElementById('overlay-detail')?.classList.add('on');
 }
 
 function closeDossierSheet() {
@@ -7522,7 +7572,7 @@ function renderFieldNotesFeed(allFiltered, sl) {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
     const eName = s.buck_name ? s.buck_name.replace(/'/g, "\\'") : '';
     const buckHtml = s.buck_name
-      ? `<span class="fn-buck" style="color:${bc}" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
+      ? `<span class="fn-buck" style="color:#8C7355" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
       : `<span style="color:var(--text3);font-size:12px">${s.deer_type || 'Observation'}</span>`;
     const hasNotes = s.notes && s.notes.length > 0;
     return `<div class="fn-card" onclick="showDet(${s.id})">
