@@ -482,6 +482,45 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .view-toggle{display:flex;background:var(--bg);border:1px solid var(--border2);border-radius:8px;overflow:hidden}
 .vtoggle{padding:5px 12px;border:none;background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.15s}
 .vtoggle.on{background:var(--bronze);color:#121415;font-weight:600}
+
+/* Phase 2 — Sightings trail cam + field notes feed */
+.sf-toggle-row{display:flex;gap:0;padding:0 14px 8px;flex-shrink:0}
+.sf-toggle{flex:1;padding:8px 12px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.15s;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px}
+.sf-toggle:first-child{border-radius:8px 0 0 8px;border-right:none}
+.sf-toggle:last-child{border-radius:0 8px 8px 0}
+.sf-toggle.on{background:var(--bronze);color:#121415;font-weight:600;border-color:var(--bronze)}
+.sf-filter-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:16px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:border-color 0.15s;margin:0 14px 8px;flex-shrink:0}
+.sf-filter-pill:active{border-color:var(--bronze)}
+.sf-filter-pill svg{flex-shrink:0}
+.tc-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s}
+.tc-card:active{opacity:0.9}
+.tc-photo{width:100%;aspect-ratio:16/9;max-height:200px;object-fit:cover;object-position:center;display:block}
+.tc-info{padding:10px 12px}
+.tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.tc-buck{font-size:13px;font-weight:600;cursor:pointer}
+.tc-buck:active{opacity:0.7}
+.tc-cam{font-size:11px;color:var(--text3);flex-shrink:0}
+.tc-date{font-size:11px;color:var(--text3);margin-top:3px}
+.tc-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.tc-pill{font-size:10px;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:3px}
+.tc-pill-beh{background:var(--bronze);color:#121415}
+.tc-pill-wx{background:transparent;border:1px solid rgba(140,115,85,0.3);color:var(--text2)}
+@media(min-width:769px){.tc-card{max-width:640px;margin-left:auto;margin-right:auto}}
+
+.fn-card{display:flex;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:border-color 0.2s}
+.fn-card:active{opacity:0.9}
+.fn-icon{width:40px;height:40px;border-radius:8px;background:#121415;border:1px solid rgba(140,115,85,0.3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fn-body{flex:1;min-width:0}
+.fn-buck{font-size:13px;font-weight:600;cursor:pointer}
+.fn-buck:active{opacity:0.7}
+.fn-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.fn-notes{font-size:11px;color:var(--text3);font-style:italic;line-height:1.4;margin-top:4px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.fn-notes.expanded{-webkit-line-clamp:unset}
+.fn-expand{font-size:10px;color:var(--bronze);margin-top:2px;cursor:pointer;display:inline-block}
+
+.sf-load-more{width:100%;padding:12px;border:1px solid var(--border2);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);margin-top:8px;min-height:44px}
+.sf-load-more:active{background:rgba(140,115,85,0.1)}
+.sf-empty{text-align:center;color:var(--text3);padding:40px 16px;font-size:13px;line-height:1.7}
 .profile-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.15s}
 .profile-card:active{background:var(--surface2)}
 .profile-thumb{width:56px;height:56px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border)}
@@ -1320,12 +1359,22 @@ textarea{resize:none}
       Sightings
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <button onclick="openTrailCamSheet()" title="Log trail cam sighting" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:18px;cursor:pointer;line-height:1;flex-shrink:0">+</button>
+      <button onclick="openTrailCamSheet()" title="Log sighting" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;border:1px solid var(--gold);background:transparent;color:var(--gold);font-size:18px;cursor:pointer;line-height:1;flex-shrink:0">+</button>
       <button class="sheet-x" onclick="closeSheet('sightings')">&#215;</button>
     </div>
   </div>
-  <!-- Filter bar -->
-  <div class="sight-filters" id="sightFilters">
+  <!-- Toggle pills -->
+  <div class="sf-toggle-row">
+    <button class="sf-toggle on" id="sfToggleCams" onclick="setSightFeed('cams')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg> Trail Cams</button>
+    <button class="sf-toggle" id="sfToggleNotes" onclick="setSightFeed('notes')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Field Notes</button>
+  </div>
+  <!-- Filter indicator pill -->
+  <div id="sfFilterPill" class="sf-filter-pill" onclick="toggleSightFilters()">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+    <span id="sfFilterLabel">Last 30 days</span>
+  </div>
+  <!-- Filter bar (hidden by default, toggled) -->
+  <div class="sight-filters" id="sightFilters" style="display:none">
     <select class="sight-select" id="sfYear" onchange="renderLog()">
       <option value="all">All Years</option>
     </select>
@@ -1705,7 +1754,12 @@ function openSheet(name) {
     document.getElementById('intelContent').innerHTML = '<div class="loading"><div class="spinner"></div><br/>Building intelligence...</div>';
     setTimeout(() => { renderDash(); setTimeout(loadHuntForecast, 300); }, 10);
   }
-  if(name === 'sightings') renderLog();
+  if(name === 'sightings') {
+    sfFiltersVisible = false;
+    const sfEl = document.getElementById('sightFilters');
+    if(sfEl) sfEl.style.display = 'none';
+    renderLog();
+  }
   if(name === 'trail-cam') initTrailCamForm();
 }
 
@@ -6794,7 +6848,13 @@ function viewAllBuckSightings(buckName) {
   setTimeout(() => {
     const deerSel = document.getElementById('sfDeer');
     if(deerSel) deerSel.value = buckName;
-    setSightView('feed');
+    const yrSel = document.getElementById('sfYear');
+    if(yrSel) yrSel.value = 'all';
+    const moSel = document.getElementById('sfMonth');
+    if(moSel) moSel.value = 'all';
+    sfDateMode = 'custom'; // show all time, not just 30 days
+    curSightFeed = 'cams';
+    sightShowCount = sightPageSize;
     openSheet('sightings');
   }, 250);
 }
@@ -7234,13 +7294,34 @@ function setYear(y) {
   }
 }
 
-let curSightView = 'feed';
+// --- Phase 2 Sightings Feed ---
+let curSightFeed = 'cams'; // 'cams' or 'notes'
+let curSightView = 'feed'; // kept for backwards compat with setSightView calls
+let sightPageSize = 20;
+let sightShowCount = 20;
+let sfFiltersVisible = false;
+let sfDateMode = '30d'; // '30d' = last 30 days default, 'custom' = user changed filters
 
 function setSightView(v) {
-  curSightView = v;
-  document.getElementById('toggleFeed')?.classList.toggle('on', v === 'feed');
-  document.getElementById('toggleProfiles')?.classList.toggle('on', v === 'profiles');
+  // Backwards compat — called from viewAllBuckSightings
+  curSightView = 'feed';
+  sfDateMode = 'custom'; // coming from dossier = show all time
   renderLog();
+}
+
+function setSightFeed(feed) {
+  curSightFeed = feed;
+  sightShowCount = sightPageSize;
+  document.getElementById('sfToggleCams')?.classList.toggle('on', feed === 'cams');
+  document.getElementById('sfToggleNotes')?.classList.toggle('on', feed === 'notes');
+  renderLog();
+}
+
+function toggleSightFilters() {
+  sfFiltersVisible = !sfFiltersVisible;
+  const el = document.getElementById('sightFilters');
+  if(el) el.style.display = sfFiltersVisible ? 'flex' : 'none';
+  if(sfFiltersVisible) sfDateMode = 'custom';
 }
 
 function getSightingsFiltered() {
@@ -7248,8 +7329,16 @@ function getSightingsFiltered() {
   const yr = document.getElementById('sfYear')?.value || 'all';
   const mo = document.getElementById('sfMonth')?.value || 'all';
   const deer = document.getElementById('sfDeer')?.value || 'all';
-  if(yr !== 'all') base = base.filter(s => s.date && s.date.startsWith(yr));
-  if(mo !== 'all') base = base.filter(s => s.date && s.date.slice(5,7) === mo);
+  // Default 30-day filter when no custom filters set
+  if(sfDateMode === '30d' && yr === 'all' && mo === 'all') {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const cutStr = cutoff.toISOString().slice(0,10);
+    base = base.filter(s => s.date && s.date >= cutStr);
+  } else {
+    if(yr !== 'all') base = base.filter(s => s.date && s.date.startsWith(yr));
+    if(mo !== 'all') base = base.filter(s => s.date && s.date.slice(5,7) === mo);
+  }
   if(deer === 'does') base = base.filter(s => s.deer_type && (s.deer_type === 'Doe' || s.deer_type === 'Fawn'));
   else if(deer === 'bucks') base = base.filter(s => s.deer_type && s.deer_type.includes('Buck'));
   else if(deer === 'unnamed') base = base.filter(s => s.deer_type && s.deer_type.includes('Buck') && !s.buck_name);
@@ -7271,82 +7360,161 @@ function buildSightFilters() {
     <option value="does">Does &amp; Fawns</option>
     <option value="bucks">All Bucks</option>
     <option value="unnamed">Unknown Bucks</option>
-    <option disabled>── Named Bucks ──</option>
+    <option disabled>\u2500\u2500 Named Bucks \u2500\u2500</option>
     ${bucks.map(b => `<option value="${b}"${curDeerVal===b?' selected':''}>${b}</option>`).join('')}`;
   if(curDeerVal) deerSel.value = curDeerVal;
+}
+
+function updateFilterPill() {
+  const lbl = document.getElementById('sfFilterLabel');
+  if(!lbl) return;
+  const yr = document.getElementById('sfYear')?.value || 'all';
+  const mo = document.getElementById('sfMonth')?.value || 'all';
+  const deer = document.getElementById('sfDeer')?.value || 'all';
+  const parts = [];
+  if(sfDateMode === '30d' && yr === 'all' && mo === 'all') {
+    parts.push('Last 30 days');
+  } else if(yr !== 'all' || mo !== 'all') {
+    const MNAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if(mo !== 'all' && yr !== 'all') parts.push(MNAMES[parseInt(mo)] + ' ' + yr);
+    else if(yr !== 'all') parts.push(yr);
+    else if(mo !== 'all') parts.push(MNAMES[parseInt(mo)]);
+  } else {
+    parts.push('All time');
+  }
+  if(deer !== 'all') {
+    if(deer === 'does') parts.push('Does & Fawns');
+    else if(deer === 'bucks') parts.push('All Bucks');
+    else if(deer === 'unnamed') parts.push('Unknown Bucks');
+    else parts.push(deer);
+  }
+  lbl.textContent = parts.join(' \u00B7 ') + (sfDateMode === '30d' && yr === 'all' && mo === 'all' && deer === 'all' ? ' \u00B7 tap to change' : '');
+}
+
+function sightBuckTap(buckName, e) {
+  e.stopPropagation();
+  if(!buckName) return;
+  const bId = buckIdByName(buckName);
+  closeSheet('sightings');
+  setTimeout(() => {
+    openSheet('intel');
+    if(bId) setTimeout(() => openBuckDossier(bId), 300);
+  }, 200);
+}
+
+function toggleFieldNote(el) {
+  const notes = el.closest('.fn-card')?.querySelector('.fn-notes');
+  if(!notes) return;
+  notes.classList.toggle('expanded');
+  el.textContent = notes.classList.contains('expanded') ? 'Show less' : 'Tap to expand';
+}
+
+function loadMoreSightings() {
+  sightShowCount += sightPageSize;
+  renderLog();
 }
 
 function renderLog() {
   if(!document.getElementById("slist")) return;
   buildSightFilters();
-  const fil = getSightingsFiltered();
+  updateFilterPill();
+  const allFiltered = getSightingsFiltered();
   const sl = document.getElementById("slist");
-  if(curSightView === 'profiles') { renderProfiles(fil, sl); return; }
-  const isUnknownView = (document.getElementById('sfDeer')?.value || 'all') === 'unnamed';
-  const unknownWithPhotos = isUnknownView ? fil.filter(s => s.image_url) : [];
-  const bulkBanner = isUnknownView && unknownWithPhotos.length > 0
-    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;margin-bottom:8px;background:rgba(140,115,85,0.1);border:1px solid rgba(140,115,85,0.25);border-radius:12px">
-        <div>
-          <div style="font-size:12px;font-weight:600;color:var(--gold)">&#128269; Bulk ID</div>
-          <div style="font-size:10px;color:var(--text3);margin-top:2px">${unknownWithPhotos.length} sighting${unknownWithPhotos.length===1?'':'s'} with photos to identify</div>
-        </div>
-        <button onclick="startBulkResolve()" style="padding:7px 14px;border-radius:10px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font)">Start</button>
-      </div>` : '';
-  if(!fil.length) { sl.innerHTML = `<div style="text-align:center;color:#4A4D4E;padding:40px;font-size:13px">No sightings found</div>`; return; }
-  sl.innerHTML = bulkBanner + fil.map(s => {
+
+  if(curSightFeed === 'cams') {
+    renderTrailCamFeed(allFiltered, sl);
+  } else {
+    renderFieldNotesFeed(allFiltered, sl);
+  }
+}
+
+function renderTrailCamFeed(allFiltered, sl) {
+  // Camera sightings with photos
+  const camSightings = allFiltered
+    .filter(s => (s.source === 'camera' || !s.source) && s.image_url)
+    .sort((a,b) => ((b.date||'')+(b.time||'00:00')).localeCompare((a.date||'')+(a.time||'00:00')));
+  const totalCam = sightings.filter(s => (s.source === 'camera' || !s.source) && s.image_url).length;
+
+  if(!camSightings.length) {
+    sl.innerHTML = `<div class="sf-empty">${totalCam === 0
+      ? 'No trail cam photos yet \u2014 tap + to log your first sighting'
+      : 'No trail cam photos in the last 30 days \u2014 log a sighting or adjust your date filter'}</div>`;
+    return;
+  }
+
+  const visible = camSightings.slice(0, sightShowCount);
+  let html = visible.map(s => {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
-    const isMature = s.deer_type && s.deer_type.includes("Mature");
-    const isBuck = s.deer_type && s.deer_type.includes("Buck");
-    const accentColor = bc || (isMature ? '#c8a951' : isBuck ? 'var(--blue)' : 'var(--border)');
-    return `<div class="sc${isMature?" m":""}" style="border-left:3px solid ${accentColor};margin-bottom:8px">
-      <div class="sc-row" onclick="showDet(${s.id})">
-      ${s.image_url ? `<img class="sc-img" src="${s.image_url}" alt=""/>` : ""}
-      <div class="sc-body">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-          <div style="min-width:0">
-            <div style="font-size:13px;font-weight:600;color:${isMature?"#c8a951":"var(--text)"}">${s.deer_type}</div>
-            ${s.buck_name ? `<div style="font-size:12px;margin-top:2px;color:${bc};font-weight:500">&#9679; ${s.buck_name}</div>` : ""}
-            <div style="font-size:11px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:4px">
-              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
-              ${s.camera_name}
-            </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0">
-            <div style="font-size:12px;color:var(--text2);font-weight:500">${fmtD(s.date)}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmtT(s.time)}</div>
-          </div>
+    const eName = s.buck_name ? s.buck_name.replace(/'/g, "\\'") : '';
+    const buckHtml = s.buck_name
+      ? `<span class="tc-buck" style="color:${bc}" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
+      : `<span style="color:var(--text3);font-size:12px">Untagged</span>`;
+    return `<div class="tc-card" onclick="showDet(${s.id})">
+      <img class="tc-photo" src="${s.image_url}" alt="" loading="lazy"/>
+      <div class="tc-info">
+        <div class="tc-top">
+          <div style="min-width:0">${buckHtml}</div>
+          <div class="tc-cam">${s.camera_name || ''}</div>
         </div>
-        <div class="tags" style="margin-top:7px">
-          ${s.behavior ? `<span class="tag">${s.behavior}</span>` : ""}
-          ${s.wind_dir ? `<span class="tag"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></svg> ${s.wind_dir}${s.wind_speed?" "+s.wind_speed+"mph":""}</span>` : ""}
-          ${s.temp_f ? `<span class="tag"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> ${s.temp_f}F</span>` : ""}
-          ${s.moon_phase ? `<span class="tag">${s.moon_phase}</span>` : ""}
+        <div class="tc-date">${fmtD(s.date)}${s.time ? ' \u00B7 '+fmtT(s.time) : ''}</div>
+        <div class="tc-pills">
+          ${s.behavior ? `<span class="tc-pill tc-pill-beh">${s.behavior}</span>` : ''}
+          ${(s.temp_f || s.wind_dir) ? `<span class="tc-pill tc-pill-wx">${s.temp_f ? s.temp_f+'\u00B0F' : ''}${s.temp_f && s.wind_dir ? ' ' : ''}${s.wind_dir || ''}</span>` : ''}
         </div>
-        ${s.notes ? `<div class="snotes" style="margin-top:6px">${s.notes}</div>` : ""}
-      </div>
-      </div>
-      <div class="sc-foot" style="justify-content:space-between">
-        <div style="display:flex;align-items:center;gap:8px">
-          ${s.buck_name
-            ? `<span style="font-size:11px;color:${bc};font-weight:500">&#9679; ${s.buck_name}</span>`
-            : isBuck
-              ? `<span style="font-size:11px;color:#4A4D4E;font-style:italic">Unknown buck</span>`
-              : `<span style="font-size:11px;color:#4A4D4E">${s.deer_type||''}</span>`}
-          ${s.travel_dir && s.travel_dir !== "Unknown" ? `<span style="font-size:10px;color:var(--text3);display:flex;align-items:center;gap:3px">
-            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-            ${s.travel_dir}</span>` : ""}
-          ${s.image_url && !s.buck_name && isBuck ? `<button class="edit-btn" onclick="event.stopPropagation();whoIsThis(${s.id})" style="color:var(--bronze);border-color:var(--bronze);padding:3px 8px;font-size:10px">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:2px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            ID?</button>` : ""}
-        </div>
-        <button class="sc-menu-btn" onclick="event.stopPropagation();showSightMenu(${s.id},this)" title="Actions">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
-        </button>
       </div>
     </div>`;
-  }).join("");
+  }).join('');
+
+  if(camSightings.length > sightShowCount) {
+    html += `<button class="sf-load-more" onclick="loadMoreSightings()">Load more (${camSightings.length - sightShowCount} remaining)</button>`;
+  }
+  sl.innerHTML = html;
 }
-function setFilt(f) { curFilter = f; renderLog(); }
+
+function renderFieldNotesFeed(allFiltered, sl) {
+  const fieldSightings = allFiltered
+    .filter(s => s.source === 'observation')
+    .sort((a,b) => ((b.date||'')+(b.time||'00:00')).localeCompare((a.date||'')+(a.time||'00:00')));
+  const totalField = sightings.filter(s => s.source === 'observation').length;
+
+  if(!fieldSightings.length) {
+    sl.innerHTML = `<div class="sf-empty">${totalField === 0
+      ? 'No field observations yet \u2014 tap + to log your first field note'
+      : 'No field observations in this date range \u2014 adjust your date filter'}</div>`;
+    return;
+  }
+
+  const visible = fieldSightings.slice(0, sightShowCount);
+  const deerSvg = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="1.3" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>';
+
+  let html = visible.map(s => {
+    const bc = s.buck_name ? buckColor(s.buck_name) : null;
+    const eName = s.buck_name ? s.buck_name.replace(/'/g, "\\'") : '';
+    const buckHtml = s.buck_name
+      ? `<span class="fn-buck" style="color:${bc}" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
+      : `<span style="color:var(--text3);font-size:12px">${s.deer_type || 'Observation'}</span>`;
+    const hasNotes = s.notes && s.notes.length > 0;
+    return `<div class="fn-card" onclick="showDet(${s.id})">
+      <div class="fn-icon">${deerSvg}</div>
+      <div class="fn-body">
+        ${buckHtml}
+        <div class="fn-meta">${fmtD(s.date)}${s.time ? ' \u00B7 '+fmtT(s.time) : ''}${s.obs_lat ? ' \u00B7 GPS' : ''}</div>
+        <div class="tc-pills" style="margin-top:4px">
+          ${s.behavior ? `<span class="tc-pill tc-pill-beh">${s.behavior}</span>` : ''}
+          ${(s.temp_f || s.wind_dir) ? `<span class="tc-pill tc-pill-wx">${s.temp_f ? s.temp_f+'\u00B0F' : ''}${s.temp_f && s.wind_dir ? ' ' : ''}${s.wind_dir || ''}</span>` : ''}
+        </div>
+        ${hasNotes ? `<div class="fn-notes">${s.notes}</div><span class="fn-expand" onclick="event.stopPropagation();toggleFieldNote(this)">Tap to expand</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+
+  if(fieldSightings.length > sightShowCount) {
+    html += `<button class="sf-load-more" onclick="loadMoreSightings()">Load more (${fieldSightings.length - sightShowCount} remaining)</button>`;
+  }
+  sl.innerHTML = html;
+}
+
+function setFilt(f) { curFilter = f; sfDateMode = 'custom'; renderLog(); }
 
 function showSightMenu(sightingId, btnEl) {
   // Remove any existing menu
