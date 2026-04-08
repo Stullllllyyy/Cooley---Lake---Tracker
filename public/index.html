@@ -495,7 +495,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tc-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s;display:flex;gap:12px;padding:12px;min-height:100px}
 .tc-card:active{opacity:0.9}
 .tc-thumb{width:120px;height:120px;border-radius:4px;object-fit:cover;flex-shrink:0}
-@media(min-width:769px){.tc-thumb{width:100px;height:100px}}
+.tc-thumb-placeholder{width:120px;height:120px;border-radius:4px;flex-shrink:0;background:#121415;border:1px solid rgba(140,115,85,0.2);display:flex;align-items:center;justify-content:center}
+@media(min-width:769px){.tc-thumb{width:100px;height:100px}.tc-thumb-placeholder{width:100px;height:100px}}
 .tc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
 .tc-buck{font-size:14px;font-weight:600;cursor:pointer;font-family:'Raleway',var(--font)}
@@ -507,8 +508,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tc-pill-beh{background:var(--bronze);color:#121415}
 .tc-pill-wx{background:transparent;border:1px solid rgba(140,115,85,0.3);color:var(--silver)}
 .tc-feed-grid{padding:8px 14px}
-@media(min-width:769px){.tc-feed-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:16px}.tc-card{margin-bottom:0}}
-@media(min-width:1200px){.tc-feed-grid{grid-template-columns:repeat(3,1fr)}}
 
 .fn-card{display:flex;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:border-color 0.2s}
 .fn-card:active{opacity:0.9}
@@ -3308,8 +3307,7 @@ async function bootApp() {
   PROPERTY_ID = membership.property_id;
 
   document.getElementById('authGate').style.display = 'none';
-  loadBuckRegistry();
-  loadSightings();
+  await Promise.all([loadBuckRegistry(), loadSightings()]);
   startMap();
 }
 
@@ -7425,12 +7423,13 @@ function loadMoreSightings() {
 function renderLog() {
   const sl = document.getElementById("slist");
   if(!sl) return;
-  console.log('[renderLog] sightings:', sightings.length, 'loaded:', !!window._sightingsLoaded, 'feed:', curSightFeed, 'dateMode:', sfDateMode);
-  // Wait for loadSightings() to complete before rendering
+  // Guard: never render until loadSightings() has completed
   if(!window._sightingsLoaded) {
+    console.log('[renderLog] BLOCKED — sightings not loaded yet');
     sl.innerHTML = '<div class="loading"><div class="spinner"></div><br/>Loading...</div>';
     return;
   }
+  console.log('[renderLog] rendering — sightings:', sightings.length, 'feed:', curSightFeed, 'dateMode:', sfDateMode);
   buildSightFilters();
   updateFilterPill();
   const allFiltered = getSightingsFiltered();
@@ -7443,19 +7442,21 @@ function renderLog() {
 }
 
 function renderTrailCamFeed(allFiltered, sl) {
-  console.log('[renderTrailCamFeed] allFiltered:', allFiltered.length, 'total sightings:', sightings.length);
-  // Camera sightings with photos
+  // All camera sightings (with or without photos)
   const camSightings = allFiltered
-    .filter(s => (s.source === 'camera' || !s.source) && s.image_url)
+    .filter(s => s.source === 'camera' || !s.source)
     .sort((a,b) => ((b.date||'')+(b.time||'00:00')).localeCompare((a.date||'')+(a.time||'00:00')));
-  const totalCam = sightings.filter(s => (s.source === 'camera' || !s.source) && s.image_url).length;
+  const totalCam = sightings.filter(s => s.source === 'camera' || !s.source).length;
+  console.log('[renderTrailCamFeed] called:', { sightingsLength: sightings.length, filtered: allFiltered.length, camSightings: camSightings.length });
 
   if(!camSightings.length) {
     sl.innerHTML = `<div class="sf-empty">${totalCam === 0
-      ? 'No trail cam photos yet \u2014 tap + to log your first sighting'
-      : 'No trail cam photos in the last 30 days \u2014 log a sighting or adjust your date filter'}</div>`;
+      ? 'No trail cam sightings yet \u2014 tap + to log your first sighting'
+      : 'No trail cam sightings in the last 30 days \u2014 log a sighting or adjust your date filter'}</div>`;
     return;
   }
+
+  const camPlaceholder = '<div class="tc-thumb-placeholder"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M17 8h.01"/></svg></div>';
 
   const visible = camSightings.slice(0, sightShowCount);
   const cards = visible.map(s => {
@@ -7463,8 +7464,11 @@ function renderTrailCamFeed(allFiltered, sl) {
     const buckHtml = s.buck_name
       ? `<span class="tc-buck" style="color:#8C7355" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
       : `<span style="color:var(--text3);font-size:12px">Untagged</span>`;
+    const thumbHtml = s.image_url
+      ? `<img class="tc-thumb" src="${s.image_url}" alt="" loading="lazy"/>`
+      : camPlaceholder;
     return `<div class="tc-card" onclick="showDet(${s.id})">
-      <img class="tc-thumb" src="${s.image_url}" alt="" loading="lazy"/>
+      ${thumbHtml}
       <div class="tc-info">
         <div class="tc-top">
           <div style="min-width:0">${buckHtml}</div>
