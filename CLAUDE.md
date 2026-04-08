@@ -77,6 +77,12 @@ Development Rules — ALWAYS FOLLOW THESE
 * Never put API keys in HTML or in chat
 * After Vercel env var change → must redeploy
 * Start session by agreeing on scope before touching code
+## Branch & Merge Rules — ALWAYS FOLLOW
+* Every session ends with merging the feature branch to main via pull request — no exceptions
+* Never leave working code on an unmerged feature branch
+* At the start of every session: run `git status` and `git log` to confirm the previous session's branch was merged to main before starting new work
+* If unmerged branches are found at session start — merge them before writing any new code
+* Vercel deploys from main only — code on feature branches is not reliably deployed
 What Claude Code Should Never Do
 * Put the Anthropic API key anywhere in HTML or client-side JS
 * Remove or bypass Supabase RLS policies (when implemented)
