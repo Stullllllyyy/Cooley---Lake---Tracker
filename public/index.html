@@ -401,7 +401,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .dossier-sticky-bar{position:sticky;bottom:0;padding:12px 14px;background:var(--surface);border-top:1px solid var(--border);z-index:2}
 .dossier-sticky-btn{width:100%;padding:12px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);min-height:44px}
 .dossier-sticky-btn:active{background:rgba(140,115,85,0.1)}
-@media(min-width:769px){#sheet-dossier{left:50%;transform:translateX(-50%);max-width:640px;right:auto;border-radius:20px 20px 0 0}#sheet-dossier.open{transform:translateX(-50%) translateY(0) !important}.dossier-content-2col{display:grid;grid-template-columns:1fr 1fr;gap:0}.dossier-content-2col .dossier-col-left{border-right:1px solid var(--border)}}
+@media(min-width:769px){#sheet-dossier{left:50%;transform:translateX(-50%) translateY(100%);max-width:640px;right:auto;border-radius:20px 20px 0 0}#sheet-dossier.open{transform:translateX(-50%) translateY(0) !important}.dossier-content-2col{display:grid;grid-template-columns:1fr 1fr;gap:0}.dossier-content-2col .dossier-col-left{border-right:1px solid var(--border)}}
 
 /* Photo lightbox */
 .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:600;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom}
@@ -1204,7 +1204,7 @@ textarea{resize:none}
   <div class="sheet-hdr" style="flex-shrink:0">
     <div class="sheet-title" style="display:flex;align-items:center;gap:8px">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>
-      <span id="dossierSheetTitle">Buck Dossier</span>
+      <div><span id="dossierSheetTitle">Buck Dossier</span><div style="font-size:10px;color:var(--text3);margin-top:1px">Buck Intelligence Report</div></div>
     </div>
     <button class="sheet-x" onclick="closeDossierSheet()" style="min-width:44px;min-height:44px">&#215;</button>
   </div>
@@ -6309,14 +6309,11 @@ function openBuckDossier(buckId) {
   if(!bs.length) return;
   dossierBuckId = buckId;
 
-  // Close intel sheet, open dossier sheet
-  closeSheet('intel');
-  setTimeout(() => {
-    const sheet = document.getElementById('sheet-dossier');
-    const overlay = document.getElementById('overlay-dossier');
-    if(sheet) sheet.classList.add('open');
-    if(overlay) overlay.classList.add('on');
-  }, 50);
+  // Open dossier sheet on top of current view (intel stays underneath)
+  const sheet = document.getElementById('sheet-dossier');
+  const overlay = document.getElementById('overlay-dossier');
+  if(sheet) sheet.classList.add('open');
+  if(overlay) overlay.classList.add('on');
 
   document.getElementById('dossierSheetTitle').textContent = buckName;
 
@@ -6396,6 +6393,12 @@ function openBuckDossier(buckId) {
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${bs.length}</div><div class="dossier-stat-lbl">Sightings</div></div>
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${cameras.length}</div><div class="dossier-stat-lbl">Cameras</div></div>
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${peakTime ? peakTime[0] : '--'}</div><div class="dossier-stat-lbl">Peak Time</div></div>
+  </div>`;
+
+  // Key Insights (AI-generated, buck-specific)
+  html += `<div class="dossier-sec" style="border-top:1px solid var(--border)">
+    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div>
+    <div id="dossierAiInsights"><div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing ${buckName}...</div></div>
   </div>`;
 
   // Start 2-column wrapper for desktop
@@ -6518,13 +6521,117 @@ function openBuckDossier(buckId) {
 
   // Load antler description and notes from bucks table
   loadDossierBuckData(buckId);
+  // Fetch buck-specific AI insights
+  fetchBuckInsights(buckId, buckName, bs);
+}
+
+// Buck-specific AI insights for dossier
+let buckInsightsCache = {};
+
+async function fetchBuckInsights(buckId, buckName, buckSightings) {
+  const el = document.getElementById('dossierAiInsights');
+  if(!el) return;
+
+  // Check cache
+  const cacheKey = 'buck_' + buckId + '_' + buckSightings.length;
+  if(buckInsightsCache[cacheKey]) {
+    el.innerHTML = buckInsightsCache[cacheKey].map(insight =>
+      `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+    ).join('');
+    return;
+  }
+
+  // Build buck-specific context
+  const regBuck = buckRegistry.find(b => b.id === buckId);
+  const ageClass = buckSightings[0]?.deer_type || 'Buck';
+  const antlerDesc = regBuck?.antler_description || '';
+  const hunterNotes = regBuck?.notes || '';
+  const notesSummary = hunterNotes ? hunterNotes.split('\n---\n').slice(-3).map(e => e.replace(/^\[.+?\]\s*/, '')).join('; ') : '';
+
+  const dates = buckSightings.map(s => s.date).filter(Boolean).sort();
+  const firstSeen = dates[0] || 'unknown';
+  const lastSeen = dates[dates.length - 1] || 'unknown';
+
+  // Top cameras
+  const camCounts = {};
+  buckSightings.forEach(s => { if(s.camera_name) camCounts[s.camera_name] = (camCounts[s.camera_name]||0)+1; });
+  const topCams = Object.entries(camCounts).sort((a,b) => b[1]-a[1]).slice(0,5).map(([c,n]) => c+':'+n);
+
+  // Wind breakdown
+  const winds = {};
+  buckSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
+  const topWinds = Object.entries(winds).sort((a,b) => b[1]-a[1]).slice(0,5).map(([w,c]) => w+':'+c);
+
+  // Hourly activity
+  const hourly = new Array(24).fill(0);
+  buckSightings.forEach(s => { if(s.time) { const h = parseInt(s.time); if(h >= 0 && h < 24) hourly[h]++; } });
+  const peakHours = hourly.map((c,h) => ({h,c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).slice(0,5).map(x => x.h + ':00('+x.c+')');
+
+  // Behavior breakdown
+  const behaviors = {};
+  buckSightings.forEach(s => { if(s.behavior) behaviors[s.behavior] = (behaviors[s.behavior]||0)+1; });
+
+  // Monthly breakdown
+  const months = new Array(12).fill(0);
+  const MNAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  buckSightings.forEach(s => { if(s.date) { const m = parseInt(s.date.slice(5,7)) - 1; if(m >= 0 && m < 12) months[m]++; } });
+  const activeMonths = months.map((c,i) => ({m:MNAMES[i],c})).filter(x => x.c > 0).sort((a,b) => b.c - a.c).map(x => x.m+':'+x.c);
+
+  // Temps
+  const temps = buckSightings.filter(s => s.temp_f).map(s => parseFloat(s.temp_f));
+  const avgTemp = temps.length ? Math.round(temps.reduce((a,b) => a+b, 0) / temps.length) : null;
+
+  // Stands nearby
+  const stands = propertyMarkers.filter(m => m.type === 'Stand');
+  const standNames = stands.map(s => s.name || 'unnamed').join(', ') || 'none';
+
+  const summary = 'Buck: ' + buckName + '. Age class: ' + ageClass + '. ' +
+    (antlerDesc ? 'Antler description: ' + antlerDesc + '. ' : '') +
+    buckSightings.length + ' total sightings. First seen: ' + firstSeen + '. Last seen: ' + lastSeen + '. ' +
+    'Top cameras: ' + (topCams.join(', ') || 'none') + '. ' +
+    'Wind dirs: ' + (topWinds.join(', ') || 'none') + '. ' +
+    'Peak hours: ' + (peakHours.join(', ') || 'none') + '. ' +
+    'Active months: ' + (activeMonths.join(', ') || 'none') + '. ' +
+    (avgTemp !== null ? 'Avg temp at sightings: ' + avgTemp + 'F. ' : '') +
+    'Behaviors: ' + (Object.entries(behaviors).map(([b,c]) => b+':'+c).join(', ') || 'none') + '. ' +
+    'Stands on property: ' + standNames + '. ' +
+    (notesSummary ? 'Hunter notes: ' + notesSummary : '');
+
+  try {
+    const resp = await claudeFetch({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 600,
+      system: 'You are a whitetail deer hunting intelligence analyst for Huginn. You are analyzing a SINGLE named buck based on its sighting history. Deliver insights specific to this individual buck — behavioral patterns, best conditions to encounter it, which cameras and stands offer the best opportunity, seasonal timing, and an actionable recommendation: "Hunt this buck when..." Be specific to THIS buck and THIS data. Respond in 4-5 concise bullets.',
+      messages: [{
+        role: 'user',
+        content: 'Analyze this individual buck and provide 4-5 actionable hunting insights specific to this deer. Format as a JSON array of strings.\n\nData: ' + summary
+      }]
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    const match = text.match(/\[[\s\S]*\]/);
+    let insights = [];
+    if(match) {
+      try { insights = JSON.parse(match[0]); } catch(e) { insights = [text]; }
+    } else if(text) {
+      insights = [text];
+    }
+    buckInsightsCache[cacheKey] = insights;
+    if(el) {
+      el.innerHTML = insights.map(insight =>
+        `<div class="intel-ai-bullet"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg><span>${insight}</span></div>`
+      ).join('');
+    }
+  } catch(e) {
+    console.error('[BuckInsights] Error:', e);
+    if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
+  }
 }
 
 function closeDossierSheet() {
   document.getElementById('sheet-dossier')?.classList.remove('open');
   document.getElementById('overlay-dossier')?.classList.remove('on');
-  // Reopen intel sheet
-  setTimeout(() => openSheet('intel'), 100);
 }
 
 async function loadDossierBuckData(buckId) {
@@ -10358,6 +10465,11 @@ function renderDash() {
     <div class="sbox"><div class="snum">${buckCount}</div><div class="slbl">Bucks</div></div>
     <div class="sbox"><div class="snum">${matureCount}</div><div class="slbl">Mature</div></div>
   </div>`;
+
+  // Filtered-to-buck banner
+  if(intelBuck !== 'all') {
+    html += `<div style="background:rgba(140,115,85,0.08);border:1px solid rgba(140,115,85,0.2);border-radius:8px;padding:10px 14px;margin-bottom:16px;font-size:11px;color:var(--text2);line-height:1.5">Showing data filtered to <strong style="color:var(--bronze)">${intelBuck}</strong> \u2014 tap the buck card below for full dossier</div>`;
+  }
 
   const emptyMsg = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:16px 8px;line-height:1.6">Log your first sighting to unlock this insight</div>';
 
