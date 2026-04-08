@@ -492,19 +492,20 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .sf-filter-pill{display:inline-flex;align-items:center;gap:4px;padding:5px 12px;border-radius:16px;border:1px solid var(--border2);background:var(--bg);color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:border-color 0.15s;margin:0 14px 8px;flex-shrink:0}
 .sf-filter-pill:active{border-color:var(--bronze)}
 .sf-filter-pill svg{flex-shrink:0}
-.tc-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s}
+.tc-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:10px;cursor:pointer;transition:border-color 0.2s;display:flex;gap:12px;padding:12px;min-height:100px}
 .tc-card:active{opacity:0.9}
-.tc-photo{width:100%;aspect-ratio:16/9;max-height:200px;object-fit:cover;object-position:center;display:block}
-.tc-info{padding:10px 12px}
+.tc-thumb{width:120px;height:120px;border-radius:4px;object-fit:cover;flex-shrink:0}
+@media(min-width:769px){.tc-thumb{width:100px;height:100px}}
+.tc-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .tc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
-.tc-buck{font-size:13px;font-weight:600;cursor:pointer}
+.tc-buck{font-size:14px;font-weight:600;cursor:pointer;font-family:'Raleway',var(--font)}
 .tc-buck:active{opacity:0.7}
-.tc-cam{font-size:11px;color:var(--text3);flex-shrink:0}
-.tc-date{font-size:11px;color:var(--text3);margin-top:3px}
+.tc-cam{font-size:12px;color:var(--silver);flex-shrink:0}
+.tc-date{font-size:12px;color:var(--text3);margin-top:3px}
 .tc-pills{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
 .tc-pill{font-size:10px;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:3px}
 .tc-pill-beh{background:var(--bronze);color:#121415}
-.tc-pill-wx{background:transparent;border:1px solid rgba(140,115,85,0.3);color:var(--text2)}
+.tc-pill-wx{background:transparent;border:1px solid rgba(140,115,85,0.3);color:var(--silver)}
 @media(min-width:769px){.tc-card{max-width:640px;margin-left:auto;margin-right:auto}}
 
 .fn-card{display:flex;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:border-color 0.2s}
@@ -1756,8 +1757,12 @@ function openSheet(name) {
   }
   if(name === 'sightings') {
     sfFiltersVisible = false;
+    sightShowCount = 20;
     const sfEl = document.getElementById('sightFilters');
     if(sfEl) sfEl.style.display = 'none';
+    // Reset toggle state
+    document.getElementById('sfToggleCams')?.classList.toggle('on', curSightFeed === 'cams');
+    document.getElementById('sfToggleNotes')?.classList.toggle('on', curSightFeed === 'notes');
     renderLog();
   }
   if(name === 'trail-cam') initTrailCamForm();
@@ -3961,6 +3966,7 @@ async function loadSightings() {
     return;
   }
   sightings = data || [];
+  window._sightingsLoaded = true;
   renderDash(); renderLog(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
   refreshMapPins();
 }
@@ -7415,11 +7421,18 @@ function loadMoreSightings() {
 }
 
 function renderLog() {
-  if(!document.getElementById("slist")) return;
+  const sl = document.getElementById("slist");
+  if(!sl) return;
+  console.log('[renderLog] sightings.length:', sightings.length, 'feed:', curSightFeed, 'dateMode:', sfDateMode);
+  // If sightings haven't loaded yet, show loading and retry
+  if(!sightings.length && !window._sightingsLoaded) {
+    sl.innerHTML = '<div class="loading"><div class="spinner"></div><br/>Loading...</div>';
+    setTimeout(renderLog, 300);
+    return;
+  }
   buildSightFilters();
   updateFilterPill();
   const allFiltered = getSightingsFiltered();
-  const sl = document.getElementById("slist");
 
   if(curSightFeed === 'cams') {
     renderTrailCamFeed(allFiltered, sl);
@@ -7447,10 +7460,10 @@ function renderTrailCamFeed(allFiltered, sl) {
     const bc = s.buck_name ? buckColor(s.buck_name) : null;
     const eName = s.buck_name ? s.buck_name.replace(/'/g, "\\'") : '';
     const buckHtml = s.buck_name
-      ? `<span class="tc-buck" style="color:${bc}" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
+      ? `<span class="tc-buck" style="color:#8C7355" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
       : `<span style="color:var(--text3);font-size:12px">Untagged</span>`;
     return `<div class="tc-card" onclick="showDet(${s.id})">
-      <img class="tc-photo" src="${s.image_url}" alt="" loading="lazy"/>
+      <img class="tc-thumb" src="${s.image_url}" alt="" loading="lazy"/>
       <div class="tc-info">
         <div class="tc-top">
           <div style="min-width:0">${buckHtml}</div>
