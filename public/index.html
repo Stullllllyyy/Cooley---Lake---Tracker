@@ -401,7 +401,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .dossier-sticky-bar{position:sticky;bottom:0;padding:12px 14px;background:var(--surface);border-top:1px solid var(--border);z-index:2}
 .dossier-sticky-btn{width:100%;padding:12px;border:1px solid var(--bronze);border-radius:var(--radius);background:transparent;color:var(--bronze);font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);min-height:44px}
 .dossier-sticky-btn:active{background:rgba(140,115,85,0.1)}
-@media(min-width:769px){#sheet-dossier{left:50%;transform:translateX(-50%) translateY(100%);max-width:640px;right:auto;border-radius:20px 20px 0 0}#sheet-dossier.open{transform:translateX(-50%) translateY(0) !important}.dossier-content-2col{display:grid;grid-template-columns:1fr 1fr;gap:0}.dossier-content-2col .dossier-col-left{border-right:1px solid var(--border)}}
+@media(min-width:769px){#sheet-dossier{left:50%;transform:translateX(-50%) translateY(100%);max-width:640px;right:auto;border-radius:20px 20px 0 0}#sheet-dossier.open{transform:translateX(-50%) translateY(0) !important}.dossier-2col-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}.dossier-wind-activity-row{display:grid;grid-template-columns:1fr 1fr;gap:24px}}
 
 /* Photo lightbox */
 .photo-lightbox{position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:600;display:flex;align-items:center;justify-content:center;touch-action:pinch-zoom}
@@ -6372,10 +6372,56 @@ function openBuckDossier(buckId) {
   // Escaped name for onclick
   const eName = buckName.replace(/'/g, "\\'");
 
+  // --- Weather Impact data prep ---
+  // Temperature ranges
+  const tempRanges = [['<20\u00B0F',0],['20-32\u00B0F',0],['32-45\u00B0F',0],['45-60\u00B0F',0],['>60\u00B0F',0]];
+  bs.forEach(s => {
+    if(!s.temp_f) return;
+    const t = parseFloat(s.temp_f);
+    if(t < 20) tempRanges[0][1]++;
+    else if(t < 32) tempRanges[1][1]++;
+    else if(t < 45) tempRanges[2][1]++;
+    else if(t < 60) tempRanges[3][1]++;
+    else tempRanges[4][1]++;
+  });
+  const maxTemp = Math.max(...tempRanges.map(r=>r[1]), 1);
+  const hasTemp = tempRanges.some(r => r[1] > 0);
+
+  // Pressure ranges
+  const pressRanges = [['Low (<29.6)',0],['Normal',0],['High (>30.2)',0]];
+  bs.forEach(s => {
+    if(!s.pressure) return;
+    const p = parseFloat(s.pressure);
+    if(p < 29.6) pressRanges[0][1]++;
+    else if(p <= 30.2) pressRanges[1][1]++;
+    else pressRanges[2][1]++;
+  });
+  const maxPress = Math.max(...pressRanges.map(r=>r[1]), 1);
+  const hasPress = pressRanges.some(r => r[1] > 0);
+
+  // Wind speed ranges
+  const wsRanges = [['Calm (0-5)',0],['Light (5-15)',0],['Moderate (15-25)',0],['Strong (>25)',0]];
+  bs.forEach(s => {
+    if(!s.wind_speed) return;
+    const w = parseFloat(s.wind_speed);
+    if(w <= 5) wsRanges[0][1]++;
+    else if(w <= 15) wsRanges[1][1]++;
+    else if(w <= 25) wsRanges[2][1]++;
+    else wsRanges[3][1]++;
+  });
+  const maxWs = Math.max(...wsRanges.map(r=>r[1]), 1);
+  const hasWs = wsRanges.some(r => r[1] > 0);
+  const hasWeatherData = hasTemp || hasPress || hasWs;
+
+  // Helper: render bar rows
+  const barRows = (ranges, max) => ranges.filter(([,c]) => c > 0).map(([lbl, cnt]) =>
+    `<div class="dossier-bar-row"><div class="dossier-bar-lbl">${lbl}</div><div class="dossier-bar-track"><div class="dossier-bar-fill" style="width:${Math.round(cnt/max*100)}%"></div></div><div class="dossier-bar-cnt">${cnt}</div></div>`
+  ).join('');
+
   // --- Build HTML ---
   let html = '';
 
-  // Hero
+  // 1. Hero
   if(photos.length) {
     html += `<div class="dossier-hero">
       <img src="${photos[0].image_url}" alt="${buckName}"/>
@@ -6388,67 +6434,54 @@ function openBuckDossier(buckId) {
     </div>`;
   }
 
-  // Stats row
+  // 2. Stats row
   html += `<div class="dossier-stats-row">
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${bs.length}</div><div class="dossier-stat-lbl">Sightings</div></div>
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${cameras.length}</div><div class="dossier-stat-lbl">Cameras</div></div>
     <div class="dossier-stat-pill"><div class="dossier-stat-val">${peakTime ? peakTime[0] : '--'}</div><div class="dossier-stat-lbl">Peak Time</div></div>
   </div>`;
 
-  // Key Insights (AI-generated, buck-specific)
+  // 3. Key Insights (AI-generated, buck-specific)
   html += `<div class="dossier-sec" style="border-top:1px solid var(--border)">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg> Key Insights</div>
     <div id="dossierAiInsights"><div class="intel-ai-loading"><div class="spinner" style="width:16px;height:16px"></div> Analyzing ${buckName}...</div></div>
   </div>`;
 
-  // Start 2-column wrapper for desktop
-  html += `<div class="dossier-content-2col"><div class="dossier-col-left">`;
-
-  // Antler Description (editable)
-  html += `<div class="dossier-sec">
-    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> Antler Description</div>
-    <div style="position:relative">
-      <input type="text" id="dossierAntlerDesc" placeholder="e.g. Drop tine left G2, wide spread, dark tarsal glands" style="width:100%;padding:8px 30px 8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);font-style:italic" onblur="saveDossierAntlerDesc()"/>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-    </div>
-  </div>`;
-
-  // Hunter's Notes (append model)
-  html += `<div class="dossier-sec">
-    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Hunter's Notes</div>
-    <textarea id="dossierNewNote" placeholder="Add a new observation..." style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:40px"></textarea>
-    <button onclick="appendDossierNote()" style="margin-top:8px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);min-height:44px">Add Note</button>
-    <div id="dossierNotesHistory" style="max-height:200px;overflow-y:auto;margin-top:8px"></div>
-  </div>`;
-
-  // Field Observations
-  html += `<div class="dossier-sec">
-    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Field Observations</div>
-    ${fieldObs.length ? fieldObs.slice(0,10).map(s => `<div class="dossier-field-obs-item">
-      <div style="font-weight:600;color:var(--silver)">${fmtD(s.date)}${s.time ? ' '+s.time.slice(0,5) : ''}</div>
-      <div>${s.behavior ? s.behavior + ' &middot; ' : ''}${s.wind_dir ? s.wind_dir+' wind' : ''}${s.temp_f ? ' &middot; '+s.temp_f+'°F' : ''}</div>
-      ${s.notes ? `<div style="color:var(--text3);font-style:italic;margin-top:2px">${s.notes}</div>` : ''}
-    </div>`).join('') : `<div style="font-size:12px;color:var(--text3);padding:8px 0">No field observations yet</div>`}
-  </div>`;
-
-  // Wind Rose (shared function)
+  // 4+5. Wind Conditions + Activity by Hour — full width, side-by-side on desktop
+  html += `<div class="dossier-wind-activity-row">`;
   if(hasWind) {
     html += `<div class="dossier-sec">
       <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg> Wind Conditions</div>
-      ${buildWindRoseSVG(windCounts, maxWind, topWinds, 80)}
+      <div style="display:flex;justify-content:center">${buildWindRoseSVG(windCounts, maxWind, topWinds, 100)}</div>
     </div>`;
   }
-
-  // Activity by Hour (shared function)
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Activity by Hour</div>
     ${build24HrTimeline(bs, true)}
   </div>`;
+  html += `</div>`;
 
-  // End left column, start right column for desktop
-  html += `</div><div class="dossier-col-right">`;
+  // 6. Weather Impact on Movement (NEW)
+  if(hasWeatherData) {
+    html += `<div class="dossier-sec">
+      <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/></svg> Weather Impact on Movement</div>
+      <div id="dossierWeatherSummary" style="font-size:11px;color:var(--text2);font-style:italic;margin-bottom:12px;line-height:1.5"><div class="intel-ai-loading"><div class="spinner" style="width:14px;height:14px"></div> Analyzing weather patterns...</div></div>`;
+    if(hasTemp) {
+      html += `<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:10px">Temperature</div>${barRows(tempRanges, maxTemp)}`;
+    }
+    if(hasPress) {
+      html += `<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:10px">Barometric Pressure</div>${barRows(pressRanges, maxPress)}`;
+    }
+    if(hasWs) {
+      html += `<div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;margin-top:10px">Wind Speed (mph)</div>${barRows(wsRanges, maxWs)}`;
+    }
+    html += `</div>`;
+  }
 
-  // Behavior Breakdown
+  // 7. Two-column grid: Behavior+Seasonal | TopCams+FieldObs
+  html += `<div class="dossier-2col-grid">`;
+  // Left column
+  html += `<div>`;
   if(behEntries.length) {
     html += `<div class="dossier-sec">
       <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg> Behavior Breakdown</div>
@@ -6459,8 +6492,6 @@ function openBuckDossier(buckId) {
       </div>`).join('')}
     </div>`;
   }
-
-  // Seasonal Activity
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Seasonal Activity</div>
     <div style="display:flex;gap:2px;align-items:flex-end;height:50px">
@@ -6470,8 +6501,9 @@ function openBuckDossier(buckId) {
       </div>`).join('')}
     </div>
   </div>`;
-
-  // Top Cameras
+  html += `</div>`;
+  // Right column
+  html += `<div>`;
   if(topCams.length) {
     html += `<div class="dossier-sec">
       <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg> Top Cameras</div>
@@ -6482,8 +6514,35 @@ function openBuckDossier(buckId) {
       </div>`).join('')}
     </div>`;
   }
+  html += `<div class="dossier-sec">
+    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> Field Observations</div>
+    ${fieldObs.length ? fieldObs.slice(0,10).map(s => `<div class="dossier-field-obs-item">
+      <div style="font-weight:600;color:var(--silver)">${fmtD(s.date)}${s.time ? ' '+s.time.slice(0,5) : ''}</div>
+      <div>${s.behavior ? s.behavior + ' &middot; ' : ''}${s.wind_dir ? s.wind_dir+' wind' : ''}${s.temp_f ? ' &middot; '+s.temp_f+'\u00B0F' : ''}</div>
+      ${s.notes ? `<div style="color:var(--text3);font-style:italic;margin-top:2px">${s.notes}</div>` : ''}
+    </div>`).join('') : `<div style="font-size:12px;color:var(--text3);padding:8px 0">No field observations yet</div>`}
+  </div>`;
+  html += `</div>`;
+  html += `</div>`; // end 2col grid
 
-  // Photo Gallery
+  // 8. Antler Description (editable)
+  html += `<div class="dossier-sec">
+    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> Antler Description</div>
+    <div style="position:relative">
+      <input type="text" id="dossierAntlerDesc" placeholder="e.g. Drop tine left G2, wide spread, dark tarsal glands" style="width:100%;padding:8px 30px 8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);font-style:italic" onblur="saveDossierAntlerDesc()"/>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0.4"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+    </div>
+  </div>`;
+
+  // 9. Hunter's Notes (append model)
+  html += `<div class="dossier-sec">
+    <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Hunter's Notes</div>
+    <textarea id="dossierNewNote" placeholder="Add a new observation..." style="width:100%;padding:8px 10px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);resize:vertical;min-height:40px"></textarea>
+    <button onclick="appendDossierNote()" style="margin-top:8px;padding:8px 16px;border-radius:8px;border:1px solid var(--gold);background:rgba(140,115,85,0.15);color:var(--gold);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);min-height:44px">Add Note</button>
+    <div id="dossierNotesHistory" style="max-height:200px;overflow-y:auto;margin-top:8px"></div>
+  </div>`;
+
+  // 10. Photo Gallery
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> Confirmed Photos${allPhotoUrls.length ? ' ('+allPhotoUrls.length+')' : ''}</div>
     ${allPhotoUrls.length ? `<div class="dossier-photo-row">${allPhotoUrls.slice(0,20).map((url, i) =>
@@ -6491,7 +6550,7 @@ function openBuckDossier(buckId) {
     ).join('')}</div>` : `<div style="font-size:12px;color:var(--text3);padding:8px 0">No confirmed photos yet</div>`}
   </div>`;
 
-  // Recent Sightings
+  // 11. Recent Sightings
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Recent Sightings</div>
     ${recent10.map(s => `<div class="dossier-sighting-item">
@@ -6503,10 +6562,7 @@ function openBuckDossier(buckId) {
     </div>`).join('')}
   </div>`;
 
-  // End right column and 2-column wrapper
-  html += `</div></div>`;
-
-  // Sticky bottom bar
+  // 12. Sticky bottom bar
   html += `<div class="dossier-sticky-bar">
     <button class="dossier-sticky-btn" onclick="viewAllBuckSightings('${eName}')">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-2px;margin-right:4px"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="12" cy="12" r="3"/></svg>
@@ -6521,8 +6577,9 @@ function openBuckDossier(buckId) {
 
   // Load antler description and notes from bucks table
   loadDossierBuckData(buckId);
-  // Fetch buck-specific AI insights
+  // Fetch buck-specific AI insights + weather summary
   fetchBuckInsights(buckId, buckName, bs);
+  if(hasWeatherData) fetchBuckWeatherSummary(buckId, buckName, bs);
 }
 
 // Buck-specific AI insights for dossier
@@ -6626,6 +6683,57 @@ async function fetchBuckInsights(buckId, buckName, buckSightings) {
   } catch(e) {
     console.error('[BuckInsights] Error:', e);
     if(el) el.innerHTML = `<div style="font-size:11px;color:var(--text3)">Insights unavailable</div>`;
+  }
+}
+
+// Buck-specific AI weather summary
+let buckWeatherCache = {};
+
+async function fetchBuckWeatherSummary(buckId, buckName, buckSightings) {
+  const el = document.getElementById('dossierWeatherSummary');
+  if(!el) return;
+  const cacheKey = 'wx_' + buckId + '_' + buckSightings.length;
+  if(buckWeatherCache[cacheKey]) {
+    el.innerHTML = buckWeatherCache[cacheKey];
+    return;
+  }
+  // Build compact weather context
+  const temps = buckSightings.filter(s => s.temp_f).map(s => parseFloat(s.temp_f));
+  const avgT = temps.length ? Math.round(temps.reduce((a,b)=>a+b,0)/temps.length) : null;
+  const minT = temps.length ? Math.round(Math.min(...temps)) : null;
+  const maxT = temps.length ? Math.round(Math.max(...temps)) : null;
+  const winds = {};
+  buckSightings.forEach(s => { if(s.wind_dir) winds[s.wind_dir] = (winds[s.wind_dir]||0)+1; });
+  const topW = Object.entries(winds).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([w,c])=>w+':'+c);
+  const pressures = buckSightings.filter(s => s.pressure).map(s => parseFloat(s.pressure));
+  const avgP = pressures.length ? (pressures.reduce((a,b)=>a+b,0)/pressures.length).toFixed(1) : null;
+  const wSpeeds = buckSightings.filter(s => s.wind_speed).map(s => parseFloat(s.wind_speed));
+  const avgWs = wSpeeds.length ? Math.round(wSpeeds.reduce((a,b)=>a+b,0)/wSpeeds.length) : null;
+
+  const ctx = buckName + ': ' + buckSightings.length + ' sightings. ' +
+    (avgT !== null ? 'Temp range ' + minT + '-' + maxT + 'F, avg ' + avgT + 'F. ' : '') +
+    (topW.length ? 'Wind dirs: ' + topW.join(', ') + '. ' : '') +
+    (avgP ? 'Avg pressure: ' + avgP + 'mb. ' : '') +
+    (avgWs !== null ? 'Avg wind speed: ' + avgWs + 'mph. ' : '');
+
+  try {
+    const resp = await claudeFetch({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 150,
+      system: 'You summarize a specific buck\'s weather preferences in ONE sentence based on sighting data. Be specific: mention temp ranges, wind directions, and pressure conditions. Example: "Marsh Buck moves most in cold temps (28-42°F) on post-front days with NW winds." Just the sentence, no quotes or prefix.',
+      messages: [{ role: 'user', content: 'Summarize this buck\'s weather preferences in one sentence.\n\n' + ctx }]
+    });
+    if(!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    const text = (data.content?.[0]?.text || '').replace(/^["']|["']$/g, '').trim();
+    if(text) {
+      buckWeatherCache[cacheKey] = text;
+      el.innerHTML = text;
+    } else {
+      el.innerHTML = '';
+    }
+  } catch(e) {
+    el.innerHTML = '';
   }
 }
 
