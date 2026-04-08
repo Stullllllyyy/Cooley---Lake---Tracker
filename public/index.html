@@ -506,7 +506,9 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .tc-pill{font-size:10px;padding:2px 8px;border-radius:6px;display:inline-flex;align-items:center;gap:3px}
 .tc-pill-beh{background:var(--bronze);color:#121415}
 .tc-pill-wx{background:transparent;border:1px solid rgba(140,115,85,0.3);color:var(--silver)}
-@media(min-width:769px){.tc-card{max-width:640px;margin-left:auto;margin-right:auto}}
+.tc-feed-grid{padding:8px 14px}
+@media(min-width:769px){.tc-feed-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;padding:16px}.tc-card{margin-bottom:0}}
+@media(min-width:1200px){.tc-feed-grid{grid-template-columns:repeat(3,1fr)}}
 
 .fn-card{display:flex;gap:10px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px;cursor:pointer;transition:border-color 0.2s}
 .fn-card:active{opacity:0.9}
@@ -7423,11 +7425,10 @@ function loadMoreSightings() {
 function renderLog() {
   const sl = document.getElementById("slist");
   if(!sl) return;
-  console.log('[renderLog] sightings.length:', sightings.length, 'feed:', curSightFeed, 'dateMode:', sfDateMode);
-  // If sightings haven't loaded yet, show loading and retry
-  if(!sightings.length && !window._sightingsLoaded) {
+  console.log('[renderLog] sightings:', sightings.length, 'loaded:', !!window._sightingsLoaded, 'feed:', curSightFeed, 'dateMode:', sfDateMode);
+  // Wait for loadSightings() to complete before rendering
+  if(!window._sightingsLoaded) {
     sl.innerHTML = '<div class="loading"><div class="spinner"></div><br/>Loading...</div>';
-    setTimeout(renderLog, 300);
     return;
   }
   buildSightFilters();
@@ -7442,6 +7443,7 @@ function renderLog() {
 }
 
 function renderTrailCamFeed(allFiltered, sl) {
+  console.log('[renderTrailCamFeed] allFiltered:', allFiltered.length, 'total sightings:', sightings.length);
   // Camera sightings with photos
   const camSightings = allFiltered
     .filter(s => (s.source === 'camera' || !s.source) && s.image_url)
@@ -7456,8 +7458,7 @@ function renderTrailCamFeed(allFiltered, sl) {
   }
 
   const visible = camSightings.slice(0, sightShowCount);
-  let html = visible.map(s => {
-    const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  const cards = visible.map(s => {
     const eName = s.buck_name ? s.buck_name.replace(/'/g, "\\'") : '';
     const buckHtml = s.buck_name
       ? `<span class="tc-buck" style="color:#8C7355" onclick="sightBuckTap('${eName}',event)">${s.buck_name}</span>`
@@ -7478,8 +7479,9 @@ function renderTrailCamFeed(allFiltered, sl) {
     </div>`;
   }).join('');
 
+  let html = `<div class="tc-feed-grid">${cards}</div>`;
   if(camSightings.length > sightShowCount) {
-    html += `<button class="sf-load-more" onclick="loadMoreSightings()">Load more (${camSightings.length - sightShowCount} remaining)</button>`;
+    html += `<div style="padding:0 14px"><button class="sf-load-more" onclick="loadMoreSightings()">Load more (${camSightings.length - sightShowCount} remaining)</button></div>`;
   }
   sl.innerHTML = html;
 }
