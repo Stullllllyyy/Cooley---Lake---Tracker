@@ -5,7 +5,13 @@ How To Use This File
 * After a session: Update this file with what was completed and what's next
 
 🔥 Current Priority (Next Session)
-* Production verification — deploy and test all pre-beta features end to end
+* index.html split Phase 1 — CSS extraction to /public/css/
+* index.html pre-split line count: 10939 lines
+
+📐 index.html Split Progress
+* Phase 0: Setup complete (Apr 2026) — directories, placeholders, Vercel test, safety tag
+* Phase 1: Pending — CSS extraction
+* Safety checkpoint: git tag pre-split-checkpoint
 
 🐛 Active Bugs
 Bug | Severity | Notes

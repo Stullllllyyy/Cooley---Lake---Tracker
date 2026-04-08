@@ -141,5 +141,13 @@ Camera Pin Architecture Notes (for future sessions)
 * SVG path tip is at y=44 (bottom of 36×44 viewBox) — path: M18 2C10.268 2 4 8.268 4 16c0 10 14 28 14 28s14-18 14-28C32 8.268 25.732 2 18 2z
 * Do NOT attempt zoom-level math or coordinate compensation — two failed attempts (fada88e, cab1934)
 * Same teardrop SVG used for tap-to-place preview pin — color #E5B53B (sulfur) while in placement mode
+## index.html Split — Rules
+* Split is in progress — do not move code outside of designated split sessions
+* Current phase: Phase 0 complete, Phase 1 pending
+* Phase 1 target: CSS extraction to /public/css/
+* One file per session — never split two files in the same session
+* Full smoke test after every file move before merging
+* If anything breaks — revert immediately, do not fix forward
+* Safety checkpoint tag: pre-split-checkpoint
 Session Handoff
 See TASKS.md for current priorities. See PLANNING.md for roadmap and product decisions. See ARCHITECTURE.md for full architectural specification and pre-beta checklist.
