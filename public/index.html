@@ -1757,6 +1757,7 @@ function openSheet(name) {
     setTimeout(() => { renderDash(); setTimeout(loadHuntForecast, 300); }, 10);
   }
   if(name === 'sightings') {
+    console.log('[openSheet sightings] sightings:', sightings.length, '_sightingsLoaded:', !!window._sightingsLoaded);
     sfFiltersVisible = false;
     sightShowCount = 20;
     const sfEl = document.getElementById('sightFilters');
@@ -3967,6 +3968,7 @@ async function loadSightings() {
   }
   sightings = data || [];
   window._sightingsLoaded = true;
+  console.log('[loadSightings] complete — loaded', sightings.length, 'sightings, _sightingsLoaded:', window._sightingsLoaded);
   renderDash(); renderLog(); buildMapFilters(); buildMapLegend(); refreshBucknameList();
   refreshMapPins();
 }
@@ -7442,12 +7444,18 @@ function renderLog() {
 }
 
 function renderTrailCamFeed(allFiltered, sl) {
+  console.log('[renderTrailCamFeed] called, sightings:', sightings.length, '_sightingsLoaded:', !!window._sightingsLoaded);
+  if(!window._sightingsLoaded) {
+    console.log('[renderTrailCamFeed] BLOCKED — data not ready');
+    sl.innerHTML = '<div class="loading"><div class="spinner"></div><br/>Loading...</div>';
+    return;
+  }
   // All camera sightings (with or without photos)
   const camSightings = allFiltered
     .filter(s => s.source === 'camera' || !s.source)
     .sort((a,b) => ((b.date||'')+(b.time||'00:00')).localeCompare((a.date||'')+(a.time||'00:00')));
   const totalCam = sightings.filter(s => s.source === 'camera' || !s.source).length;
-  console.log('[renderTrailCamFeed] called:', { sightingsLength: sightings.length, filtered: allFiltered.length, camSightings: camSightings.length });
+  console.log('[renderTrailCamFeed] rendering:', { total: sightings.length, filtered: allFiltered.length, camSightings: camSightings.length, showing: Math.min(camSightings.length, sightShowCount) });
 
   if(!camSightings.length) {
     sl.innerHTML = `<div class="sf-empty">${totalCam === 0
@@ -7491,6 +7499,10 @@ function renderTrailCamFeed(allFiltered, sl) {
 }
 
 function renderFieldNotesFeed(allFiltered, sl) {
+  if(!window._sightingsLoaded) {
+    sl.innerHTML = '<div class="loading"><div class="spinner"></div><br/>Loading...</div>';
+    return;
+  }
   const fieldSightings = allFiltered
     .filter(s => s.source === 'observation')
     .sort((a,b) => ((b.date||'')+(b.time||'00:00')).localeCompare((a.date||'')+(a.time||'00:00')));
