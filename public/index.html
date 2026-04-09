@@ -347,10 +347,10 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .prop-stat{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px}
 
 /* Buck Intelligence — horizontal scroll cards */
-.buck-intel-row{display:flex;gap:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 8px;scrollbar-width:none}
+.buck-intel-row{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:2px 0 8px;scrollbar-width:none}
 .buck-intel-row::-webkit-scrollbar{display:none}
-@media(min-width:769px){.buck-intel-row{display:grid;grid-template-columns:repeat(3,1fr);overflow-x:visible}}
-.buck-intel-card{flex:0 0 140px;background:#1a1c1e;border:1px solid rgba(140,115,85,0.2);border-radius:8px;padding:10px;cursor:pointer;transition:border-color 0.2s;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px}
+@media(min-width:769px){.buck-intel-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;overflow-x:visible}}
+.buck-intel-card{flex:0 0 200px;background:#1a1c1e;border:1px solid rgba(140,115,85,0.2);border-radius:8px;padding:10px;cursor:pointer;transition:border-color 0.2s;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:44px}
 @media(min-width:769px){.buck-intel-card{flex:auto}}
 .buck-intel-card:active{opacity:0.85;border-color:var(--bronze)}
 .buck-intel-thumb{width:60px;height:60px;border-radius:6px;object-fit:cover;border:1px solid rgba(140,115,85,0.3);flex-shrink:0}
