@@ -968,6 +968,8 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="/js/config.js"></script>
+<script src="/js/utils.js"></script>
 <script>
 // --- Sheet & Tab Management -
 const SHEETS = ['intel','sightings','trail-cam','detail','chat','dossier'];
@@ -2325,8 +2327,6 @@ function closePopup() {
 }
 
 
-const SUPABASE_URL = 'https://drzmfoaspnahzbrrmnrv.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRyem1mb2FzcG5haHpicnJtbnJ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMwNzQ0NzMsImV4cCI6MjA4ODY1MDQ3M30.-2nFoPIqeutHMKFWEJUvILZ54mq2h-RR1PlC7yxm-x8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 // ℹ️ AI features use /api/claude serverless proxy — key stored in Vercel env vars
 
@@ -2787,17 +2787,7 @@ sb.auth.getSession().then(({ data: { session } }) => {
   // If no session, authGate is already visible (default display:flex)
 });
 
-let CLAT = 45.0200, CLNG = -88.2756;
-let PROPERTY_ID = '403a9c61-4b6a-4bd1-81a3-a82054a4ce5e'; // Cooley Lake — Property #1 (default, overwritten by membership check)
-const CAMNAMES = ["Dan","Colin","Ridge","Behind Rons","By Eric","Andy Cam","Creek Crossing","Jake Cam","Other"];
-const PIN_MAP = {"Dan":"Dan","Colin":"Colin","Ridge":"Ridge","Behind Rons":"Rons","By Eric":"Eric"};
-const PIN_POS = {"Dan":[35.4,49.1],"Colin":[17.5,61.4],"Ridge":[58.5,57.6],"Behind Rons":[77.4,82.2],"By Eric":[92.1,83.6]};
-const DTYPES = ["Buck - Mature (4.5+)","Buck - 3.5","Buck - 2.5","Buck - 1.5","Doe","Fawn","Unknown"];
-const BEHS = ["Feeding","Traveling","Scraping/Rubbing","Bedding","Chasing","Breeding","Alert/Spooked","Other"];
-const TRAVEL_DIRS = ["Entering","Exiting","Passing Through","Unknown"];
-const FACING_DIRS = ["N","NE","E","SE","S","SW","W","NW"];
-const BUCK_COLORS = ["#e8c84a","#e87a4a","#4ae8c8","#c84ae8","#4a8ae8","#e84a8a","#8ae84a","#f0a050"];
-const DIR_LABELS = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+// Config constants loaded from /js/config.js
 
 let sightings = [], curFilter = "all", curMapFilter = "none", curYear = "all";
 let intelYear = "all", intelBuck = "all";
@@ -2805,13 +2795,7 @@ let wxFetched = null, wxApplied = null;
 let formImgFile = null;
 let editId = null, editImgFile = null, editImgChanged = false;
 
-function showToast(msg, duration = 2500) {
-  const t = document.createElement('div');
-  t.textContent = msg;
-  t.style.cssText = 'position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);background:rgba(30,32,34,0.95);border:1px solid var(--border2);color:var(--text);padding:9px 18px;border-radius:20px;font-size:12px;z-index:700;pointer-events:none;font-family:var(--font);white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,0.5)';
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), duration);
-}
+// showToast loaded from /js/utils.js
 
 // --- Confirm Modal (replaces confirm()) ---
 let _confirmResolve = null;
@@ -2849,34 +2833,7 @@ async function claudeFetch(body) {
   return res;
 }
 
-// --- utils -
-const fmtT = t => {
-  if(!t) return "";
-  const [h,m] = t.slice(0,5).split(":");
-  const hr = parseInt(h);
-  return `${hr>12?hr-12:(hr||12)}:${m} ${hr>=12?"PM":"AM"}`;
-};
-const fmtD = d => {
-  if(!d) return "";
-  return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric",year:"numeric"});
-};
-const moonPhase = date => {
-  const p = (((new Date(date) - new Date("2000-01-06")) / 86400000) % 29.53 + 29.53) % 29.53;
-  if(p<1.85) return {i:"New Moon",l:"New Moon"};
-  if(p<7.38) return {i:"Waxing Crescent",l:"Waxing Crescent"};
-  if(p<9.22) return {i:"First Quarter",l:"First Quarter"};
-  if(p<14.76) return {i:"Waxing Gibbous",l:"Waxing Gibbous"};
-  if(p<16.61) return {i:"Full Moon",l:"Full Moon"};
-  if(p<22.15) return {i:"Waning Gibbous",l:"Waning Gibbous"};
-  if(p<23.99) return {i:"Last Quarter",l:"Last Quarter"};
-  return {i:"Waning Crescent",l:"Waning Crescent"};
-};
-const deg2dir = d => DIR_LABELS[Math.round(d/22.5)%16];
-const simpleDir = windDir => {
-  if(!windDir) return "";
-  const simple = ["NW","NE","SE","SW","N","S","E","W"];
-  return simple.find(d => windDir.startsWith(d)) || "";
-};
+// Utility functions (fmtT, fmtD, moonPhase, deg2dir, simpleDir) loaded from /js/utils.js
 function getNamedBucks() {
   if(buckRegistry.length > 0) return buckRegistry.map(b => b.name);
   // Fallback: scan sightings if registry not yet loaded
@@ -3212,33 +3169,7 @@ async function loadSightings() {
   refreshMapPins();
 }
 
-// Client-side image compression via Canvas API
-// Resizes to max 1200px on longest edge, JPEG quality 0.82, targets ~300KB
-function compressImage(file) {
-  return new Promise((resolve) => {
-    if (!file || !file.type.startsWith('image/')) { resolve(file); return; }
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(url);
-      const MAX = 1200;
-      let w = img.width, h = img.height;
-      if (w <= MAX && h <= MAX && file.size <= 300000) { resolve(file); return; }
-      if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
-      else { if (h > MAX) { w = Math.round(w * MAX / h); h = MAX; } }
-      const c = document.createElement('canvas');
-      c.width = w; c.height = h;
-      c.getContext('2d').drawImage(img, 0, 0, w, h);
-      c.toBlob((blob) => {
-        if (!blob) { resolve(file); return; }
-        const compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
-        resolve(compressed);
-      }, 'image/jpeg', 0.82);
-    };
-    img.onerror = () => { URL.revokeObjectURL(url); resolve(file); };
-    img.src = url;
-  });
-}
+// compressImage loaded from /js/utils.js
 
 async function uploadPhoto(file, sightingId) {
   if(!file) return null;
@@ -3544,8 +3475,7 @@ function applyWx() {
 // --- map (Mapbox) -
 // Mapbox token set after DOM ready (see init below)
 
-let PROPERTY_CENTER = [-88.2756, 45.0200];
-const PROPERTY_BOUNDS = [[-88.295, 45.010], [-88.258, 45.035]];
+// PROPERTY_CENTER and PROPERTY_BOUNDS loaded from /js/config.js
 
 // Camera locations - stored in Supabase, editable via drag
 let camLocations = {
@@ -8058,31 +7988,7 @@ async function confirmTtpAddCam() {
 }
 
 // --- Mark Feature modal state ---
-const FEAT_TYPES = ['Stand','Scrape','Rub','Bedding'];
-const FEAT_COLORS  = { Stand:'#8C7355', Scrape:'#E5B53B', Rub:'#c07b4c', Bedding:'#4a7a4e' };
-const FEAT_STROKES = { Stand:'#a08468', Scrape:'#f0c75a', Rub:'#d4906a', Bedding:'#5d9462' };
-const FEAT_LABELS  = { Stand:'S', Scrape:'Sc', Rub:'R', Bedding:'Bd' };
-// Feather-style stroke SVG icons for each feature type (14×14, white stroke, 24×24 viewBox)
-const FEAT_ICONS = {
-  Stand:
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
-    '<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>',
-  Scrape:
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
-    '<line x1="7" y1="4" x2="5" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/><line x1="17" y1="4" x2="19" y2="20"/></svg>',
-  Rub:
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
-    '<polyline points="6 12 12 4 18 12"/><line x1="12" y1="22" x2="12" y2="12"/>' +
-    '<line x1="9" y1="15" x2="15" y2="15"/><line x1="10" y1="19" x2="14" y2="19"/></svg>',
-  Bedding:
-    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round">' +
-    '<ellipse cx="12" cy="14" rx="9" ry="5"/><path d="M8 14Q12 10 16 14"/></svg>'
-};
-const PIN_COLORS = ['#8C7355','#E5B53B','#c07b4c','#4a7a4e','#4a7ac8','#c84a4a'];
-const PIN_COLOR_STROKES = {
-  '#8C7355':'#a08468', '#E5B53B':'#f0c75a', '#c07b4c':'#d4906a',
-  '#4a7a4e':'#5d9462', '#4a7ac8':'#6a8ad4', '#c84a4a':'#d46a6a'
-};
+// Feature marker constants (FEAT_TYPES, FEAT_COLORS, FEAT_STROKES, FEAT_LABELS, FEAT_ICONS, PIN_COLORS, PIN_COLOR_STROKES) loaded from /js/config.js
 let featFormLngLat = null;
 let featFormImgFile = null;
 let propertyMarkers = [];
