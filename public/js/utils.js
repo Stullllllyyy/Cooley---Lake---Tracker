@@ -86,3 +86,6 @@ async function claudeFetch(body) {
   }
   return res;
 }
+
+// HTML escape utility
+function esc(s) { return s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : ''; }
