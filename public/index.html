@@ -5284,7 +5284,14 @@ async function showView(n) {
   document.querySelectorAll(".view").forEach(v => v.classList.remove("on"));
   document.querySelectorAll(".nb").forEach(b => { b.classList.remove("on"); const d = b.querySelector(".ndot"); if(d) d.remove(); });
   const vm = {dash:"vdash",map:"vmap",add:"vadd",log:"vlog",det:"vdet"};
-  document.getElementById(vm[n] || "v"+n).classList.add("on");
+  const viewEl = document.getElementById(vm[n] || "v"+n);
+  if(!viewEl) { /* Legacy view ID not found — use sheet system instead */
+    if(n === 'det' || n === 'detail') openSheet('detail');
+    else if(n === 'log' || n === 'sightings') openSheet('sightings');
+    else if(n === 'dash') openSheet('intel');
+    return;
+  }
+  viewEl.classList.add("on");
   const nb = document.getElementById("nn-"+n);
   if(nb) { nb.classList.add("on"); const d = document.createElement("div"); d.className="ndot"; nb.appendChild(d); }
   if(n === "dash") {
