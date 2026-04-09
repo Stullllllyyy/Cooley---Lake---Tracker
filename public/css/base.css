@@ -1,3 +1,22 @@
 /* Huginn — base.css */
-/* Placeholder — content will be moved here during index.html split */
-/* Do not add code to this file until the split session for this module */
+/* CSS reset, base element styles, utilities, and keyframes extracted from index.html */
+
+/* Reset */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+
+/* Base elements */
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
+
+/* Utilities */
+.loading{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
+.spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:10px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;margin-left:4px;vertical-align:middle;transition:background 0.3s}
+.sync-dot.on{background:var(--gold)}
+
+/* Keyframes */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes wxPopIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
+@keyframes wxPopOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.92)}}
+@keyframes chatDot{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1.1)}}
+@keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
