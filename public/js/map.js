@@ -387,6 +387,8 @@ function initMap() {
         { enableHighAccuracy: true, timeout: 5000 }
       );
     }
+    // Add Mapbox Terrain DEM source
+    addTerrainDEM();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -395,6 +397,12 @@ function initMap() {
   mapInstance.on('style.load', () => {
     addLineLayer();
     lineLayerAdded = true;
+    // Re-add terrain DEM source and hillshade after style change
+    addTerrainDEM();
+    // Re-apply terrain if it was active before style switch
+    if(terrainActive) {
+      mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+    }
     // Skip loading pins/markers during onboarding — map should be clean
     if(!onboardingMode) {
       addCamMarkers();
@@ -484,6 +492,7 @@ var rubMarkersVisible = false;
 var beddingMarkersVisible = false;
 var dotMapActive = false;
 var heatMapActive = false;
+var terrainActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -774,7 +783,64 @@ function updateFilterFabDot() {
   dot.style.display = nonDefault ? 'block' : 'none';
 }
 
+// --- 3D Terrain & Hillshade ---
 
+function getFirstSymbolLayer() {
+  if(!mapInstance) return undefined;
+  var layers = mapInstance.getStyle().layers;
+  for(var i = 0; i < layers.length; i++) {
+    if(layers[i].type === 'symbol') return layers[i].id;
+  }
+  return undefined;
+}
+
+function addTerrainDEM() {
+  if(!mapInstance) return;
+  if(!mapInstance.getSource('mapbox-dem')) {
+    mapInstance.addSource('mapbox-dem', {
+      type: 'raster-dem',
+      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512,
+      maxzoom: 14
+    });
+  }
+  if(!mapInstance.getLayer('hillshade-layer')) {
+    var beforeLayer = mapInstance.getLayer('waterway-label') ? 'waterway-label' : getFirstSymbolLayer();
+    mapInstance.addLayer({
+      id: 'hillshade-layer',
+      type: 'hillshade',
+      source: 'mapbox-dem',
+      paint: {
+        'hillshade-exaggeration': 0.5,
+        'hillshade-illumination-anchor': 'map'
+      }
+    }, beforeLayer);
+  }
+}
+
+function enableTerrain() {
+  if(!mapInstance || !mapInstance.getSource('mapbox-dem')) return;
+  mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+  terrainActive = true;
+  updateTerrainToggleUI();
+}
+
+function disableTerrain() {
+  if(!mapInstance) return;
+  mapInstance.setTerrain(null);
+  terrainActive = false;
+  updateTerrainToggleUI();
+}
+
+function toggleTerrain() {
+  terrainActive ? disableTerrain() : enableTerrain();
+}
+
+function updateTerrainToggleUI() {
+  var btn = document.getElementById('terrainToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', terrainActive);
+}
 
 
 function buildMapLegend() {

@@ -318,6 +318,17 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
     <div class="filter-section-lbl">Map Style</div>
     <div class="mdp-style-grid" id="mdpStyleGrid"></div>
   </div>
+  <div class="filter-section">
+    <div class="filter-section-lbl">Terrain</div>
+    <div class="mdp-terrain-row">
+      <button id="terrainToggleBtn" class="mdp-terrain-btn" onclick="toggleTerrain()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="3 17 9 5 15 11 19 7 21 17 3 17"/>
+        </svg>
+        3D Terrain
+      </button>
+    </div>
+  </div>
   <div class="filter-section" id="mdpCompassSection" style="display:none;border-bottom:none">
     <div class="filter-section-lbl">Compass</div>
     <div class="mdp-compass-row">
