@@ -12,6 +12,9 @@
 <link rel="stylesheet" href="/css/base.css"/>
 
 <style>
+/* Critical reset — duplicated from base.css to prevent FOUC before external CSS loads */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
 #map{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0}
 
 /* map overlays */
