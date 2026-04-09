@@ -11,14 +11,13 @@
 <link rel="stylesheet" href="/css/tokens.css"/>
 <link rel="stylesheet" href="/css/base.css"/>
 <link rel="stylesheet" href="/css/layout.css"/>
+<link rel="stylesheet" href="/css/map.css"/>
 
 <style>
 /* Critical reset — duplicated from base.css to prevent FOUC before external CSS loads */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
-#map{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0}
-
-/* map overlays */
+/* Map container, pins, controls — moved to map.css */
 
 /* Weather popup card */
 #wxPopupCard{position:fixed;top:100px;right:16px;z-index:120;width:min(340px,calc(100vw - 32px));background:rgba(18,20,21,0.96);border:1px solid rgba(140,115,85,0.35);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:0;display:none;transform-origin:top right;animation:wxPopIn 0.18s ease-out forwards;overflow:hidden;-webkit-overflow-scrolling:touch}
@@ -82,25 +81,7 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .filter-section:last-child{border-bottom:none}
 .filter-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;font-weight:600}
 .fp-select{flex:1;padding:7px 10px;border-radius:10px;background:var(--surface2);border:1px solid var(--border2);color:var(--text);font-size:12px;font-family:var(--font);appearance:auto;-webkit-appearance:auto;cursor:pointer;outline:none}
-/* map display panel */
-.map-display-panel{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 72px);right:68px;width:240px;max-width:calc(100vw - 82px);background:rgba(15,15,15,0.97);border:1px solid var(--border2);border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,0.85);backdrop-filter:blur(16px);z-index:50;transform:scale(0.9) translateY(10px);opacity:0;pointer-events:none;transition:transform 0.2s ease,opacity 0.2s ease;transform-origin:bottom right}
-.map-display-panel.open{transform:scale(1) translateY(0);opacity:1;pointer-events:auto}
-.mdp-style-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:0 16px 12px}
-.mdp-style-btn{padding:8px 0;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;text-align:center;transition:all 0.15s;letter-spacing:0.5px}
-.mdp-style-btn.active{background:rgba(140,115,85,0.25);border-color:var(--gold);color:var(--gold)}
-.mdp-compass-row{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 12px}
-.mdp-compass-lbl{font-size:12px;color:var(--text2);font-family:var(--font)}
-.mdp-toggle{width:40px;height:22px;border-radius:11px;background:var(--surface2);border:1px solid var(--border2);position:relative;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0}
-.mdp-toggle.on{background:var(--gold);border-color:var(--gold)}
-.mdp-toggle::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform 0.2s}
-.mdp-toggle.on::after{transform:translateX(18px)}
-.mdp-compass-denied{font-size:10px;color:var(--red);margin-top:4px;display:none}
-
-/* map display panel */
-.map-style-lbl{position:absolute;bottom:2px;right:2px;font-size:7px;font-weight:800;color:var(--text3);letter-spacing:0.5px;line-height:1;pointer-events:none}
-/* heatmap small fab */
-.map-fab-sm{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);color:var(--text2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);pointer-events:auto;transition:all 0.2s;flex-shrink:0}
-.map-fab-sm.active{background:rgba(74,127,193,0.25);border-color:var(--blue);color:var(--blue)}
+/* Map display panel + small FABs — moved to map.css */
 
 /* Map FABs — layout in layout.css */
 .layers-btn{background:rgba(18,20,21,0.88);border:1px solid var(--border2);border-radius:13px;padding:8px 14px;display:flex;align-items:center;gap:9px;cursor:pointer;backdrop-filter:blur(10px)}
@@ -568,61 +549,12 @@ textarea{resize:none}
 .save-btn{width:100%;padding:15px;border:none;border-radius:var(--radius);background:var(--gold);color:var(--bg);font-size:14px;font-weight:700;cursor:pointer;font-family:var(--font);margin-top:8px}
 .del-btn{width:100%;padding:11px;border:1px solid rgba(224,85,85,0.3);border-radius:var(--radius);background:transparent;color:var(--red);font-size:13px;cursor:pointer;font-family:var(--font);margin-top:8px}
 
-/* north indicator */
-.north-indicator{position:fixed;top:110px;right:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;backdrop-filter:blur(10px);pointer-events:none;transition:transform 0.15s ease-out;box-shadow:0 2px 16px rgba(0,0,0,0.5)}
-
-/* heading cone — rendered as Mapbox fill layer, no DOM styles needed */
-
-/* mapbox overrides */
-.mapboxgl-ctrl-top-right{top:158px !important;right:14px !important}
-.mapboxgl-ctrl-group{background:rgba(18,20,21,0.9) !important;border:1px solid var(--border2) !important;border-radius:10px !important;backdrop-filter:blur(10px)}
-.mapboxgl-ctrl-group button{background:transparent !important;color:var(--text2) !important}
-.mapboxgl-ctrl-attrib,.mapboxgl-ctrl-logo,.mapboxgl-ctrl-bottom-right{display:none !important}
-
-/* teardrop marker */
-.cam-marker{cursor:pointer;display:flex;flex-direction:column;align-items:center;transition:transform 0.15s;user-select:none}
-.cam-marker:active{transform:scale(0.88)}
-.cam-marker.faded{opacity:0.9}
-.cam-pin{width:36px;height:44px;position:relative;display:flex;align-items:center;justify-content:center}
-.cam-pin svg.pin-bg{position:absolute;top:0;left:0;width:100%;height:100%;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7))}
-.cam-pin-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;padding-bottom:10px}
-.cam-pin-ico{font-size:11px;color:#fff;line-height:1}
-.cam-pin-cnt{font-size:10px;font-weight:700;color:#fff;line-height:1;margin-top:1px;font-family:var(--font)}
-.cam-lbl{font-size:9px;background:rgba(18,20,21,0.92);color:var(--text2);padding:2px 7px;border-radius:4px;white-space:nowrap;border:1px solid rgba(255,255,255,0.08);margin-top:2px;letter-spacing:0.3px}
-/* add camera cursor */
-.map-add-mode{cursor:crosshair !important}
-/* context menu */
-.pin-menu{position:fixed;z-index:500;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.7);min-width:160px}
-.pin-menu-item{display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;color:var(--text);cursor:pointer;font-family:var(--font);border-bottom:1px solid var(--border)}
-.pin-menu-item:last-child{border:none}
-.pin-menu-item:active{background:var(--surface2)}
-.pin-menu-item.danger{color:var(--red)}
-/* conditions overlay */
-.map-conditions{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:50%;transform:translateX(-50%);z-index:50;background:rgba(18,20,21,0.82);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:5px 14px;display:flex;align-items:center;gap:10px;backdrop-filter:blur(10px);pointer-events:none;white-space:nowrap}
-.map-cond-item{font-size:10px;color:var(--text2);display:flex;align-items:center;gap:4px}
-.map-cond-sep{width:1px;height:12px;background:var(--border2)}
+/* North indicator, mapbox overrides, camera pins, pin menu, conditions — moved to map.css */
 
 /* misc */
 .bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
 
-.movement-legend{display:none}
-.map-legend-btn{width:36px;height:36px;border-radius:10px;background:rgba(18,20,21,0.88);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);display:none;transition:all 0.2s}
-.map-legend-btn.visible{display:flex}
-.map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
-.map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);right:14px;left:auto;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
-.map-legend-panel.visible{display:block}
-.leg-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:8px}
-.leg-section-lbl:first-child{margin-top:0}
-.leg-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.leg-swatch{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.leg-line{width:22px;height:3px;border-radius:2px;flex-shrink:0}
-.leg-row-text .leg-name{font-size:11px;color:var(--text2)}
-.leg-row-text .leg-desc{font-size:10px;color:var(--text3)}
-.leg-divider{height:1px;background:rgba(255,255,255,0.07);margin:8px 0}
-.ml-title{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px}
-.ml-row{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:10px;color:var(--text2)}
-.ml-line{height:2px;width:22px;border-radius:1px;flex-shrink:0}
-.ml-line.dashed{background:repeating-linear-gradient(90deg,#7a9275 0,#7a9275 4px,transparent 4px,transparent 8px)}
+/* Map legend — moved to map.css */
 
 
 /* stats strip */
@@ -632,25 +564,7 @@ textarea{resize:none}
 .slbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-top:4px}
 .stitle{font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:2.5px;margin-bottom:10px;font-weight:700}
 
-/* ── Tap-to-place mode ───────────────────────────────────── */
-/* Override modal-overlay alignment: centered instead of bottom-sheet */
-.ttp-modal-ov{align-items:center !important;justify-content:center !important}
-/* Location confirm modal — transparent overlay, card at bottom so teardrop pin at map center is visible */
-#ttpLocModal{background:transparent !important;pointer-events:none;align-items:flex-end !important;justify-content:center !important}
-#ttpLocModal .ttp-loc-card{pointer-events:all;margin-bottom:16px;width:min(340px,calc(100vw - 32px))}
-/* Location confirm card */
-.ttp-loc-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:22px 20px 18px;width:min(320px,calc(100vw - 40px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
-/* Form card — wider, scrollable, for Add Camera / Field Obs / Mark Feature modals */
-.ttp-form-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 18px 20px;width:min(400px,calc(100vw - 32px));max-height:calc(100vh - var(--tab-h) - 60px);overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 40px rgba(0,0,0,0.8)}
-/* Event type card */
-.ttp-type-card{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:20px 16px 16px;width:min(360px,calc(100vw - 32px));box-shadow:0 8px 40px rgba(0,0,0,0.8)}
-.ttp-type-opts{display:flex;flex-direction:column;gap:8px;margin:14px 0 12px}
-.ttp-type-opt{background:var(--surface2);border:2px solid var(--border2);border-radius:12px;padding:14px 16px;display:flex;flex-direction:row;align-items:center;gap:12px;cursor:pointer;font-size:13px;color:var(--text2);line-height:1.35;user-select:none;transition:border-color 0.15s,background 0.15s;font-family:var(--font)}
-.ttp-type-opt:active{transform:scale(0.96)}
-.ttp-type-opt.sel{border-color:var(--gold);background:rgba(140,115,85,0.12);color:var(--text)}
-/* Shared modal action buttons */
-.ttp-mbtn-cancel{flex:1;padding:14px;border:1px solid var(--border2);border-radius:10px;background:var(--surface2);color:var(--text2);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer}
-.ttp-mbtn-confirm{flex:1;padding:14px;border:none;border-radius:10px;background:var(--gold);color:#fff;font-size:13px;font-weight:700;font-family:var(--font);cursor:pointer}
+/* Tap-to-place — moved to map.css */
 /* Trail cam sheet — searchable camera dropdown */
 .tcam-cam-sel{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--bg);border:1px solid var(--border2);border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--text3);transition:border-color 0.2s;user-select:none}
 .tcam-cam-sel.has-val{color:var(--text);border-color:var(--gold)}
