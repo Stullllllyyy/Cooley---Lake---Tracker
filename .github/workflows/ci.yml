@@ -1,0 +1,167 @@
+name: Huginn CI — Syntax & Safety Check
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  syntax-and-safety:
+    name: Syntax Check & Anti-Pattern Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── STEP 1: Extract JS from index.html and syntax check ──
+      - name: Extract and syntax-check index.html JavaScript
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('public/index.html', 'utf8');
+            const scriptBlocks = [];
+            const regex = /<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/gi;
+            let match;
+            while ((match = regex.exec(html)) !== null) {
+              scriptBlocks.push(match[1]);
+            }
+            if (scriptBlocks.length === 0) {
+              console.log('WARNING: No inline script blocks found in index.html');
+              process.exit(0);
+            }
+            const combined = scriptBlocks.join('\n');
+            fs.writeFileSync('/tmp/huginn_extracted.js', combined);
+            console.log('Extracted ' + scriptBlocks.length + ' script block(s) from index.html');
+          "
+          node --check /tmp/huginn_extracted.js && echo "✅ JavaScript syntax OK" || (echo "❌ JavaScript syntax error found" && exit 1)
+
+      # ── STEP 2: Syntax-check the API proxy ──
+      - name: Syntax-check /api/claude.js
+        run: |
+          if [ -f "api/claude.js" ]; then
+            node --check api/claude.js && echo "✅ api/claude.js syntax OK" || (echo "❌ api/claude.js syntax error" && exit 1)
+          else
+            echo "⚠️  api/claude.js not found — skipping"
+          fi
+
+      # ── STEP 3: Anti-pattern scan ──
+      - name: Scan for prohibited patterns
+        run: |
+          FAILED=0
+
+          echo "--- Scanning for prohibited JS patterns ---"
+
+          # alert() / confirm() / prompt() — banned, must use showToast()
+          if grep -n "alert(" public/index.html | grep -v "//"; then
+            echo "❌ FAIL: alert() found — use showToast() instead"
+            FAILED=1
+          else
+            echo "✅ No alert() calls"
+          fi
+
+          if grep -n "confirm(" public/index.html | grep -v "//" | grep -v "modal" | grep -v "Confirm" | grep -v "confirmed" | grep -v "ai_confirmed"; then
+            echo "❌ FAIL: confirm() dialog found — use custom modal instead"
+            FAILED=1
+          else
+            echo "✅ No confirm() dialogs"
+          fi
+
+          if grep -n "prompt(" public/index.html | grep -v "//"; then
+            echo "❌ FAIL: prompt() found — use custom modal instead"
+            FAILED=1
+          else
+            echo "✅ No prompt() dialogs"
+          fi
+
+          # Wrong model ID — known breaking bug
+          if grep -n "claude-sonnet-4-5-20250514" public/index.html api/claude.js 2>/dev/null; then
+            echo "❌ FAIL: Wrong model ID 'claude-sonnet-4-5-20250514' — use 'claude-sonnet-4-5'"
+            FAILED=1
+          else
+            echo "✅ Model ID looks correct"
+          fi
+
+          # Dead function name from a past bug
+          if grep -n "updatePins()" public/index.html | grep -v "//"; then
+            echo "❌ FAIL: updatePins() called — correct function is refreshMapPins()"
+            FAILED=1
+          else
+            echo "✅ No updatePins() calls"
+          fi
+
+          # Hardcoded Anthropic API key pattern
+          if grep -n "sk-ant-" public/index.html; then
+            echo "❌ FAIL: Anthropic API key exposed in index.html"
+            FAILED=1
+          else
+            echo "✅ No exposed API keys"
+          fi
+
+          # Hardcoded property ID outside the PROPERTY_ID constant declaration
+          # (Allow exactly one definition, flag any others)
+          PROP_ID_COUNT=$(grep -c "403a9c61-4b6a-4bd1-81a3-a82054a4ce5e" public/index.html || true)
+          if [ "$PROP_ID_COUNT" -gt 1 ]; then
+            echo "❌ FAIL: Property ID hardcoded $PROP_ID_COUNT times — should only appear in the PROPERTY_ID constant"
+            FAILED=1
+          else
+            echo "✅ Property ID not duplicated"
+          fi
+
+          # feature_type column — known schema mismatch bug (correct column is 'type')
+          if grep -n "feature_type" public/index.html | grep -v "//"; then
+            echo "❌ FAIL: 'feature_type' used — correct column name is 'type' in property_markers"
+            FAILED=1
+          else
+            echo "✅ No feature_type references"
+          fi
+
+          echo ""
+          if [ "$FAILED" -eq 1 ]; then
+            echo "❌ One or more anti-pattern checks failed. Fix before merging."
+            exit 1
+          else
+            echo "✅ All anti-pattern checks passed."
+          fi
+
+      # ── STEP 4: Verify critical Supabase queries include property_id ──
+      - name: Check property_id scoping on Supabase inserts
+        run: |
+          node -e "
+            const fs = require('fs');
+            const html = fs.readFileSync('public/index.html', 'utf8');
+
+            // Find .insert({ blocks that are missing property_id
+            // This is a heuristic — flags inserts that look like they might be missing it
+            const insertRegex = /\.insert\(\s*\{([^}]{0,400})\}/g;
+            let match;
+            let warnings = 0;
+            const tables = ['sightings', 'cameras', 'property_markers', 'chat_messages'];
+
+            while ((match = insertRegex.exec(html)) !== null) {
+              const body = match[1];
+              // Only flag if it looks like a data table insert (contains common field names)
+              const looksLikeDataInsert = /date|camera|type|role|content/.test(body);
+              if (looksLikeDataInsert && !body.includes('property_id')) {
+                const lineNum = html.substring(0, match.index).split('\n').length;
+                console.log('⚠️  WARNING line ~' + lineNum + ': .insert() may be missing property_id');
+                console.log('   ' + match[0].substring(0, 80) + '...');
+                warnings++;
+              }
+            }
+
+            if (warnings > 0) {
+              console.log('');
+              console.log(warnings + ' potential missing property_id warning(s). Review before merging.');
+              // Warning only — not a hard failure since heuristic can have false positives
+              process.exit(0);
+            } else {
+              console.log('✅ property_id scoping looks good on insert statements');
+            }
+          "
