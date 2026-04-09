@@ -391,6 +391,8 @@ function initMap() {
     }
     // Add Mapbox Terrain DEM source
     addTerrainDEM();
+    // Add contour line source and layers
+    addContourLayers();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -401,6 +403,8 @@ function initMap() {
     lineLayerAdded = true;
     // Re-add terrain DEM source and hillshade after style change
     addTerrainDEM();
+    // Re-add contour layers after style change
+    addContourLayers();
     // Re-apply terrain if it was active before style switch
     if(terrainActive) {
       mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
@@ -495,6 +499,7 @@ var beddingMarkersVisible = false;
 var dotMapActive = false;
 var heatMapActive = false;
 var terrainActive = false;
+var contoursActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -852,6 +857,93 @@ function updateTerrainToggleUI() {
   var btn = document.getElementById('terrainToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', terrainActive);
+}
+
+// --- Contour Lines ---
+
+function addContourLayers() {
+  if(!mapInstance) return;
+  if(!mapInstance.getSource('mapbox-terrain')) {
+    mapInstance.addSource('mapbox-terrain', {
+      type: 'vector',
+      url: 'mapbox://mapbox.mapbox-terrain-v2'
+    });
+  }
+  if(!mapInstance.getLayer('contour-lines')) {
+    mapInstance.addLayer({
+      id: 'contour-lines',
+      type: 'line',
+      source: 'mapbox-terrain',
+      'source-layer': 'contour',
+      layout: {
+        'visibility': contoursActive ? 'visible' : 'none',
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': [
+          'match',
+          ['%', ['get', 'index'], 5],
+          0, '#a08060',
+          '#c8a882'
+        ],
+        'line-width': [
+          'match',
+          ['%', ['get', 'index'], 5],
+          0, 1.2,
+          0.5
+        ],
+        'line-opacity': 0.75
+      }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('contour-labels')) {
+    mapInstance.addLayer({
+      id: 'contour-labels',
+      type: 'symbol',
+      source: 'mapbox-terrain',
+      'source-layer': 'contour',
+      filter: ['==', ['%', ['get', 'index'], 5], 0],
+      layout: {
+        'visibility': contoursActive ? 'visible' : 'none',
+        'symbol-placement': 'line',
+        'text-field': ['concat', ['to-string', ['get', 'ele']], 'm'],
+        'text-size': 10,
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular']
+      },
+      paint: {
+        'text-color': '#a08060',
+        'text-halo-color': 'rgba(0,0,0,0.6)',
+        'text-halo-width': 1.5
+      }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableContours() {
+  if(!mapInstance) return;
+  mapInstance.setLayoutProperty('contour-lines', 'visibility', 'visible');
+  mapInstance.setLayoutProperty('contour-labels', 'visibility', 'visible');
+  contoursActive = true;
+  updateContourToggleUI();
+}
+
+function disableContours() {
+  if(!mapInstance) return;
+  mapInstance.setLayoutProperty('contour-lines', 'visibility', 'none');
+  mapInstance.setLayoutProperty('contour-labels', 'visibility', 'none');
+  contoursActive = false;
+  updateContourToggleUI();
+}
+
+function toggleContours() {
+  contoursActive ? disableContours() : enableContours();
+}
+
+function updateContourToggleUI() {
+  var btn = document.getElementById('contourToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', contoursActive);
 }
 
 
