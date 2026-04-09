@@ -370,6 +370,8 @@ function initMap() {
     center: [-98.5, 39.5],
     zoom: 4,
     fadeDuration: 0,
+    pitchWithRotate: true,
+    touchPitch: true,
   });
   mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
@@ -822,6 +824,11 @@ function enableTerrain() {
   if(!mapInstance || !mapInstance.getSource('mapbox-dem')) return;
   mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
   terrainActive = true;
+  mapInstance.easeTo({
+    pitch: 60,
+    bearing: mapInstance.getBearing(),
+    duration: 800
+  });
   updateTerrainToggleUI();
 }
 
@@ -829,6 +836,11 @@ function disableTerrain() {
   if(!mapInstance) return;
   mapInstance.setTerrain(null);
   terrainActive = false;
+  mapInstance.easeTo({
+    pitch: 0,
+    bearing: 0,
+    duration: 800
+  });
   updateTerrainToggleUI();
 }
 
