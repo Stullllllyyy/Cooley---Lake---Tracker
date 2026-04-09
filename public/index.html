@@ -1526,20 +1526,7 @@ function closeConfirmModal() {
 }
 
 // Wrapper for /api/claude fetch — handles 429 rate limit with toast
-async function claudeFetch(body) {
-  const res = await fetch('/api/claude', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  if (res.status === 429) {
-    showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
-    throw new Error('RATE_LIMITED');
-  }
-  return res;
-}
-
-// Utility functions (fmtT, fmtD, moonPhase, deg2dir, simpleDir) loaded from /js/utils.js
+// claudeFetch loaded from /js/utils.js
 function getNamedBucks() {
   if(buckRegistry.length > 0) return buckRegistry.map(b => b.name);
   // Fallback: scan sightings if registry not yet loaded

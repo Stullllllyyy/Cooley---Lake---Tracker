@@ -72,3 +72,17 @@ function compressImage(file) {
     img.src = url;
   });
 }
+
+// Anthropic API proxy — all AI calls route through /api/claude.js serverless function
+async function claudeFetch(body) {
+  var res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (res.status === 429) {
+    showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
+    throw new Error('RATE_LIMITED');
+  }
+  return res;
+}
