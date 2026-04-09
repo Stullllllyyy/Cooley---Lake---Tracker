@@ -588,7 +588,7 @@ textarea{resize:none}
 .logout-btn:active{opacity:0.7}
 
 /* Layers FAB */
-.layers-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 76px);left:14px;z-index:50;width:52px;height:52px;border-radius:50%;background:#E5B53B;border:none;color:#121415;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
+.layers-fab{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 76px);left:14px;z-index:50;width:46px;height:46px;border-radius:13px;background:rgba(18,20,21,0.88);border:1px solid rgba(140,115,85,0.6);color:#BCC6CC;display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(10px);box-shadow:0 2px 16px rgba(0,0,0,0.5);transition:all 0.2s;-webkit-tap-highlight-color:transparent}
 .layers-fab:active{transform:scale(0.9)}
 .layers-fab svg{pointer-events:none}
 .layers-fab-dot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#8C7355;border:2px solid #121415;display:none;pointer-events:none}
