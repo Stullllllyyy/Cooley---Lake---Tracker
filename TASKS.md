@@ -22,8 +22,17 @@ Tasks defined and ready to work on, in priority order:
 
 Immediate
 * [ ] Update Scrape/Rub/Bedding/Stand map pins — replace filled-circle style with Feather-style SVG teardrop icons matching camera pin shape. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e. anchor:bottom, same architecture as camera pins.
+* [ ] GitHub CI/CD — create .github/workflows/ci.yml (content provided separately — paste ci.yml)
+* [ ] Set up branch protection rule on main — require CI to pass before merge
+* [ ] Test CI gate — test branch + alert() → confirm red ❌ → revert → confirm green ✅
 
 Near Term
+* [ ] Multi-buck suggestion UI — top 2-3 AI candidates with confidence scores
+* [ ] Knowledge Graph Phase 1 — knowledge_nodes, knowledge_edges, memory_cards schema
+* [ ] Trail Cam Intelligence Bundle — bulk upload, EXIF extraction, AI matching, weather backfill
+* [ ] Map Layers — PAD-US public land, WI DNR parcels, trails, waterways
+* [ ] Platform model opt-in — anonymous training data toggle, anonymized crop storage
+* [ ] Roboflow labeling — label Cooley Lake library as seed dataset, 50 diverse photos per buck
 * [ ] Tighten bucks table RLS policies when Auth ships — currently open anon bridge same as other tables.
 * [ ] Replace confirm() calls with custom modals — 3 remaining: camera archive from popup, camera archive from pin menu, feature marker archive confirmation. CLAUDE.md prohibits confirm(). Flagged during soft delete implementation (Mar 24 2026).
 * [ ] Archived Pins UI — Settings section showing soft-deleted cameras and property_markers with restore option. Prerequisite: Settings tab must exist.
@@ -55,6 +64,18 @@ Medium Term
 * [ ] PostGIS enablement (time it with Stand Intel build)
 * [ ] Offline / PWA mode
 * [ ] Multi-species — Elk GMU 231 Colorado September 2026
+
+JS Phase 2 — index.html split (in order)
+* [ ] config.js — constants, PROPERTY_ID, color maps
+* [ ] utils.js — showToast, compressImage, formatDate, moonPhase
+* [ ] auth.js — login, signup, invite, onboarding, signOut
+* [ ] weather.js — weather fetch, card, pill, GPS/map toggle
+* [ ] hunt-ai.js — chat, conversations, property intel
+* [ ] intel.js — wind rose, charts, insights, dossier
+* [ ] sightings.js — log event, feeds, detail sheet
+* [ ] cameras.js — camera management, move flow
+* [ ] ui.js — hamburger, filter FAB, map display panel
+* [ ] map.js — Mapbox init, pins, layers (last — most complex)
 
 🧪 Needs Testing
 Item | Notes

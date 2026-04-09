@@ -77,6 +77,70 @@ Development Rules — ALWAYS FOLLOW THESE
 * Never put API keys in HTML or in chat
 * After Vercel env var change → must redeploy
 * Start session by agreeing on scope before touching code
+
+## Known Bug Pattern Registry — Check Every Change Against These
+
+Before committing any change, scan for these exact patterns. Each one is a bug already found in production.
+
+| ❌ Wrong | ✅ Correct | Why |
+|---|---|---|
+| `updatePins()` | `refreshMapPins()` | Function renamed — wrong name silently fails |
+| `'claude-sonnet-4-5-20250514'` | `'claude-sonnet-4-5'` | Invalid model ID breaks all AI responses |
+| `.insert({})` without `property_id` | Always include `property_id: PROPERTY_ID` | Missing scoping leaks data across properties |
+| `feature_type` column | `type` column | Actual column name in property_markers |
+| `setDraggable(true)` on existing Mapbox marker | Create new `mapboxgl.Marker({ draggable: true })` | Causes marker jump bug |
+| Upsert without conflict target | `.upsert(data, { onConflict: 'column_name' })` | Silent overwrite failures |
+| `bottom: 0` on bottom-anchored elements | `bottom: var(--tab-h)` | Tab bar overlaps content |
+| `translateY(100%)` as sheet hidden state | `translateY(calc(100% + var(--tab-h)))` | Sheet peeks above tab bar |
+| Marker `offset: [0, -18]` | `anchor: 'bottom', offset: [0, 0]` | Pin drift from movement line endpoints |
+| `alert()` / `confirm()` / `prompt()` | `showToast()` or custom modal | Prohibited — breaks mobile UX |
+| Hardcoding `403a9c61-...` outside PROPERTY_ID | Use `PROPERTY_ID` constant everywhere | Defeats multi-property architecture |
+| Any Anthropic key in HTML or client JS | Key in Vercel env var `ANTHROPIC_KEY` only | Security violation |
+
+## Post-Change Verification Protocol — Run Before Every Commit
+
+### Step 1 — Syntax Check
+```bash
+node -e "
+  const fs = require('fs');
+  const html = fs.readFileSync('public/index.html', 'utf8');
+  const regex = /<script(?![^>]*src)[^>]*>([\s\S]*?)<\/script>/gi;
+  let match, blocks = [];
+  while ((match = regex.exec(html)) !== null) blocks.push(match[1]);
+  fs.writeFileSync('/tmp/check.js', blocks.join('\n'));
+"
+node --check /tmp/check.js && echo "SYNTAX OK" || echo "SYNTAX ERROR — DO NOT COMMIT"
+```
+
+### Step 2 — Anti-Pattern Scan
+```bash
+grep -n "alert("          public/index.html
+grep -n "confirm("        public/index.html
+grep -n "prompt("         public/index.html
+grep -n "updatePins()"    public/index.html
+grep -n "feature_type"    public/index.html
+grep -n "sk-ant-"         public/index.html
+grep -n "claude-sonnet-4-5-20250514" public/index.html api/claude.js
+```
+
+### Step 3 — Scope Check on New Supabase Inserts
+- [ ] `property_id: PROPERTY_ID` present on every new insert
+- [ ] Conflict target specified on every new upsert
+- [ ] `.is('deleted_at', null)` on every SELECT from cameras or property_markers
+
+### Step 4 — Z-Index Check
+- [ ] New z-index values are in hierarchy: 50 / 80 / 120 / 350 / 400 / 450 / 475 / 500 / 600 / 9999
+
+### Step 5 — Smoke Test
+Open SMOKE_TEST.md and run every section relevant to what changed.
+
+### Step 6 — Merge Hygiene
+- [ ] Work on feature branch not main
+- [ ] Branch follows claude/description convention
+- [ ] Descriptive commit message
+- [ ] Merge to main only after smoke test passes
+- [ ] No other unmerged branches remain after merge
+
 ## Branch & Merge Rules — ALWAYS FOLLOW
 * Every session ends with merging the feature branch to main via pull request — no exceptions
 * Never leave working code on an unmerged feature branch
