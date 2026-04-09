@@ -510,6 +510,7 @@ var terrainActive = false;
 var contoursActive = false;
 var roadsActive = false;
 var waterwaysActive = false;
+var layersPanelOpen = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -867,6 +868,7 @@ function updateTerrainToggleUI() {
   var btn = document.getElementById('terrainToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', terrainActive);
+  updateLayersFabDot();
 }
 
 // --- Contour Lines ---
@@ -954,6 +956,7 @@ function updateContourToggleUI() {
   var btn = document.getElementById('contourToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', contoursActive);
+  updateLayersFabDot();
 }
 
 // --- Roads ---
@@ -1023,6 +1026,7 @@ function updateRoadsToggleUI() {
   var btn = document.getElementById('roadsToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', roadsActive);
+  updateLayersFabDot();
 }
 
 // --- Waterways ---
@@ -1094,6 +1098,31 @@ function updateWaterwaysToggleUI() {
   var btn = document.getElementById('waterwaysToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', waterwaysActive);
+  updateLayersFabDot();
+}
+
+// --- Layers Panel ---
+
+function toggleLayersPanel() {
+  layersPanelOpen ? closeLayersPanel() : openLayersPanel();
+}
+
+function openLayersPanel() {
+  layersPanelOpen = true;
+  openSheet('layers');
+  updateLayersFabDot();
+}
+
+function closeLayersPanel() {
+  layersPanelOpen = false;
+  closeSheet('layers');
+}
+
+function updateLayersFabDot() {
+  var dot = document.querySelector('.layers-fab-dot');
+  if(!dot) return;
+  var anyActive = terrainActive || contoursActive || roadsActive || waterwaysActive;
+  dot.classList.toggle('active', anyActive);
 }
 
 
