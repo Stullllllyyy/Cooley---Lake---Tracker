@@ -951,9 +951,9 @@ function updateContourToggleUI() {
   btn.classList.toggle('active', contoursActive);
 }
 
-// --- Roads & Trails ---
+// --- Roads ---
 
-var ROAD_LAYER_IDS = ['roads-paved', 'roads-unpaved', 'trails-foot', 'roads-labels'];
+var ROAD_LAYER_IDS = ['roads-paved', 'roads-unpaved'];
 
 function ensureStreetsSource() {
   if(!mapInstance || mapInstance.getSource('mapbox-streets')) return;
@@ -987,35 +987,6 @@ function addRoadLayers() {
       filter: ['in', 'class', 'track', 'service', 'link'],
       layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
       paint: { 'line-color': '#c8a464', 'line-width': 1.0, 'line-opacity': 0.85, 'line-dasharray': [2, 1] }
-    }, getFirstSymbolLayer());
-  }
-  if(!mapInstance.getLayer('trails-foot')) {
-    mapInstance.addLayer({
-      id: 'trails-foot',
-      type: 'line',
-      source: 'mapbox-streets',
-      'source-layer': 'road',
-      filter: ['in', 'class', 'path', 'pedestrian', 'footway'],
-      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
-      paint: { 'line-color': '#e5b53b', 'line-width': 0.8, 'line-opacity': 0.75, 'line-dasharray': [1, 2] }
-    }, getFirstSymbolLayer());
-  }
-  if(!mapInstance.getLayer('roads-labels')) {
-    mapInstance.addLayer({
-      id: 'roads-labels',
-      type: 'symbol',
-      source: 'mapbox-streets',
-      'source-layer': 'road',
-      filter: ['in', 'class', 'track', 'service', 'path', 'pedestrian'],
-      layout: {
-        'visibility': vis,
-        'symbol-placement': 'line',
-        'text-field': ['get', 'name'],
-        'text-size': 10,
-        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
-        'text-max-angle': 30
-      },
-      paint: { 'text-color': '#c8a464', 'text-halo-color': 'rgba(0,0,0,0.7)', 'text-halo-width': 1.5 }
     }, getFirstSymbolLayer());
   }
 }

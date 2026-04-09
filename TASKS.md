@@ -50,6 +50,14 @@ Near Term
 * [ ] Multi-property architecture — property_id on all tables (do before Auth)
 * [ ] Stand Intel AI card — nearby cameras (PostGIS radius), movement patterns, peak times, best wind, AI "Hunt this stand when..." recommendation. Prerequisite: property_markers live with precise lat/lng (done) + PostGIS enabled.
 
+Map Layers — Remaining
+* [ ] Wilderness trails layer — OSM trail data via a hosted tileset. Mapbox Streets v8 does not include wilderness/forest trails. Requires processing OSM data or using a free public OSM vector tile endpoint. Evaluate alongside PAD-US build.
+* [ ] Public land boundaries (PAD-US) — Free USGS dataset. Shows public vs private land boundaries. High value for hunters. Requires hosting tileset or finding a free public endpoint. Most impactful remaining map layer.
+* [ ] Waterways layer — Rivers, streams, creeks overlaid on satellite map. Available from Mapbox Streets composite source. Low complexity, free.
+* [ ] 3D buildings — Available free from Mapbox. Low hunting value but easy to add.
+* [ ] Lidar terrain layer — High resolution elevation data. Paid data source. Defer until app has paying users.
+* [ ] Historical satellite imagery — Google Earth Engine or similar. Paid API. Defer until app has paying users.
+
 Medium Term
 * [x] Hunt Planner AI Chat tab — DONE Mar 24 2026
 * [ ] Historical harvest log
