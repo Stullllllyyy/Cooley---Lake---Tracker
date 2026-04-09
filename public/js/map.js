@@ -393,6 +393,8 @@ function initMap() {
     addTerrainDEM();
     // Add contour line source and layers
     addContourLayers();
+    // Add roads and trails layers
+    addRoadLayers();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -405,6 +407,8 @@ function initMap() {
     addTerrainDEM();
     // Re-add contour layers after style change
     addContourLayers();
+    // Re-add roads and trails after style change
+    addRoadLayers();
     // Re-apply terrain if it was active before style switch
     if(terrainActive) {
       mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
@@ -500,6 +504,7 @@ var dotMapActive = false;
 var heatMapActive = false;
 var terrainActive = false;
 var contoursActive = false;
+var roadsActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -944,6 +949,104 @@ function updateContourToggleUI() {
   var btn = document.getElementById('contourToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', contoursActive);
+}
+
+// --- Roads & Trails ---
+
+var ROAD_LAYER_IDS = ['roads-paved', 'roads-unpaved', 'trails-foot', 'roads-labels'];
+
+function ensureStreetsSource() {
+  if(!mapInstance || mapInstance.getSource('mapbox-streets')) return;
+  mapInstance.addSource('mapbox-streets', {
+    type: 'vector',
+    url: 'mapbox://mapbox.mapbox-streets-v8'
+  });
+}
+
+function addRoadLayers() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  var vis = roadsActive ? 'visible' : 'none';
+  if(!mapInstance.getLayer('roads-paved')) {
+    mapInstance.addLayer({
+      id: 'roads-paved',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'street'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#d4b483', 'line-width': 1.5, 'line-opacity': 0.8 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('roads-unpaved')) {
+    mapInstance.addLayer({
+      id: 'roads-unpaved',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'track', 'service', 'link'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#c8a464', 'line-width': 1.0, 'line-opacity': 0.85, 'line-dasharray': [2, 1] }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('trails-foot')) {
+    mapInstance.addLayer({
+      id: 'trails-foot',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'path', 'pedestrian', 'footway'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#e5b53b', 'line-width': 0.8, 'line-opacity': 0.75, 'line-dasharray': [1, 2] }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('roads-labels')) {
+    mapInstance.addLayer({
+      id: 'roads-labels',
+      type: 'symbol',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'track', 'service', 'path', 'pedestrian'],
+      layout: {
+        'visibility': vis,
+        'symbol-placement': 'line',
+        'text-field': ['get', 'name'],
+        'text-size': 10,
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular'],
+        'text-max-angle': 30
+      },
+      paint: { 'text-color': '#c8a464', 'text-halo-color': 'rgba(0,0,0,0.7)', 'text-halo-width': 1.5 }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableRoads() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  ROAD_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'visible');
+  });
+  roadsActive = true;
+  updateRoadsToggleUI();
+}
+
+function disableRoads() {
+  if(!mapInstance) return;
+  ROAD_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'none');
+  });
+  roadsActive = false;
+  updateRoadsToggleUI();
+}
+
+function toggleRoads() {
+  roadsActive ? disableRoads() : enableRoads();
+}
+
+function updateRoadsToggleUI() {
+  var btn = document.getElementById('roadsToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', roadsActive);
 }
 
 
