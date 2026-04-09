@@ -395,6 +395,8 @@ function initMap() {
     addContourLayers();
     // Add roads and trails layers
     addRoadLayers();
+    // Add waterway layers
+    addWaterwayLayers();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -409,6 +411,8 @@ function initMap() {
     addContourLayers();
     // Re-add roads and trails after style change
     addRoadLayers();
+    // Re-add waterway layers after style change
+    addWaterwayLayers();
     // Re-apply terrain if it was active before style switch
     if(terrainActive) {
       mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
@@ -505,6 +509,7 @@ var heatMapActive = false;
 var terrainActive = false;
 var contoursActive = false;
 var roadsActive = false;
+var waterwaysActive = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -1018,6 +1023,77 @@ function updateRoadsToggleUI() {
   var btn = document.getElementById('roadsToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', roadsActive);
+}
+
+// --- Waterways ---
+
+var WATERWAY_LAYER_IDS = ['waterways-river', 'waterways-stream', 'waterways-fill'];
+
+function addWaterwayLayers() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  var vis = waterwaysActive ? 'visible' : 'none';
+  if(!mapInstance.getLayer('waterways-river')) {
+    mapInstance.addLayer({
+      id: 'waterways-river',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'waterway',
+      filter: ['in', 'class', 'river', 'canal'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#4a90d9', 'line-width': 2.0, 'line-opacity': 0.85 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('waterways-stream')) {
+    mapInstance.addLayer({
+      id: 'waterways-stream',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'waterway',
+      filter: ['in', 'class', 'stream', 'drain', 'ditch'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#5ba3e0', 'line-width': 1.0, 'line-opacity': 0.75 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('waterways-fill')) {
+    mapInstance.addLayer({
+      id: 'waterways-fill',
+      type: 'fill',
+      source: 'mapbox-streets',
+      'source-layer': 'water',
+      layout: { 'visibility': vis },
+      paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.35 }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableWaterways() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  WATERWAY_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'visible');
+  });
+  waterwaysActive = true;
+  updateWaterwaysToggleUI();
+}
+
+function disableWaterways() {
+  if(!mapInstance) return;
+  WATERWAY_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'none');
+  });
+  waterwaysActive = false;
+  updateWaterwaysToggleUI();
+}
+
+function toggleWaterways() {
+  waterwaysActive ? disableWaterways() : enableWaterways();
+}
+
+function updateWaterwaysToggleUI() {
+  var btn = document.getElementById('waterwaysToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', waterwaysActive);
 }
 
 
