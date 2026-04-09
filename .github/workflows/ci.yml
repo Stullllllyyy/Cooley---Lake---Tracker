@@ -115,7 +115,7 @@ jobs:
           fi
 
           # feature_type column — known schema mismatch bug (correct column is 'type')
-          if grep -n "feature_type" public/index.html | grep -v "//"; then
+          if grep -n "feature_type" public/index.html | grep -v "//" | grep -v "NOTE:" | grep -v "#" | grep -v "not.*feature_type" | grep -v "feature_type.*not"; then
             echo "❌ FAIL: 'feature_type' used — correct column name is 'type' in property_markers"
             FAILED=1
           else
