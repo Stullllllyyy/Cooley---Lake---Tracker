@@ -9,10 +9,9 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="/css/tokens.css"/>
+<link rel="stylesheet" href="/css/base.css"/>
 
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
 #map{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0}
 
 /* map overlays */
@@ -26,8 +25,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 /* Weather popup card */
 #wxPopupCard{position:fixed;top:100px;right:16px;z-index:120;width:min(340px,calc(100vw - 32px));background:rgba(18,20,21,0.96);border:1px solid rgba(140,115,85,0.35);border-radius:16px;backdrop-filter:blur(14px);box-shadow:0 8px 32px rgba(0,0,0,0.6);padding:0;display:none;transform-origin:top right;animation:wxPopIn 0.18s ease-out forwards;overflow:hidden;-webkit-overflow-scrolling:touch}
 #wxPopupCard.closing{animation:wxPopOut 0.14s ease-in forwards}
-@keyframes wxPopIn{from{opacity:0;transform:scale(0.92)}to{opacity:1;transform:scale(1)}}
-@keyframes wxPopOut{from{opacity:1;transform:scale(1)}to{opacity:0;transform:scale(0.92)}}
 .wx-card-hdr{padding:14px 16px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .wx-toggle-row{display:flex;gap:6px}
 .wx-toggle{padding:5px 10px;border-radius:14px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s}
@@ -198,7 +195,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
 .chat-typing span{width:6px;height:6px;border-radius:50%;background:var(--text3);animation:chatDot 1.4s infinite}
 .chat-typing span:nth-child(2){animation-delay:0.2s}
 .chat-typing span:nth-child(3){animation-delay:0.4s}
-@keyframes chatDot{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1.1)}}
 .chat-welcome{display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;padding:32px 20px;flex:1;justify-content:center}
 .chat-welcome-icon{width:48px;height:48px;border-radius:16px;background:rgba(140,115,85,0.15);border:1px solid rgba(140,115,85,0.3);display:flex;align-items:center;justify-content:center}
 .chat-welcome h3{font-size:16px;font-weight:700;color:var(--text);margin:0}
@@ -666,11 +662,6 @@ textarea{resize:none}
 .map-cond-sep{width:1px;height:12px;background:var(--border2)}
 
 /* misc */
-.loading{text-align:center;padding:40px 20px;color:var(--text3);font-size:13px}
-.spinner{display:inline-block;width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin-bottom:10px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);display:inline-block;margin-left:4px;vertical-align:middle;transition:background 0.3s}
-.sync-dot.on{background:var(--gold)}
 .bbtn{background:none;border:none;color:var(--text2);font-size:13px;cursor:pointer;padding:0;font-family:var(--font);display:flex;align-items:center;gap:5px}
 
 .movement-legend{display:none}
@@ -679,7 +670,6 @@ textarea{resize:none}
 .map-bottom-left{position:fixed;bottom:calc(var(--tab-h) + env(safe-area-inset-bottom,0px) + 16px);left:14px;z-index:51;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .map-legend-panel{position:fixed;bottom:calc(var(--tab-h) + 110px);right:14px;left:auto;z-index:51;background:rgba(18,20,21,0.92);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:220px;backdrop-filter:blur(10px);display:none;animation:legendFade 0.18s ease}
 .map-legend-panel.visible{display:block}
-@keyframes legendFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .leg-section-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;margin-top:8px}
 .leg-section-lbl:first-child{margin-top:0}
 .leg-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
@@ -747,7 +737,6 @@ textarea{resize:none}
 .marker-toggle-row:last-child{border-bottom:none}
 .mfp-toggle{font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:var(--surface2);color:var(--text3);transition:background 0.15s,color 0.15s;min-width:32px;text-align:center}
 .mfp-toggle.on{background:var(--gold);color:#fff}
-@keyframes ttpGlow{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
 
 /* Auth gate */
 #authGate{position:fixed;inset:0;z-index:99999;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column}
