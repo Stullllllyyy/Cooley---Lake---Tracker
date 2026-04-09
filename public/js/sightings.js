@@ -3185,6 +3185,19 @@ function dismissAiHint() {
 
 
 
-// --- init -
-
+// --- Realtime subscription ---
+// Refresh sightings when another session inserts a record
+var sightingsChannel = sb.channel('sightings-changes')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'sightings' }, function(payload) {
+    if(payload.eventType === 'INSERT') {
+      var exists = sightings.find(function(s) { return s.id === payload.new.id; });
+      if(!exists) {
+        sightings.unshift(payload.new);
+        var activeDash = document.getElementById("sheet-intel");
+        if(activeDash && activeDash.classList.contains("open")) renderDash();
+        buildMapFilters(); buildMapLegend(); refreshBucknameList();
+      }
+    }
+  })
+  .subscribe();
 
