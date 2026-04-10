@@ -1439,6 +1439,12 @@ async function bulkSaveNameValue(name) {
   const local = sightings.find(x => x.id === s.id);
   if(local) { local.buck_name = name; local.buck_id = bulkBuckId; }
   if(bulkBuckId && local && local.date) updateBuckDates(bulkBuckId, local.date);
+  // Knowledge graph — fire and forget, never await
+  if(local) {
+    kgBuildEdgesFromSighting(local).catch(function(e) {
+      console.warn('[KG] Silent edge build error:', e);
+    });
+  }
   // Log AI feedback
   if(bulkAiFullResult || name) {
     const aiSugg = bulkAiFullResult?.match || null;
@@ -2509,6 +2515,10 @@ async function submitObsSighting() {
   document.getElementById('ttpObsModal').classList.remove('on');
   sightings.unshift(data);
   if(obsBuckId && data.date) updateBuckDates(obsBuckId, data.date);
+  // Knowledge graph — fire and forget, never await
+  kgBuildEdgesFromSighting(data).catch(function(e) {
+    console.warn('[KG] Silent edge build error:', e);
+  });
   // Log AI feedback if AI was used
   if(obsAiResult && obsBuckName) {
     const wasCorrect = obsAiResult.match && obsAiResult.match === obsBuckName;
@@ -3056,6 +3066,10 @@ async function submitTrailCamSighting() {
   }
   sightings.unshift(data);
   if(tcamBuckId && data.date) updateBuckDates(tcamBuckId, data.date);
+  // Knowledge graph — fire and forget, never await
+  kgBuildEdgesFromSighting(data).catch(function(e) {
+    console.warn('[KG] Silent edge build error:', e);
+  });
   // Log AI feedback if AI was used (top-3 candidate model)
   if(tcamAiResult && tcamBuckNameVal && Array.isArray(tcamAiResult.candidates)) {
     const top1 = tcamAiResult.candidates[0] || null;

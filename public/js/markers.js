@@ -153,6 +153,10 @@ async function submitFeatureMarker() {
   // Add to local array and render on map
   propertyMarkers.push(data);
   addPropertyMarker(data);
+  // Knowledge graph — fire and forget, never await
+  kgBuildEdgesFromMarker(data).catch(function(e) {
+    console.warn('[KG] Silent marker edge build error:', e);
+  });
   const label = marker.name ? `${marker.type}: ${marker.name}` : marker.type;
   showToast(`${label} marked`);
 }
