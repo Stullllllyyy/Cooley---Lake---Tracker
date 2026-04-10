@@ -69,6 +69,15 @@ Near Term
 * [ ] Stand Intel AI card — nearby cameras (PostGIS radius), movement patterns, peak times, best wind, AI "Hunt this stand when..." recommendation. Prerequisite: property_markers live with precise lat/lng (done) + PostGIS enabled.
 
 Map Layers — Remaining
+* [ ] PAD-US public land layer — proxy and layer code complete, Layers FAB placeholder
+      ready. Blocked on data source. Requires Mapbox CLI tileset upload:
+      1. Install mapbox-tilesets CLI: pip install mapbox-tilesets
+      2. Get Mapbox secret token (sk. prefix) from Mapbox account
+      3. Download PAD-US Vector Analysis file (344MB) from USGS
+      4. Convert to GeoJSON via Mapshaper (simplify 10%)
+      5. Upload via CLI: tilesets upload
+      6. Update padus-tile.js with hosted tileset URL
+      7. Re-enable button in Layers FAB
 * [ ] Wilderness trails layer — OSM trail data via a hosted tileset. Mapbox Streets v8 does not include wilderness/forest trails. Requires processing OSM data or using a free public OSM vector tile endpoint. Evaluate alongside PAD-US build.
 * [ ] Public land boundaries (PAD-US) — Free USGS dataset. Shows public vs private land boundaries. High value for hunters. Requires hosting tileset or finding a free public endpoint. Most impactful remaining map layer.
 * [ ] Waterways layer — Rivers, streams, creeks overlaid on satellite map. Available from Mapbox Streets composite source. Low complexity, free.
