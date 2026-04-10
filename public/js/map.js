@@ -1110,12 +1110,12 @@ function updateWaterwaysToggleUI() {
 
 function addPublicLandLayer() {
   if(!mapInstance) return;
-  // Add USGS PAD-US raster tile source
+  // Add USGS PAD-US raster tile source (routed through Vercel proxy to bypass CORS)
   if(!mapInstance.getSource('public-land-source')) {
     mapInstance.addSource('public-land-source', {
       type: 'raster',
       tiles: [
-        'https://gis1.usgs.gov/arcgis/rest/services/padus3/Federal_Fee_Managers_Authoritative/MapServer/tile/{z}/{y}/{x}'
+        '/api/padus-tile?z={z}&y={y}&x={x}'
       ],
       tileSize: 256,
       minzoom: 4,
