@@ -46,7 +46,7 @@ Immediate
 
 Near Term
 * [ ] Multi-buck suggestion UI — top 2-3 AI candidates with confidence scores
-* [ ] Knowledge Graph Phase 1 — knowledge_nodes, knowledge_edges, memory_cards schema
+* [ ] Knowledge Graph Phase 2 — Memory Cards UI in Intel tab. Surface strongest edges per buck and stand as readable intel cards. Show what conditions each buck responds to, which cameras they frequent, peak activity windows.
 * [ ] Trail Cam Intelligence Bundle — bulk upload, EXIF extraction, AI matching, weather backfill
 * [ ] Map Layers — PAD-US public land, WI DNR parcels, trails, waterways
 * [ ] Platform model opt-in — anonymous training data toggle, anonymized crop storage
@@ -125,6 +125,7 @@ Camera pin colors on initial load | Confirm pins render correct mature/non-matur
 
 ✅ Completed
 Feature/Fix | Notes | Date
+Knowledge Graph Phase 1 | Nodes, edges, silent edge building, Hunt AI integration. 99 nodes, 322 edges from 1,000 Cooley Lake sightings. Backfill complete. | Apr 2026
 Feather-style SVG teardrop icons for feature pins | Replaced filled circles with teardrop SVG icons matching camera pin architecture. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e | Mar 23 2026
 Unknown Bucks root cause + Marsh Buck bulk resolve | Fixed buck_name drop in AI hint → accept → save flow; bulk resolved Marsh Buck null records | Mar 23 2026
 GitHub + Claude Code integration | Connected to Vercel + GitHub | Mar 2026

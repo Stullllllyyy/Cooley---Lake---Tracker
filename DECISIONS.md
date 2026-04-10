@@ -20,6 +20,8 @@ PostGIS — defer until FAB markers
 Decision: Enable Supabase PostGIS extension when FAB marker system is built Reason: Current float8 lat/lng pairs work fine at current scale. PostGIS pays off when accumulating stand markers, scrape/rub markers, observation points, and draw layer polygons. Time the migration to coincide with FAB marker build so it's one schema update. Note: PostGIS will NOT fix the current pin/line visual alignment bug — that is a front-end rendering issue, not a data issue. Date: Planned
 Auth — after multi-property architecture
 Decision: Supabase Auth (email/password + magic link) with invite code gate (COOLEY2025) Reason: Auth without multi-property creates a mess to unpick. Property_id schema must be in place first. Date: Planned
+Knowledge Graph architecture — Supabase tables (knowledge_nodes + knowledge_edges)
+Decision: Two-table graph schema in Supabase. Nodes = entities, Edges = relationships with strength scores that grow with evidence. Silent edge building on every sighting save. Hunt AI injects top 50 edges as behavioral context. Reason: Lives in existing Supabase stack, SQL queryable, scales to multi-property, PostGIS-ready for spatial edge detection. entity_id is text not uuid to support non-UUID identifiers like weather patterns and time slots. Date: April 2026
 Product Decisions
 Source field on sightings
 Decision: Every sighting record has source: 'camera' | 'observation' Reason: Camera sightings and field observations are fundamentally different data types. Source field enables filtering, analytics, and Hunt AI to weight them differently. Date: Mar 2026
