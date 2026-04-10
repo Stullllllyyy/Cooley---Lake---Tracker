@@ -10,6 +10,23 @@
 // All functions catch their own errors — graph building is non-critical and
 // must NEVER break a sighting or marker save.
 
+// Sanitize a string for use as entity_id. entity_id values are passed into
+// Supabase .eq() filters that serialize to URL query strings — commas, spaces,
+// and other special chars break the query. UUIDs pass through untouched.
+// Example: "NW, 50F range" → "nw_50f_range"
+function kgSanitizeEntityId(raw) {
+  if (raw == null) return '';
+  var s = String(raw);
+  // UUID passthrough (36-char v4 format) — no need to mangle
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s)) {
+    return s;
+  }
+  return s.toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/__+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
 // --- Node management ---------------------------------------------------
 
 // Upsert a node — create if not exists, update if exists.
@@ -126,7 +143,8 @@ async function kgBuildEdgesFromSighting(sighting) {
 
       var camLat = camRecord.data ? camRecord.data.lat : null;
       var camLng = camRecord.data ? camRecord.data.lng : null;
-      var camId = camRecord.data ? camRecord.data.id : sighting.camera_name;
+      // camRecord.data.id is a UUID (safe). Fallback to sanitized camera name.
+      var camId = camRecord.data ? camRecord.data.id : kgSanitizeEntityId(sighting.camera_name);
 
       cameraNodeId = await kgUpsertNode(
         'camera', camId, sighting.camera_name, camLat, camLng,
@@ -148,7 +166,8 @@ async function kgBuildEdgesFromSighting(sighting) {
     // 3. Build buck edges if named buck
     if (hasBuck) {
       var buckName = sighting.buck_name || 'Unknown Buck';
-      var buckId = sighting.buck_id || buckName;
+      // buck_id is a UUID (safe). Fallback to sanitized buck name.
+      var buckId = sighting.buck_id || kgSanitizeEntityId(buckName);
 
       var buckNodeId = await kgUpsertNode(
         'buck', buckId, buckName, null, null,
@@ -182,15 +201,20 @@ async function kgBuildEdgesFromSighting(sighting) {
 
       // Buck correlates_with weather conditions
       if (sighting.wind_dir || sighting.temp_f) {
+        // Use underscore separator (not ", ") so the resulting entity_id is
+        // URL-safe. Comma+space breaks Supabase .eq() query serialization.
         var weatherPatternName = [
           sighting.wind_dir || '',
           sighting.temp_f ? Math.round(sighting.temp_f / 10) * 10 + 'F range' : ''
-        ].filter(Boolean).join(', ');
+        ].filter(Boolean).join('_');
 
-        if (weatherPatternName) {
+        // Sanitize for use as entity_id — lowercase alphanumerics + underscores.
+        var weatherEntityId = kgSanitizeEntityId(weatherPatternName);
+
+        if (weatherEntityId) {
           var weatherNodeId = await kgUpsertNode(
             'weather_pattern',
-            weatherPatternName.toLowerCase().replace(/\s+/g, '_'),
+            weatherEntityId,
             weatherPatternName,
             null, null,
             { wind_dir: sighting.wind_dir, temp_f: sighting.temp_f }
@@ -213,8 +237,9 @@ async function kgBuildEdgesFromSighting(sighting) {
                        hour < 15 ? 'midday' :
                        hour < 18 ? 'afternoon' : 'evening';
 
+        var timeEntityId = kgSanitizeEntityId('time_' + timeSlot);
         var timeNodeId = await kgUpsertNode(
-          'weather_pattern', 'time_' + timeSlot, timeSlot.replace('_', ' '),
+          'weather_pattern', timeEntityId, timeSlot.replace('_', ' '),
           null, null, {}
         );
 
@@ -343,10 +368,10 @@ async function kgGetPropertyContext() {
 async function kgBackfillAllSightings() {
   console.log('[KG] Starting backfill...');
   try {
+    // Note: sightings table has no deleted_at column — do not filter on it.
     var all = await sb.from('sightings')
       .select('*')
       .eq('property_id', PROPERTY_ID)
-      .is('deleted_at', null)
       .order('date', { ascending: true });
 
     if (!all.data) { console.log('[KG] No sightings found'); return; }
