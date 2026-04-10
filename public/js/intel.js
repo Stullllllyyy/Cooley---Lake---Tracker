@@ -1024,12 +1024,19 @@ function openBuckDossier(buckId) {
   fetchBuckInsights(buckId, buckName, bs);
   if(hasWeatherData) fetchBuckWeatherSummary(buckId, buckName, bs);
 
-  // Inject Graph Intelligence (Knowledge Graph) async — never blocks dossier render
+  // Inject Graph Intelligence (Knowledge Graph) async — never blocks dossier render.
+  // Uses innerHTML (not outerHTML) so the placeholder element remains in the DOM
+  // regardless of resolution order. This prevents a mobile race condition where
+  // loadBuckGraphIntelligence's Supabase queries resolve faster than the slower
+  // claudeFetch calls in fetchBuckInsights and fetchBuckWeatherSummary — on iOS
+  // Safari the outerHTML replacement of a sibling could trigger a reparse/reflow
+  // that interferes with those still-pending network requests.
   loadBuckGraphIntelligence(buckName, buckId).then(function(data) {
     var placeholder = document.getElementById('kg-intel-placeholder');
     if (!placeholder) return;
-    var html = renderBuckGraphIntelligence(data);
-    placeholder.outerHTML = html || '';
+    var kgHtml = renderBuckGraphIntelligence(data);
+    placeholder.innerHTML = kgHtml || '';
+    placeholder.className = ''; // remove kg-loading class regardless of data state
   });
 }
 
@@ -1678,11 +1685,13 @@ function renderDash() {
   renderConditionsChart();
   setTimeout(loadHuntForecast, 100);
 
-  // Inject Stand Intelligence (Knowledge Graph) async — never blocks Intel tab render
+  // Inject Stand Intelligence (Knowledge Graph) async — never blocks Intel tab render.
+  // Uses innerHTML (not outerHTML) so the placeholder stays in the DOM — same
+  // mobile-safety reasoning as loadBuckGraphIntelligence in openBuckDossier.
   loadStandIntelligence().then(function(standCards) {
     var placeholder = document.getElementById('stand-intel-placeholder');
     if (!placeholder) return;
-    placeholder.outerHTML = renderStandIntelligence(standCards) || '';
+    placeholder.innerHTML = renderStandIntelligence(standCards) || '';
   });
 }
 
