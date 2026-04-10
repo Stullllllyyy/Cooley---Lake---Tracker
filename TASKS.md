@@ -17,6 +17,17 @@ How To Use This File
 Bug | Severity | Notes
 Field observation pins on map | Low | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist correctly after full page reload.
 
+💀 Dead Code — Confirmed Orphans
+Discovered during AI buck identification rebuild (top-3 candidates session). All of the following live in /public/js/sightings.js but reference HTML elements that do NOT exist anywhere in /public/index.html. Entry points have been removed. Safe to delete in a dedicated cleanup session — DO NOT touch in feature work.
+* [ ] initForm() — orphaned, no live entry point. Targets non-existent #fd, #ft, #fbuckname, #fnotes, #ftemp, #fwind, #wxload, #wxdata, #wxstat, #uprev, #uph, #aiHintBox, #cch, #dch, #bch, #tch
+* [ ] saveLog() — orphaned, targets non-existent #fbuckname, #finput, #uph, #uprev, #aiHintBox
+* [ ] handlePhoto() — orphaned, no live <input onchange="handlePhoto"> binding in HTML; targets non-existent #uph, #uprev
+* [ ] runAiHint() — orphaned, targets non-existent #aiHintBox, #aiHintText, #aiHintReason. Live AI buck ID is now tcamRunAiHint() on the Trail Cam sheet
+* [ ] acceptAiHint() — orphaned, targets non-existent #fbuckname, #aiHintBox
+* [ ] dismissAiHint() — orphaned, targets non-existent #aiHintBox
+
+CLAUDE.md previously documented #ttpCamModal / submitCamSighting() as the live camera sighting form — both are also orphans. CLAUDE.md was corrected this session to reflect the actual live form (#sheet-trail-cam, openTrailCamSheet(), submitTrailCamSighting()).
+
 📋 Active Backlog
 Tasks defined and ready to work on, in priority order:
 
@@ -49,6 +60,14 @@ Near Term
 * [ ] Supabase Auth — email/password + magic link + invite code COOLEY2025
 * [ ] Multi-property architecture — property_id on all tables (do before Auth)
 * [ ] Stand Intel AI card — nearby cameras (PostGIS radius), movement patterns, peak times, best wind, AI "Hunt this stand when..." recommendation. Prerequisite: property_markers live with precise lat/lng (done) + PostGIS enabled.
+
+Map Layers — Remaining
+* [ ] Wilderness trails layer — OSM trail data via a hosted tileset. Mapbox Streets v8 does not include wilderness/forest trails. Requires processing OSM data or using a free public OSM vector tile endpoint. Evaluate alongside PAD-US build.
+* [ ] Public land boundaries (PAD-US) — Free USGS dataset. Shows public vs private land boundaries. High value for hunters. Requires hosting tileset or finding a free public endpoint. Most impactful remaining map layer.
+* [ ] Waterways layer — Rivers, streams, creeks overlaid on satellite map. Available from Mapbox Streets composite source. Low complexity, free.
+* [ ] 3D buildings — Available free from Mapbox. Low hunting value but easy to add.
+* [ ] Lidar terrain layer — High resolution elevation data. Paid data source. Defer until app has paying users.
+* [ ] Historical satellite imagery — Google Earth Engine or similar. Paid API. Defer until app has paying users.
 
 Medium Term
 * [x] Hunt Planner AI Chat tab — DONE Mar 24 2026

@@ -6,7 +6,7 @@
 //   enterTapToPlaceMode, closeFabDial (self-ref), sfFiltersVisible, sightShowCount,
 //   curSightFeed
 
-var SHEETS = ['intel','sightings','trail-cam','detail','chat','dossier'];
+var SHEETS = ['intel','sightings','trail-cam','detail','chat','dossier','layers'];
 
 function openSheet(name) {
   closeFabDial();

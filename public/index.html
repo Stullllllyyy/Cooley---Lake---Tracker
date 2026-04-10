@@ -174,6 +174,16 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
   </div>
 </div>
 
+<!-- Layers FAB -->
+<button id="layersFab" class="layers-fab" onclick="toggleLayersPanel()" aria-label="Map layers">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+    <polyline points="2 17 12 22 22 17"/>
+    <polyline points="2 12 12 17 22 12"/>
+  </svg>
+  <span class="layers-fab-dot"></span>
+</button>
+
 <!-- Filter FAB -->
 <div class="filter-fab" id="filterFab" onclick="toggleFilterPanel()" title="Filters">
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46"/></svg>
@@ -317,17 +327,6 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
   <div class="filter-section">
     <div class="filter-section-lbl">Map Style</div>
     <div class="mdp-style-grid" id="mdpStyleGrid"></div>
-  </div>
-  <div class="filter-section">
-    <div class="filter-section-lbl">Terrain</div>
-    <div class="mdp-terrain-row">
-      <button id="terrainToggleBtn" class="mdp-terrain-btn" onclick="toggleTerrain()">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-          <polygon points="3 17 9 5 15 11 19 7 21 17 3 17"/>
-        </svg>
-        3D Terrain
-      </button>
-    </div>
   </div>
   <div class="filter-section" id="mdpCompassSection" style="display:none;border-bottom:none">
     <div class="filter-section-lbl">Compass</div>
@@ -601,6 +600,73 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
   </div>
 </div>
 
+<!-- LAYERS SHEET -->
+<div class="overlay" id="overlay-layers" onclick="closeLayersPanel()"></div>
+<div class="sheet layers-sheet" id="sheet-layers">
+  <div class="sheet-handle"></div>
+  <div class="layers-sheet-header">
+    <span class="layers-sheet-title">Map Layers</span>
+    <button class="layers-sheet-close" onclick="closeLayersPanel()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/>
+        <line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="layers-sheet-body">
+    <div class="layers-section">
+      <div class="layers-section-label">Terrain</div>
+      <div class="layers-toggle-row">
+        <button id="terrainToggleBtn" class="layers-toggle-btn" onclick="toggleTerrain()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="3 17 9 5 15 11 19 7 21 17 3 17"/>
+          </svg>
+          <span>3D Terrain</span>
+        </button>
+        <button id="contourToggleBtn" class="layers-toggle-btn" onclick="toggleContours()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12c0 0 2-4 5-4s5 4 8 4 5-4 5-4"/>
+            <path d="M3 17c0 0 2-4 5-4s5 4 8 4 5-4 5-4"/>
+            <path d="M3 7c0 0 2-4 5-4s5 4 8 4 5-4 5-4"/>
+          </svg>
+          <span>Contour Lines</span>
+        </button>
+      </div>
+    </div>
+    <div class="layers-section">
+      <div class="layers-section-label">Navigation</div>
+      <div class="layers-toggle-row">
+        <button id="roadsToggleBtn" class="layers-toggle-btn" onclick="toggleRoads()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12h18M3 6l4 6-4 6M21 6l-4 6 4 6"/>
+          </svg>
+          <span>Roads</span>
+        </button>
+        <button id="waterwaysToggleBtn" class="layers-toggle-btn" onclick="toggleWaterways()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
+            <path d="M3 18c2-4 4-4 6 0s4 4 6 0 4-4 6 0"/>
+          </svg>
+          <span>Waterways</span>
+        </button>
+      </div>
+    </div>
+    <div class="layers-section">
+      <div class="layers-section-label">Boundaries</div>
+      <div class="layers-toggle-row">
+        <button class="layers-toggle-btn layers-toggle-btn--coming-soon" disabled>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span>Public Land</span>
+          <span class="layers-coming-soon-badge">Soon</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- SIGHTINGS SHEET -->
 <div class="overlay" id="overlay-sightings" onclick="closeSheet('sightings')"></div>
 <div class="sheet" id="sheet-sightings">
@@ -670,12 +736,25 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
       <img id="tcamPhotoPreview" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:10px"/>
     </div>
     <input type="file" id="tcamInput" accept="image/*" style="display:none" onchange="tcamHandlePhoto(this)"/>
-    <!-- AI hint (buck-only) -->
-    <div id="tcamAiHint" style="display:none;margin-bottom:12px;padding:10px 12px;background:rgba(74,127,193,0.08);border:1px solid rgba(74,127,193,0.25);border-radius:10px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:4px">AI Buck ID</div>
-      <div style="font-size:12px;color:var(--text)" id="tcamAiText">Analyzing...</div>
-      <div id="tcamAiReason" style="font-size:10px;color:var(--text3);margin-top:5px;line-height:1.5;font-style:italic"></div>
-      <div id="tcamAiActions" style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap"></div>
+    <!-- AI hint (buck-only) — top-3 candidate UI -->
+    <div id="tcamAiHint" class="ai-hint-box" style="display:none">
+      <div class="ai-hint-header">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <span class="ai-hint-header-text">AI Buck ID</span>
+        <span id="tcamAiText" class="ai-hint-status">Analyzing...</span>
+      </div>
+      <div id="tcamAiObservations" class="ai-hint-observations" style="display:none"></div>
+      <div id="tcamAiCandidates" class="ai-hint-candidates"></div>
+      <button id="tcamAiNoneBtn" class="ai-hint-none-btn" onclick="tcamShowNonePanel()" style="display:none">None of These</button>
+      <div id="tcamAiNonePanel" class="ai-hint-none-panel" style="display:none">
+        <div class="ai-hint-none-header">Select the correct buck</div>
+        <div id="tcamAiBuckList" class="ai-hint-buck-list"></div>
+        <div id="tcamAiNewBuckForm" class="ai-hint-new-form" style="display:none">
+          <input type="text" id="tcamAiNewBuckName" class="ai-hint-new-input" placeholder="New buck name" autocomplete="off"/>
+          <button class="ai-hint-new-save" onclick="tcamSaveNewBuckFromAi()">Save</button>
+        </div>
+        <button class="ai-hint-add-new-btn" onclick="tcamShowNewBuckForm()">+ Add New Buck</button>
+      </div>
     </div>
     <!-- Date / Time -->
     <div class="two-col">

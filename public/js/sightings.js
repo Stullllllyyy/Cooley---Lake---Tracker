@@ -2635,87 +2635,205 @@ function tcamHandlePhoto(inp) {
   };
   r.readAsDataURL(f);
 }
+// Top-3 AI buck identification result.
+// Shape: { candidates: [{name,confidence,reasoning}, ...], visualObservations, photoUrl, cameraName, selectedRank }
+// selectedRank is 1-based when set: 1/2/3 from a candidate card, or 0 when "None of These".
 var tcamAiResult = null;
+
 async function tcamRunAiHint(base64DataUrl) {
   const namedBucks = getNamedBucks();
   if(namedBucks.length === 0) return;
   const hintBox = document.getElementById('tcamAiHint');
-  const hintText = document.getElementById('tcamAiText');
-  const hintReason = document.getElementById('tcamAiReason');
-  const hintActions = document.getElementById('tcamAiActions');
+  const statusEl = document.getElementById('tcamAiText');
+  const obsEl = document.getElementById('tcamAiObservations');
+  const candidatesEl = document.getElementById('tcamAiCandidates');
+  const noneBtn = document.getElementById('tcamAiNoneBtn');
+  const nonePanel = document.getElementById('tcamAiNonePanel');
   hintBox.style.display = 'block';
-  hintText.textContent = 'Analyzing photo...';
-  hintReason.textContent = '';
-  hintActions.innerHTML = '';
+  statusEl.textContent = 'Analyzing photo...';
+  obsEl.style.display = 'none';
+  obsEl.textContent = '';
+  candidatesEl.innerHTML = '';
+  noneBtn.style.display = 'none';
+  nonePanel.style.display = 'none';
   tcamAiHintSugg = null;
   tcamAiResult = null;
   try {
     const camContext = tcamSelectedCam || null;
     const { profiles: buckProfiles, hasBucks } = buildAiBuckProfiles(camContext);
-    if(!hasBucks) { hintText.textContent = 'No named bucks with photos to compare'; return; }
+    if(!hasBucks) { statusEl.textContent = 'No buck profiles available'; return; }
     const base64 = base64DataUrl.split(',')[1];
     const mediaType = base64DataUrl.split(';')[0].split(':')[1];
 
     // Fetch reference photos
-    hintText.textContent = 'Loading reference images...';
+    statusEl.textContent = 'Loading reference images...';
     let refContent = [];
     try { const r = await buildRefPhotoContent(camContext); refContent = r.content; } catch(e) { /* fallback */ }
-    hintText.textContent = 'Comparing against known bucks...';
+    statusEl.textContent = 'Comparing against known bucks...';
+
+    const promptText = `Look at the buck in this photo and compare against these known bucks from this property:
+
+${buckProfiles}
+
+${AI_VISUAL_REASONING_PROMPT}
+
+Return your top 3 most likely matches ranked by confidence. If fewer than 3 bucks are plausible matches, return fewer. If no buck matches, return an empty candidates array.
+
+Respond in JSON only, no preamble, no markdown:
+{
+  "visual_observations": "one sentence describing key antler characteristics visible",
+  "candidates": [
+    { "name": "exact buck name from list", "confidence": 0-100, "reasoning": "one sentence" },
+    { "name": "exact buck name from list", "confidence": 0-100, "reasoning": "one sentence" },
+    { "name": "exact buck name from list", "confidence": 0-100, "reasoning": "one sentence" }
+  ]
+}`;
 
     const content = [];
     if(refContent.length > 0) {
       content.push({ type: 'text', text: 'Reference photos of known bucks:' });
       content.push(...refContent);
-      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'text', text: 'Now identify this new trail cam photo.\n\n' + promptText });
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
     } else {
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
-      content.push({ type: 'text', text: `You are analyzing a trail camera photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'text', text: 'You are analyzing a trail camera photo for a deer hunting app.\n\n' + promptText });
     }
 
     const response = await claudeFetch({
         model: 'claude-sonnet-4-5',
-        max_tokens: 500,
+        max_tokens: 600,
         messages: [{ role: 'user', content }]
     });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
-    const result = JSON.parse(cleaned);
-    tcamAiResult = result;
-    const tcConfColor = result.confidence > 80 ? '#4caf50' : result.confidence >= 50 ? '#f5a623' : '#e53935';
-    if(result.match && result.confidence >= 50) {
-      tcamAiHintSugg = result.match;
-      hintText.innerHTML = `${result.match} — <span style="color:${tcConfColor}">${result.confidence}%</span>`;
-      hintReason.textContent = result.reasoning;
-      hintActions.innerHTML = `<button onclick="tcamConfirmAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#8C7355;color:#121415;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font)">&#10003; Confirm</button>
-        <button onclick="tcamWrongAiHint()" style="padding:8px 14px;border-radius:8px;border:none;background:#4A4D4E;color:#BCC6CC;font-size:11px;cursor:pointer;font-family:var(--font)">&#10007; Wrong</button>
-        <button onclick="tcamDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
-    } else {
-      hintText.innerHTML = result.confidence < 40 ? '<span style="color:#e53935">Unable to confidently identify</span>' : 'No confident match';
-      hintReason.textContent = result.reasoning || '';
-      hintActions.innerHTML = `<button onclick="tcamDismissAiHint()" style="padding:8px 14px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:11px;cursor:pointer;font-family:var(--font)">Dismiss</button>`;
-    }
+    const parsed = JSON.parse(cleaned);
+    const candidates = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 3) : [];
+    tcamAiResult = {
+      candidates,
+      visualObservations: parsed.visual_observations || '',
+      cameraName: camContext,
+      photoUrl: null,        // populated at submit-time from uploaded image_url
+      selectedRank: null     // populated when user picks a candidate or "None of These"
+    };
+    renderTcamAiCandidates(tcamAiResult);
   } catch(e) {
-    hintText.textContent = 'AI analysis failed';
+    statusEl.textContent = 'AI analysis failed';
     console.error('tcamRunAiHint:', e);
   }
 }
-function tcamConfirmAiHint() {
-  if(tcamAiHintSugg) document.getElementById('tcamBuckName').value = tcamAiHintSugg;
-  document.getElementById('tcamAiHint').style.display = 'none';
-  // Feedback logged at sighting submit time with tcamAiResult
+
+function renderTcamAiCandidates(result) {
+  const statusEl = document.getElementById('tcamAiText');
+  const obsEl = document.getElementById('tcamAiObservations');
+  const candidatesEl = document.getElementById('tcamAiCandidates');
+  const noneBtn = document.getElementById('tcamAiNoneBtn');
+  if(!candidatesEl) return;
+  const candidates = result.candidates || [];
+
+  if(result.visualObservations) {
+    obsEl.textContent = result.visualObservations;
+    obsEl.style.display = 'block';
+  }
+
+  if(candidates.length === 0) {
+    statusEl.textContent = 'No confident match';
+    candidatesEl.innerHTML = '';
+    noneBtn.style.display = 'block';
+    return;
+  }
+
+  statusEl.textContent = 'Tap the correct buck';
+  candidatesEl.innerHTML = candidates.map(function(c, idx) {
+    const pct = Math.round(Number(c.confidence) || 0);
+    const barColor = pct >= 75 ? '#E5B53B' : pct >= 50 ? '#8C7355' : '#4A4D4E';
+    return '<div class="ai-hint-card" onclick="tcamSelectCandidate(' + idx + ')">' +
+      '<div class="ai-hint-card-name">' + esc(c.name || '') + '</div>' +
+      '<div class="ai-hint-card-confidence">' +
+        '<div class="ai-hint-conf-bar-wrap"><div class="ai-hint-conf-bar" style="width:' + pct + '%;background:' + barColor + '"></div></div>' +
+        '<span class="ai-hint-conf-pct">' + pct + '%</span>' +
+      '</div>' +
+      '<div class="ai-hint-card-reason">' + esc(c.reasoning || '') + '</div>' +
+    '</div>';
+  }).join('');
+  noneBtn.style.display = 'block';
 }
-function tcamWrongAiHint() {
-  // Dismiss the suggestion and let user pick manually
-  tcamAiHintSugg = null;
-  document.getElementById('tcamAiHint').style.display = 'none';
-  document.getElementById('tcamBuckName')?.focus();
-  // tcamAiResult retained for feedback logging at submit time
+
+function tcamFillBuckName(name) {
+  const buckInput = document.getElementById('tcamBuckName');
+  if(!buckInput) return;
+  buckInput.value = name;
+  buckInput.dispatchEvent(new Event('input', { bubbles: true }));
 }
-function tcamDismissAiHint() {
-  document.getElementById('tcamAiHint').style.display = 'none';
-  tcamAiHintSugg = null;
-  tcamAiResult = null;
+
+function tcamSelectCandidate(idx) {
+  if(!tcamAiResult || !tcamAiResult.candidates) return;
+  const candidate = tcamAiResult.candidates[idx];
+  if(!candidate) return;
+  tcamFillBuckName(candidate.name);
+  tcamAiResult.selectedRank = idx + 1;
+  // Visual feedback — highlight selected card
+  document.querySelectorAll('#tcamAiCandidates .ai-hint-card').forEach(function(c, i) {
+    c.classList.toggle('ai-hint-card--selected', i === idx);
+  });
+  // Hide none panel if open
+  const nonePanel = document.getElementById('tcamAiNonePanel');
+  if(nonePanel) nonePanel.style.display = 'none';
+}
+
+function tcamShowNonePanel() {
+  const panel = document.getElementById('tcamAiNonePanel');
+  const buckList = document.getElementById('tcamAiBuckList');
+  const newForm = document.getElementById('tcamAiNewBuckForm');
+  if(!panel || !buckList) return;
+  if(newForm) newForm.style.display = 'none';
+
+  const topNames = (tcamAiResult && tcamAiResult.candidates)
+    ? tcamAiResult.candidates.map(function(c) { return (c.name || '').toLowerCase(); })
+    : [];
+  const remaining = (buckRegistry || []).filter(function(b) {
+    return topNames.indexOf((b.name || '').toLowerCase()) === -1;
+  });
+
+  buckList.innerHTML = remaining.length === 0
+    ? '<div class="ai-hint-no-bucks">All registered bucks shown above</div>'
+    : remaining.map(function(b) {
+        return '<div class="ai-hint-buck-row" onclick="tcamSelectFromList(\'' + b.id + '\',\'' + esc(b.name).replace(/'/g, "\\'") + '\')">' + esc(b.name) + '</div>';
+      }).join('');
+  panel.style.display = 'block';
+}
+
+function tcamSelectFromList(buckId, buckName) {
+  tcamFillBuckName(buckName);
+  if(tcamAiResult) tcamAiResult.selectedRank = 0;
+  document.querySelectorAll('#tcamAiCandidates .ai-hint-card').forEach(function(c) {
+    c.classList.remove('ai-hint-card--selected');
+  });
+  const panel = document.getElementById('tcamAiNonePanel');
+  if(panel) panel.style.display = 'none';
+}
+
+function tcamShowNewBuckForm() {
+  const newForm = document.getElementById('tcamAiNewBuckForm');
+  if(!newForm) return;
+  newForm.style.display = 'flex';
+  const input = document.getElementById('tcamAiNewBuckName');
+  if(input) { input.value = ''; setTimeout(function() { input.focus(); }, 60); }
+}
+
+function tcamSaveNewBuckFromAi() {
+  const input = document.getElementById('tcamAiNewBuckName');
+  const name = input && input.value ? input.value.trim() : '';
+  if(!name) { showToast('Name is required'); return; }
+  tcamFillBuckName(name);
+  if(tcamAiResult) tcamAiResult.selectedRank = 0;
+  document.querySelectorAll('#tcamAiCandidates .ai-hint-card').forEach(function(c) {
+    c.classList.remove('ai-hint-card--selected');
+  });
+  const newForm = document.getElementById('tcamAiNewBuckForm');
+  if(newForm) newForm.style.display = 'none';
+  const panel = document.getElementById('tcamAiNonePanel');
+  if(panel) panel.style.display = 'none';
 }
 
 // Buck tag suggestion dropdown
@@ -2798,14 +2916,34 @@ async function submitTrailCamSighting() {
   }
   sightings.unshift(data);
   if(tcamBuckId && data.date) updateBuckDates(tcamBuckId, data.date);
-  // Log AI feedback if AI was used
-  if(tcamAiResult && tcamBuckNameVal) {
-    const wasCorrect = tcamAiResult.match && tcamAiResult.match === tcamBuckNameVal;
+  // Log AI feedback if AI was used (top-3 candidate model)
+  if(tcamAiResult && tcamBuckNameVal && Array.isArray(tcamAiResult.candidates)) {
+    const top1 = tcamAiResult.candidates[0] || null;
+    // Compute selected rank if not already captured at click time (e.g. user typed buck manually)
+    let selectedRank = tcamAiResult.selectedRank;
+    if(selectedRank == null) {
+      const idx = tcamAiResult.candidates.findIndex(function(c) {
+        return c && c.name && c.name.toLowerCase() === tcamBuckNameVal.toLowerCase();
+      });
+      selectedRank = idx >= 0 ? idx + 1 : 0; // 0 = not in top-3
+    }
+    const wasCorrect = selectedRank === 1; // true only if user kept the AI's #1 pick
+    let correctionNotes = null;
+    if(selectedRank === 0) {
+      correctionNotes = 'User selected from full buck list — not in top 3 candidates';
+    } else if(selectedRank > 1) {
+      correctionNotes = 'User selected rank ' + selectedRank + ' candidate over rank 1';
+    }
     await writeAiFeedback({
-      photoUrl: data.image_url, cameraName: tcamSelectedCam,
-      aiSuggestion: tcamAiResult.match, aiConfidence: tcamAiResult.confidence,
-      aiReasoning: tcamAiResult.reasoning,
-      confirmedBuckId: tcamBuckId, confirmedBuckName: tcamBuckNameVal, wasCorrect
+      photoUrl: data.image_url,
+      cameraName: tcamSelectedCam,
+      aiSuggestion: top1 ? top1.name : null,
+      aiConfidence: top1 ? top1.confidence : null,
+      aiReasoning: tcamAiResult.visualObservations || (top1 ? top1.reasoning : null),
+      confirmedBuckId: tcamBuckId,
+      confirmedBuckName: tcamBuckNameVal,
+      wasCorrect,
+      correctionNotes
     });
   }
   tcamAiResult = null;

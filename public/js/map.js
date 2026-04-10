@@ -370,6 +370,8 @@ function initMap() {
     center: [-98.5, 39.5],
     zoom: 4,
     fadeDuration: 0,
+    pitchWithRotate: true,
+    touchPitch: true,
   });
   mapInstance.addControl(new mapboxgl.ScaleControl({ maxWidth: 80, unit: 'imperial' }), 'bottom-left');
   mapInstance.on('load', () => {
@@ -389,6 +391,12 @@ function initMap() {
     }
     // Add Mapbox Terrain DEM source
     addTerrainDEM();
+    // Add contour line source and layers
+    addContourLayers();
+    // Add roads and trails layers
+    addRoadLayers();
+    // Add waterway layers
+    addWaterwayLayers();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -399,6 +407,12 @@ function initMap() {
     lineLayerAdded = true;
     // Re-add terrain DEM source and hillshade after style change
     addTerrainDEM();
+    // Re-add contour layers after style change
+    addContourLayers();
+    // Re-add roads and trails after style change
+    addRoadLayers();
+    // Re-add waterway layers after style change
+    addWaterwayLayers();
     // Re-apply terrain if it was active before style switch
     if(terrainActive) {
       mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
@@ -493,6 +507,10 @@ var beddingMarkersVisible = false;
 var dotMapActive = false;
 var heatMapActive = false;
 var terrainActive = false;
+var contoursActive = false;
+var roadsActive = false;
+var waterwaysActive = false;
+var layersPanelOpen = false;
 
 function addObsMarkers() {
   obsMarkers.forEach(m => m.remove());
@@ -822,6 +840,11 @@ function enableTerrain() {
   if(!mapInstance || !mapInstance.getSource('mapbox-dem')) return;
   mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
   terrainActive = true;
+  mapInstance.easeTo({
+    pitch: 60,
+    bearing: mapInstance.getBearing(),
+    duration: 800
+  });
   updateTerrainToggleUI();
 }
 
@@ -829,6 +852,11 @@ function disableTerrain() {
   if(!mapInstance) return;
   mapInstance.setTerrain(null);
   terrainActive = false;
+  mapInstance.easeTo({
+    pitch: 0,
+    bearing: 0,
+    duration: 800
+  });
   updateTerrainToggleUI();
 }
 
@@ -840,6 +868,261 @@ function updateTerrainToggleUI() {
   var btn = document.getElementById('terrainToggleBtn');
   if(!btn) return;
   btn.classList.toggle('active', terrainActive);
+  updateLayersFabDot();
+}
+
+// --- Contour Lines ---
+
+function addContourLayers() {
+  if(!mapInstance) return;
+  if(!mapInstance.getSource('mapbox-terrain')) {
+    mapInstance.addSource('mapbox-terrain', {
+      type: 'vector',
+      url: 'mapbox://mapbox.mapbox-terrain-v2'
+    });
+  }
+  if(!mapInstance.getLayer('contour-lines')) {
+    mapInstance.addLayer({
+      id: 'contour-lines',
+      type: 'line',
+      source: 'mapbox-terrain',
+      'source-layer': 'contour',
+      layout: {
+        'visibility': contoursActive ? 'visible' : 'none',
+        'line-join': 'round',
+        'line-cap': 'round'
+      },
+      paint: {
+        'line-color': [
+          'match',
+          ['%', ['get', 'index'], 5],
+          0, '#a08060',
+          '#c8a882'
+        ],
+        'line-width': [
+          'match',
+          ['%', ['get', 'index'], 5],
+          0, 1.2,
+          0.5
+        ],
+        'line-opacity': 0.75
+      }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('contour-labels')) {
+    mapInstance.addLayer({
+      id: 'contour-labels',
+      type: 'symbol',
+      source: 'mapbox-terrain',
+      'source-layer': 'contour',
+      filter: ['==', ['%', ['get', 'index'], 5], 0],
+      layout: {
+        'visibility': contoursActive ? 'visible' : 'none',
+        'symbol-placement': 'line',
+        'text-field': ['concat', ['to-string', ['get', 'ele']], 'm'],
+        'text-size': 10,
+        'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular']
+      },
+      paint: {
+        'text-color': '#a08060',
+        'text-halo-color': 'rgba(0,0,0,0.6)',
+        'text-halo-width': 1.5
+      }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableContours() {
+  if(!mapInstance) return;
+  mapInstance.setLayoutProperty('contour-lines', 'visibility', 'visible');
+  mapInstance.setLayoutProperty('contour-labels', 'visibility', 'visible');
+  contoursActive = true;
+  updateContourToggleUI();
+}
+
+function disableContours() {
+  if(!mapInstance) return;
+  mapInstance.setLayoutProperty('contour-lines', 'visibility', 'none');
+  mapInstance.setLayoutProperty('contour-labels', 'visibility', 'none');
+  contoursActive = false;
+  updateContourToggleUI();
+}
+
+function toggleContours() {
+  contoursActive ? disableContours() : enableContours();
+}
+
+function updateContourToggleUI() {
+  var btn = document.getElementById('contourToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', contoursActive);
+  updateLayersFabDot();
+}
+
+// --- Roads ---
+
+var ROAD_LAYER_IDS = ['roads-paved', 'roads-unpaved'];
+
+function ensureStreetsSource() {
+  if(!mapInstance || mapInstance.getSource('mapbox-streets')) return;
+  mapInstance.addSource('mapbox-streets', {
+    type: 'vector',
+    url: 'mapbox://mapbox.mapbox-streets-v8'
+  });
+}
+
+function addRoadLayers() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  var vis = roadsActive ? 'visible' : 'none';
+  if(!mapInstance.getLayer('roads-paved')) {
+    mapInstance.addLayer({
+      id: 'roads-paved',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'street'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#d4b483', 'line-width': 1.5, 'line-opacity': 0.8 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('roads-unpaved')) {
+    mapInstance.addLayer({
+      id: 'roads-unpaved',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'road',
+      filter: ['in', 'class', 'track', 'service', 'link'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#c8a464', 'line-width': 1.0, 'line-opacity': 0.85, 'line-dasharray': [2, 1] }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableRoads() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  ROAD_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'visible');
+  });
+  roadsActive = true;
+  updateRoadsToggleUI();
+}
+
+function disableRoads() {
+  if(!mapInstance) return;
+  ROAD_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'none');
+  });
+  roadsActive = false;
+  updateRoadsToggleUI();
+}
+
+function toggleRoads() {
+  roadsActive ? disableRoads() : enableRoads();
+}
+
+function updateRoadsToggleUI() {
+  var btn = document.getElementById('roadsToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', roadsActive);
+  updateLayersFabDot();
+}
+
+// --- Waterways ---
+
+var WATERWAY_LAYER_IDS = ['waterways-river', 'waterways-stream', 'waterways-fill'];
+
+function addWaterwayLayers() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  var vis = waterwaysActive ? 'visible' : 'none';
+  if(!mapInstance.getLayer('waterways-river')) {
+    mapInstance.addLayer({
+      id: 'waterways-river',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'waterway',
+      filter: ['in', 'class', 'river', 'canal'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#4a90d9', 'line-width': 2.0, 'line-opacity': 0.85 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('waterways-stream')) {
+    mapInstance.addLayer({
+      id: 'waterways-stream',
+      type: 'line',
+      source: 'mapbox-streets',
+      'source-layer': 'waterway',
+      filter: ['in', 'class', 'stream', 'drain', 'ditch'],
+      layout: { 'visibility': vis, 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#5ba3e0', 'line-width': 1.0, 'line-opacity': 0.75 }
+    }, getFirstSymbolLayer());
+  }
+  if(!mapInstance.getLayer('waterways-fill')) {
+    mapInstance.addLayer({
+      id: 'waterways-fill',
+      type: 'fill',
+      source: 'mapbox-streets',
+      'source-layer': 'water',
+      layout: { 'visibility': vis },
+      paint: { 'fill-color': '#4a90d9', 'fill-opacity': 0.35 }
+    }, getFirstSymbolLayer());
+  }
+}
+
+function enableWaterways() {
+  if(!mapInstance) return;
+  ensureStreetsSource();
+  WATERWAY_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'visible');
+  });
+  waterwaysActive = true;
+  updateWaterwaysToggleUI();
+}
+
+function disableWaterways() {
+  if(!mapInstance) return;
+  WATERWAY_LAYER_IDS.forEach(function(id) {
+    if(mapInstance.getLayer(id)) mapInstance.setLayoutProperty(id, 'visibility', 'none');
+  });
+  waterwaysActive = false;
+  updateWaterwaysToggleUI();
+}
+
+function toggleWaterways() {
+  waterwaysActive ? disableWaterways() : enableWaterways();
+}
+
+function updateWaterwaysToggleUI() {
+  var btn = document.getElementById('waterwaysToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', waterwaysActive);
+  updateLayersFabDot();
+}
+
+// --- Layers Panel ---
+
+function toggleLayersPanel() {
+  layersPanelOpen ? closeLayersPanel() : openLayersPanel();
+}
+
+function openLayersPanel() {
+  layersPanelOpen = true;
+  openSheet('layers');
+  updateLayersFabDot();
+}
+
+function closeLayersPanel() {
+  layersPanelOpen = false;
+  closeSheet('layers');
+}
+
+function updateLayersFabDot() {
+  var dot = document.querySelector('.layers-fab-dot');
+  if(!dot) return;
+  var anyActive = terrainActive || contoursActive || roadsActive || waterwaysActive;
+  dot.classList.toggle('active', anyActive);
 }
 
 
