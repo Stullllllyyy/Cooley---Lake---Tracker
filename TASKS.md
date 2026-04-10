@@ -26,6 +26,13 @@ Discovered during AI buck identification rebuild (top-3 candidates session). All
 * [ ] acceptAiHint() — orphaned, targets non-existent #fbuckname, #aiHintBox
 * [ ] dismissAiHint() — orphaned, targets non-existent #aiHintBox
 
+Discovered during Who Is This top-3 candidates rebuild (Apr 10 2026). Who Is This now uses whoSelectCandidate / whoShowNonePanel / whoSelectFromList / whoSaveNewBuckFromModal. The old single-suggestion action functions are no longer wired to any UI — the Confirm / Wrong Buck / New Buck buttons and their #whoBuckSelector / #whoNewBuckForm containers are gone. Functions still reference whoMatchResult.match which no longer exists on the shape; they will silently no-op if invoked. Leave in place per dead code policy until a dedicated cleanup session.
+* [ ] whoConfirmMatch() — UI-unreachable. Was Confirm button handler.
+* [ ] whoShowBuckSelector() — UI-unreachable. Was Wrong Buck button handler. Targets non-existent #whoBuckSelector, #whoNewBuckForm.
+* [ ] whoSelectCorrectBuck() — UI-unreachable. Was called by whoShowBuckSelector list rows.
+* [ ] whoShowNewBuckForm() — UI-unreachable. Was New Buck button handler. Targets non-existent #whoNewBuckForm, #whoBuckSelector.
+* [ ] whoSaveNewBuck() — UI-unreachable. Was inline form save handler. Targets non-existent #whoNewBuckName, #whoNewBuckAge.
+
 CLAUDE.md previously documented #ttpCamModal / submitCamSighting() as the live camera sighting form — both are also orphans. CLAUDE.md was corrected this session to reflect the actual live form (#sheet-trail-cam, openTrailCamSheet(), submitTrailCamSighting()).
 
 📋 Active Backlog
