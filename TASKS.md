@@ -17,6 +17,17 @@ How To Use This File
 Bug | Severity | Notes
 Field observation pins on map | Low | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist correctly after full page reload.
 
+💀 Dead Code — Confirmed Orphans
+Discovered during AI buck identification rebuild (top-3 candidates session). All of the following live in /public/js/sightings.js but reference HTML elements that do NOT exist anywhere in /public/index.html. Entry points have been removed. Safe to delete in a dedicated cleanup session — DO NOT touch in feature work.
+* [ ] initForm() — orphaned, no live entry point. Targets non-existent #fd, #ft, #fbuckname, #fnotes, #ftemp, #fwind, #wxload, #wxdata, #wxstat, #uprev, #uph, #aiHintBox, #cch, #dch, #bch, #tch
+* [ ] saveLog() — orphaned, targets non-existent #fbuckname, #finput, #uph, #uprev, #aiHintBox
+* [ ] handlePhoto() — orphaned, no live <input onchange="handlePhoto"> binding in HTML; targets non-existent #uph, #uprev
+* [ ] runAiHint() — orphaned, targets non-existent #aiHintBox, #aiHintText, #aiHintReason. Live AI buck ID is now tcamRunAiHint() on the Trail Cam sheet
+* [ ] acceptAiHint() — orphaned, targets non-existent #fbuckname, #aiHintBox
+* [ ] dismissAiHint() — orphaned, targets non-existent #aiHintBox
+
+CLAUDE.md previously documented #ttpCamModal / submitCamSighting() as the live camera sighting form — both are also orphans. CLAUDE.md was corrected this session to reflect the actual live form (#sheet-trail-cam, openTrailCamSheet(), submitTrailCamSighting()).
+
 📋 Active Backlog
 Tasks defined and ready to work on, in priority order:
 

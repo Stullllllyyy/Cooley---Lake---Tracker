@@ -612,3 +612,41 @@ textarea{resize:none}
 .layers-toggle-btn--coming-soon{opacity:0.4;cursor:default;position:relative}
 .layers-toggle-btn--coming-soon:active{transform:none}
 .layers-coming-soon-badge{font-size:8px;font-weight:700;color:#121415;background:#E5B53B;padding:1px 6px;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px}
+
+/* AI Buck Hint Box — top-3 candidate UI (Trail Cam form) */
+.ai-hint-box{background:#1a1c1e;border:1px solid var(--border);border-left:3px solid var(--bronze);border-radius:6px;padding:12px 14px;margin-bottom:12px;animation:aiHintFadeIn 0.18s ease-out}
+@keyframes aiHintFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.ai-hint-header{display:flex;align-items:center;gap:6px;margin-bottom:8px;color:var(--bronze)}
+.ai-hint-header svg{flex-shrink:0}
+.ai-hint-header-text{font-size:11px;font-weight:700;color:var(--silver);text-transform:uppercase;letter-spacing:0.6px;flex:1}
+.ai-hint-status{font-size:10px;color:var(--tungsten);font-style:italic}
+.ai-hint-observations{font-size:10px;color:var(--text3);font-style:italic;line-height:1.5;margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--border)}
+.ai-hint-candidates{display:flex;flex-direction:column;gap:6px}
+.ai-hint-card{background:rgba(18,20,21,0.6);border:1px solid var(--border2);border-radius:6px;padding:10px 12px;cursor:pointer;transition:background 0.15s,border-color 0.15s;-webkit-tap-highlight-color:transparent}
+.ai-hint-card:active{transform:scale(0.99)}
+.ai-hint-card:hover{border-color:var(--bronze);background:rgba(140,115,85,0.06)}
+.ai-hint-card--selected{border-color:var(--gold);background:rgba(229,181,59,0.1)}
+.ai-hint-card-name{font-size:13px;font-weight:700;color:var(--silver);margin-bottom:6px}
+.ai-hint-card--selected .ai-hint-card-name{color:var(--gold)}
+.ai-hint-card-confidence{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.ai-hint-conf-bar-wrap{flex:1;height:5px;background:var(--tungsten);border-radius:3px;overflow:hidden}
+.ai-hint-conf-bar{height:100%;border-radius:3px;transition:width 0.4s ease-out}
+.ai-hint-conf-pct{font-size:10px;font-weight:700;color:var(--text2);min-width:30px;text-align:right}
+.ai-hint-card-reason{font-size:10px;color:var(--text3);line-height:1.45}
+.ai-hint-none-btn{display:block;width:100%;margin-top:8px;padding:9px 12px;background:rgba(18,20,21,0.6);border:1px solid var(--tungsten);border-radius:6px;color:var(--text3);font-size:11px;font-weight:600;font-family:var(--font);cursor:pointer;transition:all 0.15s;-webkit-tap-highlight-color:transparent}
+.ai-hint-none-btn:hover{border-color:var(--bronze);color:var(--silver)}
+.ai-hint-none-btn:active{transform:scale(0.98)}
+.ai-hint-none-panel{margin-top:8px;padding-top:10px;border-top:1px solid var(--bronze)}
+.ai-hint-none-header{font-size:10px;font-weight:700;color:var(--bronze);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
+.ai-hint-buck-list{max-height:160px;overflow-y:auto;margin-bottom:8px;-webkit-overflow-scrolling:touch}
+.ai-hint-buck-list::-webkit-scrollbar{width:0;display:none}
+.ai-hint-buck-row{padding:9px 10px;font-size:12px;color:var(--silver);cursor:pointer;border-radius:4px;transition:background 0.12s;-webkit-tap-highlight-color:transparent}
+.ai-hint-buck-row:hover,.ai-hint-buck-row:active{background:rgba(140,115,85,0.12)}
+.ai-hint-no-bucks{padding:9px 10px;font-size:11px;color:var(--text3);font-style:italic}
+.ai-hint-add-new-btn{display:block;width:100%;padding:9px 12px;background:transparent;border:none;color:var(--gold);font-size:12px;font-weight:700;font-family:var(--font);cursor:pointer;text-align:left;-webkit-tap-highlight-color:transparent}
+.ai-hint-add-new-btn:hover{color:#f5c952}
+.ai-hint-new-form{display:flex;gap:6px;margin-bottom:8px}
+.ai-hint-new-input{flex:1;padding:9px 10px;font-size:12px;background:#1a1c1e;border:1px solid var(--border2);border-radius:6px;color:var(--silver);font-family:var(--font);outline:none}
+.ai-hint-new-input:focus{border-color:var(--bronze)}
+.ai-hint-new-save{padding:9px 14px;background:var(--bronze);border:none;border-radius:6px;color:#121415;font-size:11px;font-weight:700;font-family:var(--font);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ai-hint-new-save:active{transform:scale(0.97)}

@@ -34,12 +34,15 @@ Step-by-step:
 2. mapboxgl.Marker({ draggable: true }) created with sulfur (#E5B53B) teardrop SVG + pulsing ttpGlow animation, placed at mapInstance.getCenter()
 3. Location Set card appears at BOTTOM of screen (transparent overlay so pin at map center is visible above it). Live coords update via marker.on('drag') and marker.on('dragend').
 4. User drags pin to desired location, taps Confirm → confirmTapToPlace() stops pulse, locks pin
-5. Event Type modal appears (centered) — three cards: Camera Sighting / Field Observation / Mark Feature
+5. Event Type modal appears (centered) — three cards: Add Camera / Field Observation / Mark Feature
 6. User selects type → focused form modal opens with location pre-filled:
-   - Camera Sighting (#ttpCamModal) → submitCamSighting() → inserts to sightings with source='camera'
+   - Add Camera (#ttpAddCamModal) → openTtpAddCamModal() → places a new camera pin at the dropped location (NOT a sighting log)
    - Field Observation (#ttpObsModal) → submitObsSighting() → inserts to sightings with source='observation', obs_lat/obs_lng
    - Mark Feature (#ttpFeatureModal) → submitFeatureMarker() → inserts to property_markers
 7. On successful save: preview marker removed, tapToPlaceLngLat cleared, form closed, map pins refreshed
+
+Logging a camera sighting (separate flow — not tap-to-place)
+The live "log a camera sighting" path is the Trail Cam bottom sheet (#sheet-trail-cam), reached by tapping the + button in the Sightings tab header. Entry: openTrailCamSheet() → openSheet('trail-cam') → initTrailCamForm(). Photo upload: tcamHandlePhoto() → tcamRunAiHint() (top-3 candidate AI buck ID with #tcamAiCandidates cards, "None of These" panel with full-list selector and inline new-buck form). Buck input: #tcamBuckName. Submit: submitTrailCamSighting() → inserts to sightings with source='camera' and writes ai_feedback with selected rank when AI was used.
 
 Key state variables: tapToPlaceActive (bool), tapToPlaceLngLat ({lat,lng}), tapToPlacePreviewMarker (Marker instance), ttpAfterConfirm (optional callback to bypass event type modal)
 cancelTapToPlace() removes the marker and clears all state. TTP_OVERLAY_SEL and the pointer-events disable/restore pattern were removed entirely — the draggable marker approach makes them unnecessary.
