@@ -989,6 +989,9 @@ function openBuckDossier(buckId) {
     ).join('')}</div>` : `<div style="font-size:12px;color:var(--text3);padding:8px 0">No confirmed photos yet</div>`}
   </div>`;
 
+  // 10b. Graph Intelligence (Knowledge Graph — injected async after render)
+  html += `<div id="kg-intel-placeholder" class="kg-loading">Loading intelligence...</div>`;
+
   // 11. Recent Sightings
   html += `<div class="dossier-sec">
     <div class="dossier-sec-title"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Recent Sightings</div>
@@ -1020,6 +1023,14 @@ function openBuckDossier(buckId) {
   // Fetch buck-specific AI insights + weather summary
   fetchBuckInsights(buckId, buckName, bs);
   if(hasWeatherData) fetchBuckWeatherSummary(buckId, buckName, bs);
+
+  // Inject Graph Intelligence (Knowledge Graph) async — never blocks dossier render
+  loadBuckGraphIntelligence(buckName, buckId).then(function(data) {
+    var placeholder = document.getElementById('kg-intel-placeholder');
+    if (!placeholder) return;
+    var html = renderBuckGraphIntelligence(data);
+    placeholder.outerHTML = html || '';
+  });
 }
 
 // Buck-specific AI insights for dossier
@@ -1607,6 +1618,9 @@ function renderDash() {
   html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8C7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg> Buck Intelligence</div>`;
   html += `<div id="intelBuckCards" style="margin-bottom:32px"></div>`;
 
+  // --- Section 1b: Stand Intelligence (Knowledge Graph — injected async) ---
+  html += `<div id="stand-intel-placeholder"></div>`;
+
   // --- Section 2: 4-Box Analytics Grid ---
   html += `<div style="font-size:10px;color:var(--bronze);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;margin-bottom:10px">Analytics</div>`;
   html += `<div class="intel-4grid" id="intel4Grid" style="margin-bottom:32px">
@@ -1663,6 +1677,299 @@ function renderDash() {
   renderRecentActivity(ys);
   renderConditionsChart();
   setTimeout(loadHuntForecast, 100);
+
+  // Inject Stand Intelligence (Knowledge Graph) async — never blocks Intel tab render
+  loadStandIntelligence().then(function(standCards) {
+    var placeholder = document.getElementById('stand-intel-placeholder');
+    if (!placeholder) return;
+    placeholder.outerHTML = renderStandIntelligence(standCards) || '';
+  });
+}
+
+
+// ============================================================================
+// Knowledge Graph Phase 2 — Surface intelligence visually
+// Reads knowledge_nodes / knowledge_edges and formats as readable cards.
+// No AI calls. Every loader catches its own errors and returns null on failure
+// so the UI falls back gracefully to an empty state.
+// ============================================================================
+
+async function loadBuckGraphIntelligence(buckName, buckId) {
+  try {
+    if (!buckName && !buckId) return null;
+
+    // Find the buck's node ID — try entity_id first, fall back to entity_name.
+    // Older nodes may have been upserted with sanitized name as entity_id before
+    // a buck registry row existed.
+    var nodeResult = await sb.from('knowledge_nodes')
+      .select('id')
+      .eq('property_id', PROPERTY_ID)
+      .eq('entity_type', 'buck')
+      .or('entity_id.eq.' + (buckId || '__none__') + ',entity_name.eq.' + (buckName || '__none__'))
+      .maybeSingle();
+
+    if (!nodeResult.data) return null;
+    var nodeId = nodeResult.data.id;
+
+    // Get all outgoing edges from this buck node.
+    var edges = await sb.from('knowledge_edges')
+      .select(
+        'relationship, strength, evidence_count, attributes, ' +
+        'to_node:to_node_id(entity_type, entity_name, attributes)'
+      )
+      .eq('property_id', PROPERTY_ID)
+      .eq('from_node_id', nodeId)
+      .gte('evidence_count', 2)
+      .order('strength', { ascending: false })
+      .limit(20);
+
+    if (!edges.data || edges.data.length === 0) return null;
+
+    var timePatterns = [];
+    var weatherPatterns = [];
+    var cameraPatterns = [];
+
+    edges.data.forEach(function(edge) {
+      if (!edge.to_node) return;
+      var conf = Math.round(edge.strength * 100);
+      var obs = edge.evidence_count;
+
+      if (edge.relationship === 'active_during') {
+        timePatterns.push({
+          label: (edge.to_node.entity_name || '').replace(/_/g, ' '),
+          confidence: conf,
+          observations: obs
+        });
+      } else if (edge.relationship === 'correlates_with') {
+        var attrs = edge.attributes || {};
+        weatherPatterns.push({
+          label: (edge.to_node.entity_name || '').replace(/_/g, ' '),
+          confidence: conf,
+          observations: obs,
+          wind: attrs.wind_dir || null,
+          behavior: attrs.behavior || null
+        });
+      } else if (edge.relationship === 'seen_at') {
+        cameraPatterns.push({
+          label: edge.to_node.entity_name || '',
+          confidence: conf,
+          observations: obs,
+          timeOfDay: edge.attributes ? edge.attributes.time_of_day : null
+        });
+      }
+    });
+
+    return { timePatterns: timePatterns, weatherPatterns: weatherPatterns, cameraPatterns: cameraPatterns };
+
+  } catch (err) {
+    console.warn('[KG] Buck intelligence load failed:', err && err.message ? err.message : err);
+    return null;
+  }
+}
+
+function renderBuckGraphIntelligence(data) {
+  if (!data) return '';
+  var hasContent = data.timePatterns.length > 0 ||
+                   data.weatherPatterns.length > 0 ||
+                   data.cameraPatterns.length > 0;
+  if (!hasContent) return '';
+
+  var html = '<div class="dossier-section kg-intelligence-section">' +
+    '<div class="dossier-section-title">Graph Intelligence</div>' +
+    '<div class="kg-cards-wrap">';
+
+  // Time patterns card
+  if (data.timePatterns.length > 0) {
+    html += '<div class="kg-card">' +
+      '<div class="kg-card-label">Peak Activity Windows</div>';
+    data.timePatterns.slice(0, 4).forEach(function(p) {
+      html += '<div class="kg-card-row">' +
+        '<span class="kg-card-name">' + esc(p.label) + '</span>' +
+        '<span class="kg-card-meta">' + p.observations + ' obs &middot; ' + p.confidence + '%</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Weather patterns card
+  if (data.weatherPatterns.length > 0) {
+    html += '<div class="kg-card">' +
+      '<div class="kg-card-label">Condition Triggers</div>';
+    data.weatherPatterns.slice(0, 4).forEach(function(p) {
+      var detail = '';
+      if (p.wind) detail += p.wind + ' wind';
+      if (p.behavior) detail += (detail ? ' \u00B7 ' : '') + p.behavior;
+      html += '<div class="kg-card-row">' +
+        '<span class="kg-card-name">' + esc(p.label) + '</span>' +
+        '<span class="kg-card-meta">' + p.observations + ' obs</span>' +
+        '</div>';
+      if (detail) {
+        html += '<div class="kg-card-detail">' + esc(detail) + '</div>';
+      }
+    });
+    html += '</div>';
+  }
+
+  // Camera patterns card
+  if (data.cameraPatterns.length > 0) {
+    html += '<div class="kg-card">' +
+      '<div class="kg-card-label">Camera Activity</div>';
+    data.cameraPatterns.slice(0, 4).forEach(function(p) {
+      html += '<div class="kg-card-row">' +
+        '<span class="kg-card-name">' + esc(p.label) + '</span>' +
+        '<span class="kg-card-meta">' + p.observations + ' sightings</span>' +
+        '</div>';
+    });
+    html += '</div>';
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+async function loadStandIntelligence() {
+  try {
+    // Get all stand nodes for this property
+    var stands = await sb.from('knowledge_nodes')
+      .select('id, entity_name, lat, lng, attributes')
+      .eq('property_id', PROPERTY_ID)
+      .eq('entity_type', 'stand');
+
+    if (!stands.data || stands.data.length === 0) return null;
+
+    var standCards = [];
+
+    for (var i = 0; i < stands.data.length; i++) {
+      var stand = stands.data[i];
+
+      // Get edges FROM this stand (near relationships to cameras)
+      var nearEdges = await sb.from('knowledge_edges')
+        .select(
+          'relationship, evidence_count, attributes, ' +
+          'to_node:to_node_id(entity_type, entity_name)'
+        )
+        .eq('property_id', PROPERTY_ID)
+        .eq('from_node_id', stand.id)
+        .eq('relationship', 'near');
+
+      var nearbyCameraNames = [];
+      if (nearEdges.data) {
+        nearEdges.data.forEach(function(e) {
+          if (e.to_node && e.to_node.entity_type === 'camera') {
+            nearbyCameraNames.push(e.to_node.entity_name);
+          }
+        });
+      }
+
+      // Find bucks seen at those cameras
+      var buckActivity = [];
+      if (nearbyCameraNames.length > 0) {
+        for (var j = 0; j < nearbyCameraNames.length; j++) {
+          var camNode = await sb.from('knowledge_nodes')
+            .select('id')
+            .eq('property_id', PROPERTY_ID)
+            .eq('entity_type', 'camera')
+            .eq('entity_name', nearbyCameraNames[j])
+            .maybeSingle();
+
+          if (!camNode.data) continue;
+
+          var buckEdges = await sb.from('knowledge_edges')
+            .select(
+              'strength, evidence_count, attributes, ' +
+              'from_node:from_node_id(entity_type, entity_name)'
+            )
+            .eq('property_id', PROPERTY_ID)
+            .eq('to_node_id', camNode.data.id)
+            .eq('relationship', 'seen_at')
+            .gte('evidence_count', 2)
+            .order('strength', { ascending: false })
+            .limit(5);
+
+          if (buckEdges.data) {
+            buckEdges.data.forEach(function(e) {
+              if (e.from_node && e.from_node.entity_type === 'buck') {
+                var existing = buckActivity.find(function(b) {
+                  return b.name === e.from_node.entity_name;
+                });
+                if (existing) {
+                  existing.observations += e.evidence_count;
+                } else {
+                  buckActivity.push({
+                    name: e.from_node.entity_name,
+                    observations: e.evidence_count,
+                    wind: e.attributes ? e.attributes.wind_dir : null,
+                    timeOfDay: e.attributes ? e.attributes.time_of_day : null
+                  });
+                }
+              }
+            });
+          }
+        }
+      }
+
+      // Sort buck activity by observations
+      buckActivity.sort(function(a, b) { return b.observations - a.observations; });
+
+      standCards.push({
+        name: stand.entity_name,
+        nearbyCameras: nearbyCameraNames,
+        buckActivity: buckActivity.slice(0, 4)
+      });
+    }
+
+    return standCards.filter(function(s) { return s.buckActivity.length > 0; });
+
+  } catch (err) {
+    console.warn('[KG] Stand intelligence load failed:', err && err.message ? err.message : err);
+    return null;
+  }
+}
+
+function renderStandIntelligence(standCards) {
+  if (!standCards || standCards.length === 0) return '';
+
+  var html = '<div class="stand-intel-section">' +
+    '<div class="stand-intel-title">Stand Intelligence</div>' +
+    '<div class="stand-cards-wrap">';
+
+  standCards.forEach(function(stand) {
+    html += '<div class="stand-card">' +
+      '<div class="stand-card-header">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+          '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>' +
+          '<polyline points="9 22 9 12 15 12 15 22"/>' +
+        '</svg>' +
+        '<span class="stand-card-name">' + esc(stand.name) + '</span>' +
+      '</div>';
+
+    if (stand.nearbyCameras.length > 0) {
+      html += '<div class="stand-card-cameras">Covers: ' +
+        stand.nearbyCameras.slice(0, 3).map(esc).join(', ') + '</div>';
+    }
+
+    if (stand.buckActivity.length > 0) {
+      html += '<div class="stand-card-bucks-label">Buck Activity Nearby</div>';
+      stand.buckActivity.forEach(function(buck) {
+        var detail = '';
+        if (buck.wind) detail += buck.wind + ' wind';
+        if (buck.timeOfDay) detail += (detail ? ' \u00B7 ' : '') + buck.timeOfDay;
+        html += '<div class="kg-card-row">' +
+          '<span class="kg-card-name">' + esc(buck.name) + '</span>' +
+          '<span class="kg-card-meta">' + buck.observations + ' obs' +
+            (detail ? ' \u00B7 ' + esc(detail) : '') +
+          '</span>' +
+          '</div>';
+      });
+    } else {
+      html += '<div class="stand-card-empty">No buck activity recorded nearby yet</div>';
+    }
+
+    html += '</div>';
+  });
+
+  html += '</div></div>';
+  return html;
 }
 
 
