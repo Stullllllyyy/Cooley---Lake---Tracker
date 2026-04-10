@@ -10,6 +10,10 @@ function showDet(id) {
   const s = sightings.find(x => x.id === id); if(!s) return;
   const m = moonPhase(s.date);
   const bc = s.buck_name ? buckColor(s.buck_name) : null;
+  // Who Is This button — only for buck sightings with a photo
+  var whoHtml = (s.image_url && s.deer_type && s.deer_type.toLowerCase().includes('buck'))
+    ? '<button class="who-is-this-btn" onclick="whoIsThis(' + s.id + ')">&#129432; Who is this buck?</button>'
+    : '';
   const wxHtml = s.wind_speed ? `
     <div class="wx-panel" style="margin-top:10px">
       <div class="wx-panel-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="vertical-align:-1px;margin-right:5px"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg> Conditions at Sighting</div>
@@ -41,6 +45,7 @@ function showDet(id) {
       </div>
       ${wxHtml}
       ${s.notes?`<div style="background:var(--bg);border-radius:10px;padding:10px;margin-top:10px"><div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Notes</div><div style="font-size:13px;color:var(--text2);line-height:1.6;font-style:italic">${s.notes}</div></div>`:''}
+      ${whoHtml}
       <button class="edit-btn" style="margin-top:12px;width:100%;padding:10px" onclick="openEdit(${s.id})">&#9998; Edit Sighting</button>
     </div>`;
   openSheet('detail');
