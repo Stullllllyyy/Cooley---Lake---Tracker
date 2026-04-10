@@ -614,6 +614,14 @@ textarea{resize:none}
 .layers-toggle-btn--coming-soon{opacity:0.4;cursor:default;position:relative}
 .layers-toggle-btn--coming-soon:active{transform:none}
 .layers-coming-soon-badge{font-size:8px;font-weight:700;color:#121415;background:#E5B53B;padding:1px 6px;border-radius:6px;text-transform:uppercase;letter-spacing:0.5px}
+.layers-opacity-row{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:10px}
+.layers-opacity-label{font-size:10px;font-weight:700;color:var(--silver);text-transform:uppercase;letter-spacing:1px;font-family:var(--font);flex-shrink:0}
+.layers-opacity-slider{flex:1;-webkit-appearance:none;appearance:none;height:4px;background:var(--tungsten);border-radius:2px;outline:none;cursor:pointer;min-width:0}
+.layers-opacity-slider::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--bronze);border:2px solid var(--bg);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.4)}
+.layers-opacity-slider::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--bronze);border:2px solid var(--bg);cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,0.4)}
+.layers-opacity-slider:active::-webkit-slider-thumb{background:var(--gold)}
+.layers-opacity-slider:active::-moz-range-thumb{background:var(--gold)}
+.layers-opacity-val{font-size:11px;font-weight:700;color:var(--bronze);font-family:var(--font);min-width:36px;text-align:right;flex-shrink:0}
 
 /* AI Buck Hint Box — top-3 candidate UI (Trail Cam form) */
 .ai-hint-box{background:#1a1c1e;border:1px solid var(--border);border-left:3px solid var(--bronze);border-radius:6px;padding:12px 14px;margin-bottom:12px;animation:aiHintFadeIn 0.18s ease-out}

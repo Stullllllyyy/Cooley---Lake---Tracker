@@ -397,6 +397,8 @@ function initMap() {
     addRoadLayers();
     // Add waterway layers
     addWaterwayLayers();
+    // Add USGS public land raster layer
+    addPublicLandLayer();
   });
   // Weather popup: track map pan for Map Center refresh button
   mapInstance.on('moveend', () => {
@@ -413,6 +415,8 @@ function initMap() {
     addRoadLayers();
     // Re-add waterway layers after style change
     addWaterwayLayers();
+    // Re-add public land raster layer after style change
+    addPublicLandLayer();
     // Re-apply terrain if it was active before style switch
     if(terrainActive) {
       mapInstance.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
@@ -510,6 +514,7 @@ var terrainActive = false;
 var contoursActive = false;
 var roadsActive = false;
 var waterwaysActive = false;
+var publicLandActive = false;
 var layersPanelOpen = false;
 
 function addObsMarkers() {
@@ -1101,6 +1106,91 @@ function updateWaterwaysToggleUI() {
   updateLayersFabDot();
 }
 
+// --- Public Land (USGS PAD-US Federal Lands) ---
+
+function addPublicLandLayer() {
+  if(!mapInstance) return;
+  // Add USGS PAD-US raster tile source
+  if(!mapInstance.getSource('public-land-source')) {
+    mapInstance.addSource('public-land-source', {
+      type: 'raster',
+      tiles: [
+        'https://gis1.usgs.gov/arcgis/rest/services/padus3/Federal_Fee_Managers_Authoritative/MapServer/tile/{z}/{y}/{x}'
+      ],
+      tileSize: 256,
+      minzoom: 4,
+      maxzoom: 16,
+      attribution: 'USGS PAD-US Federal Lands'
+    });
+  }
+  // Add raster layer
+  if(!mapInstance.getLayer('public-land-layer')) {
+    mapInstance.addLayer({
+      id: 'public-land-layer',
+      type: 'raster',
+      source: 'public-land-source',
+      layout: { visibility: 'none' },
+      paint: { 'raster-opacity': 0.5 }
+    }, getFirstSymbolLayer());
+  }
+  // Restore visibility state after style reload
+  if(mapInstance.getLayer('public-land-layer')) {
+    mapInstance.setLayoutProperty(
+      'public-land-layer',
+      'visibility',
+      publicLandActive ? 'visible' : 'none'
+    );
+    // Restore current opacity from slider if present
+    var slider = document.getElementById('publicLandOpacity');
+    if(slider) {
+      mapInstance.setPaintProperty('public-land-layer', 'raster-opacity', (+slider.value) / 100);
+    }
+  }
+}
+
+function enablePublicLand() {
+  if(!mapInstance) return;
+  if(mapInstance.getLayer('public-land-layer')) {
+    mapInstance.setLayoutProperty('public-land-layer', 'visibility', 'visible');
+  }
+  publicLandActive = true;
+  updatePublicLandToggleUI();
+  updateLayersFabDot();
+  var opacityRow = document.getElementById('publicLandOpacityRow');
+  if(opacityRow) opacityRow.style.display = 'flex';
+}
+
+function disablePublicLand() {
+  if(!mapInstance) return;
+  if(mapInstance.getLayer('public-land-layer')) {
+    mapInstance.setLayoutProperty('public-land-layer', 'visibility', 'none');
+  }
+  publicLandActive = false;
+  updatePublicLandToggleUI();
+  updateLayersFabDot();
+  var opacityRow = document.getElementById('publicLandOpacityRow');
+  if(opacityRow) opacityRow.style.display = 'none';
+}
+
+function togglePublicLand() {
+  publicLandActive ? disablePublicLand() : enablePublicLand();
+}
+
+function updatePublicLandToggleUI() {
+  var btn = document.getElementById('publicLandToggleBtn');
+  if(!btn) return;
+  btn.classList.toggle('active', publicLandActive);
+  btn.disabled = false;
+}
+
+function setPublicLandOpacity(val) {
+  if(mapInstance && mapInstance.getLayer('public-land-layer')) {
+    mapInstance.setPaintProperty('public-land-layer', 'raster-opacity', val / 100);
+  }
+  var valEl = document.getElementById('publicLandOpacityVal');
+  if(valEl) valEl.textContent = val + '%';
+}
+
 // --- Layers Panel ---
 
 function toggleLayersPanel() {
@@ -1121,7 +1211,7 @@ function closeLayersPanel() {
 function updateLayersFabDot() {
   var dot = document.querySelector('.layers-fab-dot');
   if(!dot) return;
-  var anyActive = terrainActive || contoursActive || roadsActive || waterwaysActive;
+  var anyActive = terrainActive || contoursActive || roadsActive || waterwaysActive || publicLandActive;
   dot.classList.toggle('active', anyActive);
 }
 

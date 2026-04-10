@@ -654,14 +654,18 @@ html,body{height:100%;overflow:hidden;font-family:var(--font);background:var(--b
     <div class="layers-section">
       <div class="layers-section-label">Boundaries</div>
       <div class="layers-toggle-row">
-        <button class="layers-toggle-btn layers-toggle-btn--coming-soon" disabled>
+        <button id="publicLandToggleBtn" class="layers-toggle-btn" onclick="togglePublicLand()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <polyline points="9 22 9 12 15 12 15 22"/>
           </svg>
           <span>Public Land</span>
-          <span class="layers-coming-soon-badge">Soon</span>
         </button>
+      </div>
+      <div id="publicLandOpacityRow" class="layers-opacity-row" style="display:none;">
+        <span class="layers-opacity-label">Opacity</span>
+        <input type="range" id="publicLandOpacity" class="layers-opacity-slider" min="10" max="90" value="50" oninput="setPublicLandOpacity(this.value)"/>
+        <span id="publicLandOpacityVal" class="layers-opacity-val">50%</span>
       </div>
     </div>
   </div>
