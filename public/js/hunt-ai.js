@@ -74,7 +74,7 @@ function scrollChatToBottom() {
 }
 
 // --- Build system prompt with property data ---
-function buildChatSystemPrompt() {
+async function buildChatSystemPrompt() {
   const namedBucks = getNamedBucks();
   const camList = Object.entries(camLocations).map(([name, loc]) =>
     `${name}: lat ${loc.lat?.toFixed(4)}, lng ${loc.lng?.toFixed(4)}`
@@ -123,6 +123,14 @@ function buildChatSystemPrompt() {
     if (parts.length) contextSection = '\n\nPROPERTY CONTEXT (from the hunter):\n' + parts.join('\n');
   }
 
+  // Pull knowledge graph context — structured behavioral intelligence distinct
+  // from raw sightings. Fails silently (returns null) if the graph is empty or
+  // the tables are unavailable.
+  const kgContext = await kgGetPropertyContext();
+  const kgSection = kgContext
+    ? '\n\nPROPERTY INTELLIGENCE GRAPH (observed behavioral patterns — confidence derived from repeated observations):\n' + kgContext
+    : '';
+
   return `You are Huginn, an expert whitetail deer hunting advisor for a property called Cooley Lake in Suring, Wisconsin (center: ${CLAT}, ${CLNG}).
 Your job: analyze the hunter's trail camera data, property features, and weather to give specific, actionable hunting advice. Be concise and direct. Use the data — don't guess.
 
@@ -133,7 +141,7 @@ PROPERTY FEATURES (stands, scrapes, rubs, bedding):
 ${markerSummary || 'No features marked yet.'}
 
 NAMED BUCKS (${namedBucks.length} total):
-${buckSummaries || 'No named bucks yet.'}
+${buckSummaries || 'No named bucks yet.'}${kgSection}
 
 RECENT SIGHTINGS (${Math.min(sightings.length, 150)} of ${sightings.length} total):
 date | time | camera | type | buck | behavior | wind | temp | moon | travel
@@ -198,7 +206,7 @@ async function sendChatMessage() {
     const res = await claudeFetch({
         model: 'claude-sonnet-4-5',
         max_tokens: 1024,
-        system: buildChatSystemPrompt(),
+        system: await buildChatSystemPrompt(),
         messages: msgs
     });
 
