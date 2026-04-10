@@ -357,6 +357,8 @@
 .sc-foot{padding:8px 14px 10px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px}
 .edit-btn{padding:5px 12px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;cursor:pointer;font-family:var(--font);transition:all 0.2s}
 .edit-btn:active{background:rgba(140,115,85,0.1);color:var(--bronze);border-color:var(--bronze)}
+.who-is-this-btn{display:block;width:100%;height:48px;margin-bottom:10px;padding:0 14px;border-radius:10px;border:1px solid var(--bronze);background:var(--bg);color:var(--bronze);font-size:13px;font-weight:600;font-family:var(--font);cursor:pointer;transition:color 0.15s,border-color 0.15s;-webkit-tap-highlight-color:transparent}
+.who-is-this-btn:hover,.who-is-this-btn:active{color:var(--sulfur);border-color:var(--sulfur)}
 .sc-menu-btn{width:28px;height:28px;border-radius:8px;border:none;background:transparent;color:var(--text3);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;font-family:var(--font)}
 .sc-menu-btn:active{background:var(--surface2);color:var(--text)}
 .sc-action-menu{position:fixed;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:170px}
