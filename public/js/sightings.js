@@ -2771,17 +2771,31 @@ function tcamUpdateMoon() {
 }
 
 // Photo + AI hint (buck-only)
+// Original file is kept in tcamFormImgFile for submit-time upload (re-compressed at standard
+// size in submitTrailCamSighting). For the AI hint payload we compress more aggressively
+// (max 800px, quality 0.7) to keep mobile uploads tractable on weak connections.
 function tcamHandlePhoto(inp) {
   const f = inp.files[0]; if(!f) return;
   tcamFormImgFile = f;
   const r = new FileReader();
-  r.onload = e => {
+  r.onload = async e => {
     document.getElementById('tcamPhotoPrompt').style.display = 'none';
     const p = document.getElementById('tcamPhotoPreview');
     p.src = e.target.result; p.style.display = 'block';
     const deerChip = document.querySelector('#tcamDeerRow .chip.on');
     const isBuck = deerChip && deerChip.dataset.v && deerChip.dataset.v.includes('Buck');
-    if(isBuck) tcamRunAiHint(e.target.result);
+    if(isBuck) {
+      try {
+        const aiFile = await compressImage(f, { max: 800, quality: 0.7 });
+        const aiReader = new FileReader();
+        aiReader.onload = ev => tcamRunAiHint(ev.target.result);
+        aiReader.onerror = () => tcamRunAiHint(e.target.result);
+        aiReader.readAsDataURL(aiFile);
+      } catch(err) {
+        console.error('tcamHandlePhoto compress:', err);
+        tcamRunAiHint(e.target.result);
+      }
+    }
   };
   r.readAsDataURL(f);
 }
@@ -2854,7 +2868,7 @@ Respond in JSON only, no preamble, no markdown:
         model: 'claude-sonnet-4-5',
         max_tokens: 600,
         messages: [{ role: 'user', content }]
-    });
+    }, { timeoutMs: 30000 });
     const data = await response.json();
     const cleaned = (data.content?.[0]?.text || '').replace(/```json|```/g,'').trim();
     const parsed = JSON.parse(cleaned);
@@ -2868,8 +2882,19 @@ Respond in JSON only, no preamble, no markdown:
     };
     renderTcamAiCandidates(tcamAiResult);
   } catch(e) {
-    statusEl.textContent = 'AI analysis failed';
     console.error('tcamRunAiHint:', e);
+    // Clear any partially rendered state and show a visible error instead of spinning forever
+    obsEl.style.display = 'none';
+    obsEl.textContent = '';
+    candidatesEl.innerHTML = '';
+    noneBtn.style.display = 'none';
+    if(e && e.name === 'AbortError') {
+      statusEl.textContent = 'Analysis timed out. Try again on a stronger connection.';
+    } else if(e && e.message === 'RATE_LIMITED') {
+      statusEl.textContent = 'AI request limit reached. Try again later.';
+    } else {
+      statusEl.textContent = 'AI analysis failed. Check your connection and retry.';
+    }
   }
 }
 

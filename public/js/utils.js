@@ -46,15 +46,18 @@ function simpleDir(windDir) {
 }
 
 // Client-side image compression via Canvas API
-// Resizes to max 1200px on longest edge, JPEG quality 0.82, targets ~300KB
-function compressImage(file) {
+// Defaults: max 1200px on longest edge, JPEG quality 0.82, targets ~300KB
+// Optional second arg: { max, quality } to override (e.g. AI hint uses max:800, quality:0.7)
+function compressImage(file, options) {
+  var opts = options || {};
+  var MAX = opts.max || 1200;
+  var QUALITY = opts.quality != null ? opts.quality : 0.82;
   return new Promise(function(resolve) {
     if (!file || !file.type.startsWith('image/')) { resolve(file); return; }
     var img = new Image();
     var url = URL.createObjectURL(file);
     img.onload = function() {
       URL.revokeObjectURL(url);
-      var MAX = 1200;
       var w = img.width, h = img.height;
       if (w <= MAX && h <= MAX && file.size <= 300000) { resolve(file); return; }
       if (w > h) { if (w > MAX) { h = Math.round(h * MAX / w); w = MAX; } }
@@ -66,7 +69,7 @@ function compressImage(file) {
         if (!blob) { resolve(file); return; }
         var compressed = new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' });
         resolve(compressed);
-      }, 'image/jpeg', 0.82);
+      }, 'image/jpeg', QUALITY);
     };
     img.onerror = function() { URL.revokeObjectURL(url); resolve(file); };
     img.src = url;
@@ -74,17 +77,30 @@ function compressImage(file) {
 }
 
 // Anthropic API proxy — all AI calls route through /api/claude.js serverless function
-async function claudeFetch(body) {
-  var res = await fetch('/api/claude', {
+// Optional second arg: { timeoutMs } to abort the request after N ms (throws AbortError)
+async function claudeFetch(body, options) {
+  var opts = options || {};
+  var fetchInit = {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
-  });
-  if (res.status === 429) {
-    showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
-    throw new Error('RATE_LIMITED');
+  };
+  var controller, timeoutId;
+  if (opts.timeoutMs) {
+    controller = new AbortController();
+    fetchInit.signal = controller.signal;
+    timeoutId = setTimeout(function() { controller.abort(); }, opts.timeoutMs);
   }
-  return res;
+  try {
+    var res = await fetch('/api/claude', fetchInit);
+    if (res.status === 429) {
+      showToast("You\u2019ve reached the AI request limit. Try again in an hour.", 5000);
+      throw new Error('RATE_LIMITED');
+    }
+    return res;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
 }
 
 // HTML escape utility
