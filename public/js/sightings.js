@@ -12,7 +12,7 @@ function showDet(id) {
   const bc = s.buck_name ? buckColor(s.buck_name) : null;
   // Who Is This button — only for buck sightings with a photo
   var whoHtml = (s.image_url && s.deer_type && s.deer_type.toLowerCase().includes('buck'))
-    ? '<button class="who-is-this-btn" onclick="whoIsThis(' + s.id + ')">&#129432; Who is this buck?</button>'
+    ? '<button class="who-is-this-btn" onclick="whoIsThis(' + s.id + ')">Who is this buck?</button>'
     : '';
   const wxHtml = s.wind_speed ? `
     <div class="wx-panel" style="margin-top:10px">
