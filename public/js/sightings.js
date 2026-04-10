@@ -1533,6 +1533,7 @@ function showWhoIsThisModal(sightingId, imageUrl) {
       </div>
       <img id="whoImg" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-bottom:12px"/>
       <div id="whoResult" style="min-height:80px"></div>
+      <div id="whoNonePanel" class="ai-hint-none-panel" style="display:none"></div>
       <div id="whoActions" style="display:none;margin-top:10px"></div>
     </div>`;
     document.body.appendChild(modal);
@@ -1542,6 +1543,8 @@ function showWhoIsThisModal(sightingId, imageUrl) {
   document.getElementById("whoImg").src = imageUrl;
   document.getElementById("whoResult").innerHTML = `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">
     <div style="font-size:20px;margin-bottom:8px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:8px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>Analyzing photo...</div>`;
+  const nonePanelEl = document.getElementById("whoNonePanel");
+  if(nonePanelEl) { nonePanelEl.style.display = "none"; nonePanelEl.innerHTML = ""; }
   document.getElementById("whoActions").style.display = "none";
   document.getElementById("whoActions").innerHTML = "";
   modal.dataset.sightingId = sightingId;
@@ -1555,7 +1558,15 @@ async function runFullAiMatch(sightingId, imageUrl) {
   const namedBucks = getNamedBucks();
   const result = document.getElementById("whoResult");
   const actions = document.getElementById("whoActions");
+  const nonePanel = document.getElementById("whoNonePanel");
   whoMatchResult = null;
+
+  // Reset None-of-These panel on every run
+  if(nonePanel) {
+    nonePanel.style.display = "none";
+    nonePanel.innerHTML = "";
+  }
+  if(actions) { actions.innerHTML = ""; actions.style.display = "none"; }
 
   if(namedBucks.length === 0) {
     result.innerHTML = `<div style="font-size:12px;color:var(--text3);padding:12px;font-style:italic">No named bucks to compare against yet. Log some sightings with buck names first.</div>`;
@@ -1598,40 +1609,41 @@ async function runFullAiMatch(sightingId, imageUrl) {
 
     result.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Comparing against known bucks${refCount > 0 ? ` (${refCount} reference photo${refCount > 1 ? 's' : ''})` : ''}...</div>`;
 
+    // Top-3 candidate prompt — matches Trail Cam tab shape
+    const prompt = `You are analyzing a trail camera photo for a deer hunting app.
+Compare the buck in this photo against these known bucks and their reference photos.
+
+${buckProfiles}
+
+Return your top 3 most likely matches ranked by confidence. If fewer than 3 bucks
+are plausible matches return fewer. If no buck matches confidently return empty candidates.
+
+Respond in JSON only, no preamble, no markdown backticks:
+{
+  "visual_observations": "one sentence describing key antler characteristics visible",
+  "candidates": [
+    { "name": "buck name", "confidence": 0-100, "reasoning": "one sentence" },
+    { "name": "buck name", "confidence": 0-100, "reasoning": "one sentence" },
+    { "name": "buck name", "confidence": 0-100, "reasoning": "one sentence" }
+  ]
+}`;
+
     // Build content array: reference photos first, then the new photo
     const content = [];
     if(refContent.length > 0) {
       content.push({ type: 'text', text: 'Here are confirmed reference photos of known bucks on this property. Study each buck\'s antler configuration carefully.' });
       content.push(...refContent);
-      content.push({ type: 'text', text: `Now identify this new trail cam photo. Compare the antler configuration, tine count, brow tines, spread, and body profile against the reference photos above.
-
-${AI_VISUAL_REASONING_PROMPT}
-
-Additional context about known bucks:
-
-${buckProfiles}
-
-Respond in JSON only:
-{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the reference photos and known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` });
+      content.push({ type: 'text', text: `Now identify this new trail cam photo. Compare antler configuration, tine count, brow tines, spread, and body profile against the reference photos above.\n\n${AI_VISUAL_REASONING_PROMPT}\n\n${prompt}` });
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
     } else {
       // Fallback: text-only identification (no reference photos available)
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
-      content.push({ type: 'text', text: `You are a deer hunting expert analyzing a trail camera photo.
-
-${AI_VISUAL_REASONING_PROMPT}
-
-Known bucks on this property:
-
-${buckProfiles}
-
-Respond in JSON only:
-{"visual_observations": "2-3 sentences describing what you see — point count, tine length, spread, distinctive features, body size", "match": "exact buck name or null", "confidence": 0-100, "reasoning": "2-3 sentences comparing your visual observations to the known buck descriptions", "antler_desc": "one sentence describing this buck's rack"}` });
+      content.push({ type: 'text', text: `${AI_VISUAL_REASONING_PROMPT}\n\n${prompt}` });
     }
 
     const response = await claudeFetch({
         model: "claude-sonnet-4-5",
-        max_tokens: 700,
+        max_tokens: 800,
         messages: [{ role: "user", content }]
     });
 
@@ -1644,75 +1656,57 @@ Respond in JSON only:
     if(data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content?.[0]?.text || "";
     const cleaned = text.replace(/```json|```/g, "").trim();
-    const res = JSON.parse(cleaned);
-    whoMatchResult = res;
+    const parsed = JSON.parse(cleaned);
+    const candidates = Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 3) : [];
 
-    const confColor = res.confidence > 80 ? "#4caf50" : res.confidence >= 50 ? "#f5a623" : "#e53935";
-    const confLabel = res.confidence > 80 ? "High confidence" : res.confidence >= 50 ? "Moderate confidence" : "Low confidence";
-    const confDot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${confColor};margin-right:4px;vertical-align:middle"></span>`;
+    whoMatchResult = {
+      candidates,
+      visual_observations: parsed.visual_observations || '',
+      sightingId: sightingId,
+      imageUrl: imageUrl,
+      selectedRank: null
+    };
 
-    // Visual observations section
-    const obsHtml = res.visual_observations ? `<div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:10px;padding:8px;background:rgba(140,115,85,0.08);border-radius:8px;border-left:3px solid var(--gold)"><strong style="color:var(--text)">AI observed:</strong> ${res.visual_observations}</div>` : "";
-
-    if(res.confidence < 50 || !res.match) {
-      // LOW confidence or no match — Tag New / Select Existing
-      result.innerHTML = `${obsHtml}
-        <div style="display:flex;align-items:center;gap:8px;padding:10px;background:rgba(229,57,53,0.08);border-radius:10px;border:1px solid rgba(229,57,53,0.2);margin-bottom:8px">
-          ${confDot}<span style="font-size:13px;color:#e53935;font-weight:600">Unable to confidently identify</span>
-        </div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px;margin-bottom:8px">${res.antler_desc}</div>` : ""}`;
-      actions.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
-        <button class="aif-btn aif-btn-new" onclick="whoShowNewBuckForm()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Tag as New Buck
-        </button>
-        <button class="aif-btn aif-btn-wrong" onclick="whoShowBuckSelector()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Select Existing Buck
-        </button>
-      </div>
-      <div id="whoBuckSelector" style="display:none"></div>
-      <div id="whoNewBuckForm" style="display:none"></div>`;
-      actions.style.display = "block";
-    } else {
-      // MEDIUM or HIGH confidence — Confirm / Wrong / New
-      const bc = buckColor(res.match);
-      const lowConfWarn = res.confidence < 80 ? "" : "";
-      result.innerHTML = `${obsHtml}
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:10px;background:rgba(74,127,193,0.08);border-radius:10px;border:1px solid rgba(74,127,193,0.2)">
-          <div style="width:36px;height:36px;border-radius:50%;background:#1a1a1a;border:2px solid ${bc};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${bc}" stroke-width="1.5" stroke-linecap="round"><path d="M12 20 L12 14"/><path d="M12 14 L9 10 L7 7 L5 5"/><path d="M9 10 L7 12"/><path d="M7 7 L5 9"/><path d="M12 14 L15 10 L17 7 L19 5"/><path d="M15 10 L17 12"/><path d="M17 7 L19 9"/></svg>
-          </div>
-          <div>
-            <div style="font-size:14px;font-weight:700;color:${bc}">${res.match}</div>
-            <div style="font-size:11px;color:${confColor}">${confDot}${res.confidence}% — ${confLabel}</div>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">${res.reasoning}</div>
-        ${res.antler_desc ? `<div style="font-size:11px;color:var(--text3);font-style:italic;padding:8px;background:var(--bg);border-radius:8px;margin-bottom:8px">${res.antler_desc}</div>` : ""}`;
-      actions.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
-        <button class="aif-btn aif-btn-confirm" id="whoConfirmBtn" onclick="whoConfirmMatch()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          Confirm — This is ${res.match}
-        </button>
-        <button class="aif-btn aif-btn-wrong" onclick="whoShowBuckSelector()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          Wrong Buck
-        </button>
-        <button class="aif-btn aif-btn-new" onclick="whoShowNewBuckForm()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          New Buck
-        </button>
-      </div>
-      <div id="whoBuckSelector" style="display:none"></div>
-      <div id="whoNewBuckForm" style="display:none"></div>`;
-      actions.style.display = "block";
-    }
+    renderWhoCandidates(whoMatchResult);
   } catch(e) {
     console.error("Full AI match failed:", e);
     result.innerHTML = `<div style="font-size:12px;color:var(--red);padding:12px">Analysis failed: ${e.message}<br/><span style="font-size:10px;color:var(--text3)">Check Vercel function logs for details.</span></div>`;
   }
+}
+
+// Render top-3 candidate cards into #whoResult, matching Trail Cam tab UI
+function renderWhoCandidates(result) {
+  const resultEl = document.getElementById("whoResult");
+  if(!resultEl) return;
+  const candidates = result.candidates || [];
+
+  const obsHtml = result.visual_observations
+    ? '<div class="ai-hint-observations">' + esc(result.visual_observations) + '</div>'
+    : '';
+
+  if(candidates.length === 0) {
+    // No candidates — show fallback message + None of These button only
+    resultEl.innerHTML = obsHtml +
+      '<div style="padding:12px;font-size:12px;color:var(--text3);font-style:italic;text-align:center">Unable to confidently identify this buck</div>' +
+      '<button class="ai-hint-none-btn" onclick="whoShowNonePanel()">None of These</button>';
+    return;
+  }
+
+  const cardsHtml = '<div class="ai-hint-candidates">' + candidates.map(function(c, idx) {
+    const pct = Math.round(Number(c.confidence) || 0);
+    const barColor = pct >= 75 ? '#E5B53B' : pct >= 50 ? '#8C7355' : '#4A4D4E';
+    return '<div class="ai-hint-card" onclick="whoSelectCandidate(' + idx + ')">' +
+      '<div class="ai-hint-card-name">' + esc(c.name || '') + '</div>' +
+      '<div class="ai-hint-card-confidence">' +
+        '<div class="ai-hint-conf-bar-wrap"><div class="ai-hint-conf-bar" style="width:' + pct + '%;background:' + barColor + '"></div></div>' +
+        '<span class="ai-hint-conf-pct">' + pct + '%</span>' +
+      '</div>' +
+      '<div class="ai-hint-card-reason">' + esc(c.reasoning || '') + '</div>' +
+    '</div>';
+  }).join('') + '</div>';
+
+  resultEl.innerHTML = obsHtml + cardsHtml +
+    '<button class="ai-hint-none-btn" onclick="whoShowNonePanel()">None of These</button>';
 }
 
 // --- Who Is This: three-button actions ---
@@ -1847,6 +1841,147 @@ async function whoSaveNewBuck() {
   modal.style.display = "none";
   whoRefreshUI();
   showToast("New buck " + name + " added");
+}
+
+// ── Who Is This — top-3 candidate interaction handlers ───────────────────────
+
+// Tap a candidate card → update sighting, write feedback, close modal
+async function whoSelectCandidate(idx) {
+  if(!whoMatchResult || !Array.isArray(whoMatchResult.candidates)) return;
+  const candidate = whoMatchResult.candidates[idx];
+  if(!candidate || !candidate.name) return;
+  const name = candidate.name;
+  whoMatchResult.selectedRank = idx + 1;
+
+  // Visual feedback — highlight selected card
+  document.querySelectorAll('#whoResult .ai-hint-card').forEach(function(c, i) {
+    c.classList.toggle('ai-hint-card--selected', i === idx);
+  });
+
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  // Resolve buck_id — lookup in registry or auto-create
+  const buckId = await resolveBuckId(name);
+  const { error } = await sb.from("sightings").update({ buck_name: name, buck_id: buckId }).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); return; }
+  if(s) { s.buck_name = name; s.buck_id = buckId; }
+  if(buckId && s?.date) updateBuckDates(buckId, s.date);
+
+  const top1 = whoMatchResult.candidates[0] || null;
+  const wasCorrect = idx === 0;
+  const correctionNotes = idx > 0 ? 'User selected rank ' + (idx + 1) + ' candidate over rank 1' : null;
+  await writeAiFeedback({
+    photoUrl: imageUrl,
+    cameraName: s?.camera_name,
+    aiSuggestion: top1 ? top1.name : null,
+    aiConfidence: top1 ? top1.confidence : null,
+    aiReasoning: whoMatchResult.visual_observations || (top1 ? top1.reasoning : null),
+    confirmedBuckId: buckId,
+    confirmedBuckName: name,
+    wasCorrect: wasCorrect,
+    correctionNotes: correctionNotes
+  });
+
+  showToast("Buck updated to " + name);
+  whoRefreshUI();
+  setTimeout(function() { if(modal) modal.style.display = "none"; }, 800);
+}
+
+// None of These → show remaining bucks (excluding top 3) with inline new buck form
+function whoShowNonePanel() {
+  const panel = document.getElementById("whoNonePanel");
+  if(!panel) return;
+
+  const topNames = (whoMatchResult && whoMatchResult.candidates)
+    ? whoMatchResult.candidates.map(function(c) { return (c.name || '').toLowerCase(); })
+    : [];
+  const remaining = (buckRegistry || []).filter(function(b) {
+    return topNames.indexOf((b.name || '').toLowerCase()) === -1;
+  });
+
+  const listHtml = remaining.length === 0
+    ? '<div class="ai-hint-no-bucks">All registered bucks shown above</div>'
+    : remaining.map(function(b) {
+        const safeName = esc(b.name).replace(/'/g, "\\'");
+        return '<div class="ai-hint-buck-row" onclick="whoSelectFromList(\'' + b.id + '\',\'' + safeName + '\')">' + esc(b.name) + '</div>';
+      }).join('');
+
+  panel.innerHTML =
+    '<div class="ai-hint-none-header">Select the correct buck</div>' +
+    '<div id="whoBuckList" class="ai-hint-buck-list">' + listHtml + '</div>' +
+    '<div id="whoNewBuckFormInline" class="ai-hint-new-form" style="display:none">' +
+      '<input type="text" id="whoNewBuckNameInline" class="ai-hint-new-input" placeholder="New buck name" autocomplete="off"/>' +
+      '<button class="ai-hint-new-save" onclick="whoSaveNewBuckFromModal()">Save</button>' +
+    '</div>' +
+    '<button class="ai-hint-add-new-btn" onclick="whoShowNewBuckFormInline()">+ Add New Buck</button>';
+  panel.style.display = "block";
+}
+
+// Reveal the inline new-buck input inside #whoNonePanel
+function whoShowNewBuckFormInline() {
+  const form = document.getElementById("whoNewBuckFormInline");
+  if(!form) return;
+  form.style.display = 'flex';
+  const input = document.getElementById("whoNewBuckNameInline");
+  if(input) { input.value = ''; setTimeout(function() { input.focus(); }, 60); }
+}
+
+// Select a buck from the "None of These" remaining list
+async function whoSelectFromList(buckId, buckName) {
+  if(!buckId || !buckName) return;
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  const { error } = await sb.from("sightings").update({ buck_name: buckName, buck_id: buckId }).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); return; }
+  if(s) { s.buck_name = buckName; s.buck_id = buckId; }
+  if(s?.date) updateBuckDates(buckId, s.date);
+
+  const top1 = whoMatchResult && whoMatchResult.candidates ? whoMatchResult.candidates[0] : null;
+  await writeAiFeedback({
+    photoUrl: imageUrl,
+    cameraName: s?.camera_name,
+    aiSuggestion: top1 ? top1.name : null,
+    aiConfidence: top1 ? top1.confidence : null,
+    aiReasoning: whoMatchResult?.visual_observations || (top1 ? top1.reasoning : null),
+    confirmedBuckId: buckId,
+    confirmedBuckName: buckName,
+    wasCorrect: false,
+    correctionNotes: 'User selected from full buck list — not in top 3 candidates'
+  });
+
+  showToast("Buck updated to " + buckName);
+  whoRefreshUI();
+  setTimeout(function() { if(modal) modal.style.display = "none"; }, 800);
+}
+
+// Create a new buck from the inline form inside #whoNonePanel
+async function whoSaveNewBuckFromModal() {
+  const input = document.getElementById("whoNewBuckNameInline");
+  const name = input && input.value ? input.value.trim() : '';
+  if(!name) { showToast("Name is required"); return; }
+  const { modal, sightingId, imageUrl, s } = whoGetContext();
+  const newBuck = await createBuck(name);
+  if(!newBuck) { showToast("Failed to create buck"); return; }
+  const buckId = newBuck.id;
+  const { error } = await sb.from("sightings").update({ buck_name: name, buck_id: buckId }).eq("id", sightingId);
+  if(error) { showToast("Save failed: " + error.message); return; }
+  if(s) { s.buck_name = name; s.buck_id = buckId; }
+  if(s?.date) updateBuckDates(buckId, s.date);
+
+  const top1 = whoMatchResult && whoMatchResult.candidates ? whoMatchResult.candidates[0] : null;
+  await writeAiFeedback({
+    photoUrl: imageUrl,
+    cameraName: s?.camera_name,
+    aiSuggestion: top1 ? top1.name : null,
+    aiConfidence: top1 ? top1.confidence : null,
+    aiReasoning: whoMatchResult?.visual_observations || (top1 ? top1.reasoning : null),
+    confirmedBuckId: buckId,
+    confirmedBuckName: name,
+    wasCorrect: false,
+    correctionNotes: 'User created new buck — not in top 3 candidates'
+  });
+
+  showToast("New buck " + name + " created");
+  whoRefreshUI();
+  setTimeout(function() { if(modal) modal.style.display = "none"; }, 800);
 }
 
 
