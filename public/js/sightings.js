@@ -199,7 +199,7 @@ function buildAiBuckProfiles(cameraName) {
       return;
     }
 
-    let profile = `${name}: ${bs.length} sightings, cameras: ${cameras.join(', ')}`;
+    let profile = `${name}: cameras: ${cameras.join(', ')}`;
     if(antlerDesc) profile += `\n  Antler description: ${antlerDesc}`;
     if(notesSummary) profile += `\n  Hunter notes: ${notesSummary}`;
     if(sightingNotes) profile += `\n  Field notes: ${sightingNotes}`;
@@ -208,7 +208,7 @@ function buildAiBuckProfiles(cameraName) {
     if(cameraName) {
       const camSightings = bs.filter(s => s.camera_name === cameraName);
       if(camSightings.length > 0) {
-        profile += `\n  Confirmed at ${cameraName}: ${camSightings.length} sighting${camSightings.length > 1 ? 's' : ''}`;
+        profile += `\n  Previously observed at ${cameraName}`;
       }
     }
 
@@ -227,10 +227,7 @@ function buildAiBuckProfiles(cameraName) {
       return bs.length > 0;
     });
     if(confirmedAtCam.length) {
-      result = `This photo is from the ${cameraName} camera. Confirmed bucks at ${cameraName}: ${confirmedAtCam.map(n => {
-        const cnt = sightings.filter(s => s.buck_name === n && s.camera_name === cameraName).length;
-        return `${n} (${cnt} sighting${cnt > 1 ? 's' : ''})`;
-      }).join(', ')}. Use this as a strong prior.\n\n` + result;
+      result = `This photo is from the ${cameraName} camera. Bucks previously observed at ${cameraName}: ${confirmedAtCam.join(', ')}.\n\n` + result;
     } else {
       result = `This photo is from the ${cameraName} camera. No previously confirmed bucks at this camera.\n\n` + result;
     }
@@ -244,7 +241,7 @@ var AI_VISUAL_REASONING_PROMPT = `Before naming a buck, describe what you observ
 - Tine length relative to ears
 - Spread relative to body width
 - Any distinctive features (drop tines, stickers, kickers)
-- Body size and estimated age class
+- Body size and estimated age class — if the deer appears to be a young buck (small body frame, thin neck, legs appear long relative to body), do not suggest mature buck profiles regardless of antler similarity. Age class is a hard filter, not a soft suggestion.
 Then compare these observations against the reference photos and known buck descriptions.
 
 Priority order for identification:
@@ -1620,6 +1617,21 @@ async function runFullAiMatch(sightingId, imageUrl) {
 
     result.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text3);font-size:12px">Comparing against known bucks${refCount > 0 ? ` (${refCount} reference photo${refCount > 1 ? 's' : ''})` : ''}...</div>`;
 
+    // Age class constraint — bias AI away from mature bucks when sighting is tagged as young,
+    // and toward mature candidates when tagged as mature. Pulls deer type from the sighting record.
+    var whoDeerType = (thisSighting && thisSighting.deer_type || '').toLowerCase();
+    var ageConstraint = '';
+    if (whoDeerType.includes('1.5') || whoDeerType.includes('2.5')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a young buck (1.5-2.5 years old). ' +
+        'Only suggest candidates that are known young bucks or unknown. ' +
+        'Do not suggest mature bucks (4.5+, 3.5) regardless of antler similarity. ' +
+        'Body size and overall deer frame should confirm youth before any antler match is accepted.';
+    } else if (whoDeerType.includes('4.5') || whoDeerType.includes('mature')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a mature buck (4.5+ years). ' +
+        'Prioritize mature buck candidates. Young bucks should only appear as candidates ' +
+        'if no mature buck profile matches.';
+    }
+
     // Top-3 candidate prompt — matches Trail Cam tab shape
     const prompt = `You are analyzing a trail camera photo for a deer hunting app.
 Compare the buck in this photo against these known bucks and their reference photos.
@@ -1627,7 +1639,7 @@ Compare the buck in this photo against these known bucks and their reference pho
 ${buckProfiles}
 
 Return your top 3 most likely matches ranked by confidence. If fewer than 3 bucks
-are plausible matches return fewer. If no buck matches confidently return empty candidates.
+are plausible matches return fewer. If no buck matches confidently return empty candidates.${ageConstraint}
 
 Respond in JSON only, no preamble, no markdown backticks:
 {
@@ -2347,15 +2359,31 @@ async function obsRunAiHint(base64DataUrl) {
     try { const r = await buildRefPhotoContent(null); refContent = r.content; } catch(e) { /* fallback */ }
     hintText.textContent = 'Comparing against known bucks...';
 
+    // Age class constraint — bias AI away from mature bucks when observation is tagged as young,
+    // and toward mature candidates when tagged as mature. Pulls deer type from the form chip.
+    var obsDeerChip = document.querySelector('#ttpObsDeerRow .chip.on');
+    var obsDeerType = (obsDeerChip && obsDeerChip.dataset && obsDeerChip.dataset.v || '').toLowerCase();
+    var ageConstraint = '';
+    if (obsDeerType.includes('1.5') || obsDeerType.includes('2.5')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a young buck (1.5-2.5 years old). ' +
+        'Only suggest candidates that are known young bucks or unknown. ' +
+        'Do not suggest mature bucks (4.5+, 3.5) regardless of antler similarity. ' +
+        'Body size and overall deer frame should confirm youth before any antler match is accepted.';
+    } else if (obsDeerType.includes('4.5') || obsDeerType.includes('mature')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a mature buck (4.5+ years). ' +
+        'Prioritize mature buck candidates. Young bucks should only appear as candidates ' +
+        'if no mature buck profile matches.';
+    }
+
     const content = [];
     if(refContent.length > 0) {
       content.push({ type: 'text', text: 'Reference photos of known bucks:' });
       content.push(...refContent);
-      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'text', text: `Now identify this photo. Compare antlers against the reference photos.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nAdditional context:\n\n${buckProfiles}${ageConstraint}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
     } else {
       content.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } });
-      content.push({ type: 'text', text: `You are analyzing a photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
+      content.push({ type: 'text', text: `You are analyzing a photo for a deer hunting app.\n\n${AI_VISUAL_REASONING_PROMPT}\n\nKnown bucks:\n\n${buckProfiles}${ageConstraint}\n\nRespond in JSON only:\n{"match": "buck name or null", "confidence": 0-100, "reasoning": "one sentence about antler characteristics"}` });
     }
 
     const response = await claudeFetch({
@@ -2835,13 +2863,29 @@ async function tcamRunAiHint(base64DataUrl) {
     try { const r = await buildRefPhotoContent(camContext); refContent = r.content; } catch(e) { /* fallback */ }
     statusEl.textContent = 'Comparing against known bucks...';
 
+    // Age class constraint — bias AI away from mature bucks when photo is tagged as young,
+    // and toward mature candidates when tagged as mature. Pulls deer type from the form chip.
+    var tcamDeerChip = document.querySelector('#tcamDeerRow .chip.on');
+    var tcamDeerType = (tcamDeerChip && tcamDeerChip.dataset && tcamDeerChip.dataset.v || '').toLowerCase();
+    var ageConstraint = '';
+    if (tcamDeerType.includes('1.5') || tcamDeerType.includes('2.5')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a young buck (1.5-2.5 years old). ' +
+        'Only suggest candidates that are known young bucks or unknown. ' +
+        'Do not suggest mature bucks (4.5+, 3.5) regardless of antler similarity. ' +
+        'Body size and overall deer frame should confirm youth before any antler match is accepted.';
+    } else if (tcamDeerType.includes('4.5') || tcamDeerType.includes('mature')) {
+      ageConstraint = '\n\nIMPORTANT: This photo has been tagged as a mature buck (4.5+ years). ' +
+        'Prioritize mature buck candidates. Young bucks should only appear as candidates ' +
+        'if no mature buck profile matches.';
+    }
+
     const promptText = `Look at the buck in this photo and compare against these known bucks from this property:
 
 ${buckProfiles}
 
 ${AI_VISUAL_REASONING_PROMPT}
 
-Return your top 3 most likely matches ranked by confidence. If fewer than 3 bucks are plausible matches, return fewer. If no buck matches, return an empty candidates array.
+Return your top 3 most likely matches ranked by confidence. If fewer than 3 bucks are plausible matches, return fewer. If no buck matches, return an empty candidates array.${ageConstraint}
 
 Respond in JSON only, no preamble, no markdown:
 {
