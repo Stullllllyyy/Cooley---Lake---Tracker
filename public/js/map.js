@@ -5,7 +5,7 @@
 //   PIN_COLOR_STROKES), utils.js (showToast), auth.js (sb), weather.js (updateMapWeather,
 //   wxPopupSource, wxPopupOpen, wxMapMoved, updateWxToggleUI), sightings.js (sightings,
 //   curFilter, curMapFilter, curYear, getNamedBucks, buckColor, refreshBucknameList,
-//   renderLog, initForm), cameras.js (camLocations, addCamMarkers, loadCamLocations),
+//   renderLog), cameras.js (camLocations, addCamMarkers, loadCamLocations),
 //   markers.js (renderPropertyMarkers, addObsMarkers as called from here), ui.js (openSheet),
 //   intel.js (renderDash, loadHuntForecast)
 

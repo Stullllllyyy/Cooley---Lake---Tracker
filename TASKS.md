@@ -4,6 +4,13 @@ How To Use This File
 * During a session: Reference current tasks, stay in scope
 * After a session: Update this file with what was completed and what's next
 
+🎯 Beta Launch Target: July 4th 2026 — wider invite-only beta
+   Phase 1 (now–May 1): Cleanup, Privacy Policy, cost model
+   Phase 2 (May 1–May 20): Multi-property architecture
+   Phase 3 (May 20–June 10): Supabase Auth + invite system
+   Phase 4 (June 10–June 25): Beta hardening + testing
+   Week 11 (June 25–July 4): Buffer + launch prep
+
 🔥 Current Priority (Next Session)
 * index.html split Phase 1 — CSS extraction to /public/css/
 * index.html pre-split line count: 10939 lines
@@ -18,13 +25,18 @@ Bug | Severity | Notes
 Field observation pins on map | Low | Pins save with obs_lat/obs_lng and appear after save — needs production verification that pins persist correctly after full page reload.
 
 💀 Dead Code — Confirmed Orphans
-Discovered during AI buck identification rebuild (top-3 candidates session). All of the following live in /public/js/sightings.js but reference HTML elements that do NOT exist anywhere in /public/index.html. Entry points have been removed. Safe to delete in a dedicated cleanup session — DO NOT touch in feature work.
-* [ ] initForm() — orphaned, no live entry point. Targets non-existent #fd, #ft, #fbuckname, #fnotes, #ftemp, #fwind, #wxload, #wxdata, #wxstat, #uprev, #uph, #aiHintBox, #cch, #dch, #bch, #tch
-* [ ] saveLog() — orphaned, targets non-existent #fbuckname, #finput, #uph, #uprev, #aiHintBox
-* [ ] handlePhoto() — orphaned, no live <input onchange="handlePhoto"> binding in HTML; targets non-existent #uph, #uprev
-* [ ] runAiHint() — orphaned, targets non-existent #aiHintBox, #aiHintText, #aiHintReason. Live AI buck ID is now tcamRunAiHint() on the Trail Cam sheet
-* [ ] acceptAiHint() — orphaned, targets non-existent #fbuckname, #aiHintBox
-* [ ] dismissAiHint() — orphaned, targets non-existent #aiHintBox
+Removed Apr 22 2026 during dead code cleanup session:
+* [x] initForm() — removed. Was at sightings.js:3316, 37 lines. Only reference was a stale comment in map.js line 8 (also cleaned up).
+* [x] saveLog() — did not exist (listed erroneously in this file). Nothing to remove.
+* [x] handlePhoto() — removed. Was at sightings.js:3447, 17 lines.
+* [x] runAiHint() — removed. Was at sightings.js:3467, 67 lines. Contained old biased AI prompt. Live AI buck ID is tcamRunAiHint() on the Trail Cam sheet.
+* [x] acceptAiHint() — removed. Was at sightings.js:3535, 6 lines.
+* [x] dismissAiHint() — removed. Was at sightings.js:3542, 4 lines.
+* [x] aiHintSuggestion module var — removed, was only read/written by the three AI hint functions above.
+
+Flagged during cleanup but out of scope for this session (no live callers, still reference dead DOM elements — schedule for next cleanup):
+* [ ] submitSighting() — sightings.js:422. No callers anywhere. Touches #fbuckname, #fnotes, #finput, #uph, #uprev, #aiHintBox, #fd, #ft, #fwind, #ftemp (all gone from HTML).
+* [ ] setLogMode() — sightings.js:3184. Only caller was initForm() (removed this session). Touches #fnotes, #aiHintBox.
 
 Discovered during Who Is This top-3 candidates rebuild (Apr 10 2026). Who Is This now uses whoSelectCandidate / whoShowNonePanel / whoSelectFromList / whoSaveNewBuckFromModal. The old single-suggestion action functions are no longer wired to any UI — the Confirm / Wrong Buck / New Buck buttons and their #whoBuckSelector / #whoNewBuckForm containers are gone. Functions still reference whoMatchResult.match which no longer exists on the shape; they will silently no-op if invoked. Leave in place per dead code policy until a dedicated cleanup session.
 * [ ] whoConfirmMatch() — UI-unreachable. Was Confirm button handler.
@@ -125,6 +137,7 @@ Camera pin colors on initial load | Confirm pins render correct mature/non-matur
 
 ✅ Completed
 Feature/Fix | Notes | Date
+Dead code cleanup — sightings.js | Removed initForm (37L), handlePhoto (17L), runAiHint (67L, contained old biased AI prompt), acceptAiHint (6L), dismissAiHint (4L), aiHintSuggestion module var. saveLog did not exist. Updated stale map.js dependency comment. submitSighting + setLogMode flagged for next cleanup. | Apr 22 2026
 Knowledge Graph Phase 1 | Nodes, edges, silent edge building, Hunt AI integration. 99 nodes, 322 edges from 1,000 Cooley Lake sightings. Backfill complete. | Apr 2026
 Feather-style SVG teardrop icons for feature pins | Replaced filled circles with teardrop SVG icons matching camera pin architecture. Brand colors: Stand #8C7355, Scrape #E5B53B, Rub #c07b4c, Bedding #4a7a4e | Mar 23 2026
 Unknown Bucks root cause + Marsh Buck bulk resolve | Fixed buck_name drop in AI hint → accept → save flow; bulk resolved Marsh Buck null records | Mar 23 2026
@@ -186,4 +199,5 @@ Mar 20 2026 | Fixed new cam pins dropping black (fallback gold), field obs pins 
 Mar 21 2026 | Completed full Log Event UX Rework (7 steps): + FAB → draggable sulfur teardrop pin at map center → Location Set card (bottom-anchored so pin visible) → event type modal → Camera Sighting form / Field Observation form / Mark Feature form, all wired to Supabase. Fixed tap-to-place crosshair→draggable marker migration (pin color, card position, drag+dragend events, dead code removal). Fixed property_markers insert (feature_type→type column, removed non-existent date+active). Added Markers filter pill. | Feather-style SVG teardrop icons for feature pins; Unknown Bucks root cause + Marsh Buck bulk resolve
 Mar 24 2026 | Hunt AI Chat full build: chat UI, system prompt with sighting data, conversations with drawer, Property Intel toggle with 7 editable category cards, iOS keyboard handling. Fixed response parser and Key Insights (root cause: wrong model ID 'claude-sonnet-4-5-20250514' → 'claude-sonnet-4-5'). Fixed chat sheet dvh for mobile. Fixed emoji icons → SVGs. Fixed editor from bottom-sheet to centered modal. | Property Intel append model with timestamps; verify chat and insights working in production
 Mar 24 2026 | Pre-beta blockers completed: sightings feed fix (card links open detail sheet), Property Intel append model with timestamped entries, Supabase RLS policies on all tables, property_id migration (all tables + queries scoped), /api/claude rate limiting (IP-based), image compression (client-side resize before upload), soft deletes on cameras and property_markers (deleted_at column, UPDATE instead of DELETE, SELECT filters). | Production verification; deploy and test end to end
+Apr 22 2026 | Dead code cleanup session: removed 6 confirmed-orphan functions from sightings.js (initForm, handlePhoto, runAiHint w/ old biased AI prompt, acceptAiHint, dismissAiHint) plus aiHintSuggestion module var. saveLog was listed in orphan log but did not exist. Updated stale map.js dependency comment. Flagged submitSighting and setLogMode as next-cleanup targets (unreachable but out of scope for this session). Added July 4 beta launch milestone. | index.html split Phase 1 — CSS extraction
 Apr 8 2026 | Phase 1 Buck Intelligence: Added Buck Intelligence section to Intel tab (horizontal scroll cards between Overview and Analytics). Full buck dossier sheet (hero photo, stats, antler desc, hunter's notes, field obs, wind rose, activity chart, behavior, seasonal, top cameras, photo gallery with lightbox, recent sightings, "View All Sightings" cross-tab link). Removed Profiles button from Sightings tab. Marked openBuckProfile/renderProfiles as orphaned. Shared functions: buildWindRoseSVG, build24HrTimeline reused without duplication. Desktop: 3-column grid cards, 640px centered dossier, 2-column layout. | Phase 2 Sightings tab rebuild; orphaned code cleanup in index.html split phase
