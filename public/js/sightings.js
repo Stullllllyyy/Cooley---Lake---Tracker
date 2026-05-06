@@ -256,6 +256,25 @@ Do not weight your suggestion based on which buck has the most historical sighti
 // --- Reference Photo Comparison for AI Identification ---
 var refPhotoCache = null; // { buckId: [{url, base64, mediaType}], ... }
 
+// --- AI Identification Session Rate Limit ---
+// Caps Anthropic vision-API calls per browser session across all three ID call sites
+// (tcamRunAiHint, obsRunAiHint, runFullAiMatch). Complements the 50/hr per-IP server
+// limit in /api/claude.js. Resets on page reload.
+var _aiHintCallCount = 0;
+var AI_HINT_SESSION_LIMIT = 20;
+
+function updateAiHintCounter() {
+  var remaining = AI_HINT_SESSION_LIMIT - _aiHintCallCount;
+  var counterEl = document.getElementById('aiHintCounter');
+  if (!counterEl) return;
+  if (remaining <= 5) {
+    counterEl.textContent = remaining + ' AI identifications remaining this session';
+    counterEl.style.display = 'block';
+  } else {
+    counterEl.style.display = 'none';
+  }
+}
+
 async function urlToBase64(url) {
   const response = await fetch(url);
   const blob = await response.blob();
@@ -1563,6 +1582,14 @@ function showWhoIsThisModal(sightingId, imageUrl) {
 var whoMatchResult = null;
 
 async function runFullAiMatch(sightingId, imageUrl) {
+  if (_aiHintCallCount >= AI_HINT_SESSION_LIMIT) {
+    showToast('AI identification limit reached for this session. Refresh the page to continue or identify remaining bucks manually.');
+    var modal = document.getElementById('whoModal');
+    if (modal) modal.style.display = 'none';
+    return;
+  }
+  _aiHintCallCount++;
+  updateAiHintCounter();
   const namedBucks = getNamedBucks();
   const result = document.getElementById("whoResult");
   const actions = document.getElementById("whoActions");
@@ -2335,6 +2362,12 @@ function obsHandlePhoto(inp) {
 
 var obsAiResult = null;
 async function obsRunAiHint(base64DataUrl) {
+  if (_aiHintCallCount >= AI_HINT_SESSION_LIMIT) {
+    showToast('AI identification limit reached for this session. Refresh the page to continue or identify remaining bucks manually.');
+    return;
+  }
+  _aiHintCallCount++;
+  updateAiHintCounter();
   const namedBucks = getNamedBucks();
   if(namedBucks.length === 0) return;
   const hintBox = document.getElementById('ttpObsAiHint');
@@ -2586,6 +2619,7 @@ function initTrailCamForm() {
   document.getElementById('tcamPhotoPrompt').style.display = 'block';
   document.getElementById('tcamInput').value = '';
   document.getElementById('tcamAiHint').style.display = 'none';
+  updateAiHintCounter();
   document.getElementById('tcamNotes').value = '';
   document.getElementById('tcamTemp').value = '';
   document.getElementById('tcamWind').value = '';
@@ -2833,6 +2867,12 @@ function tcamHandlePhoto(inp) {
 var tcamAiResult = null;
 
 async function tcamRunAiHint(base64DataUrl) {
+  if (_aiHintCallCount >= AI_HINT_SESSION_LIMIT) {
+    showToast('AI identification limit reached for this session. Refresh the page to continue or identify remaining bucks manually.');
+    return;
+  }
+  _aiHintCallCount++;
+  updateAiHintCounter();
   const namedBucks = getNamedBucks();
   if(namedBucks.length === 0) return;
   const hintBox = document.getElementById('tcamAiHint');

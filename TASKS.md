@@ -188,6 +188,7 @@ property_id migration | Added property_id column to all tables; all queries scop
 /api/claude rate limiting | IP-based rate limiting on Vercel serverless proxy to prevent abuse | Mar 24 2026
 Image compression | Client-side image resize before Supabase Storage upload to reduce bandwidth and storage | Mar 24 2026
 Soft deletes on cameras and property_markers | DELETE→UPDATE deleted_at; all SELECTs filter .is('deleted_at', null); archive messaging replaces delete messaging; sightings preserved | Mar 24 2026
+Bulk upload rate limiting | Client-side 20 AI ID calls/session limit across all three identification call sites. Counter display when within 5 of limit. | Apr 2026
 
 Session Log
 Date | What We Did | What's Next

@@ -6,6 +6,10 @@
 // Stores { key: [timestamp, timestamp, ...] } per client IP.
 // Persists across warm invocations on the same Vercel instance.
 // Resets on cold start — acceptable for pre-beta; swap to Vercel KV for production scale.
+//
+// Client-side: 20 AI identification calls per session (sightings.js _aiHintCallCount)
+// Server-side: 50 requests/hour per IP (this file)
+// Both limits work together to prevent runaway API costs
 const RATE_LIMIT_MAX = 50;          // max requests per window
 const RATE_LIMIT_WINDOW = 3600000;  // 1 hour in ms
 const rateLimitMap = new Map();
